@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>кружочек</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    #circle {
+      width: 100px;
+      height: 100px;
+      background-color: #3498db;
+      border-radius: 50%;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background-color 0.2s;
+    }
+    #circle:active {
+      background-color: #2980b9;
+    }
+    #score {
+      margin-top: 20px;
+      font-size: 32px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="circle">Тап</div>
+  <div id="score">Счет: 0</div>
+
+  <script>
+    const circle = document.getElementById('circle');
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+
+    circle.addEventListener('click', () => {
+      score++;
+      scoreDisplay.textContent = 'Счет: ' + score;
+    });
+  </script>
+
+</body>
+</html>
