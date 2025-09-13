@@ -8,56 +8,81 @@ html_content = """
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>кружочек</title>
+  <title>ляжки фембоя</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
+
     body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
+      font-family: 'Comic Neue', cursive, Arial, sans-serif;
+      user-select: none;
+      color: #fff;
+      text-shadow: 0 0 5px #ff77cc;
     }
     #circle {
-      width: 100px;
-      height: 100px;
-      background-color: #3498db;
-      border-radius: 50%;
+      width: 150px;
+      height: 150px;
       cursor: pointer;
-      user-select: none;
+      border-radius: 50%;
+      box-shadow: 0 8px 20px rgba(255, 102, 204, 0.6);
+      transition: transform 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 24px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      transition: background-color 0.2s;
+      overflow: hidden;
+      background-color: transparent;
+    }
+    #circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      user-select: none;
+      pointer-events: none;
     }
     #circle:active {
-      background-color: #2980b9;
+      transform: scale(0.95);
+      box-shadow: 0 4px 12px rgba(255, 102, 204, 0.9);
     }
     #score {
-      margin-top: 20px;
-      font-size: 32px;
-      color: #333;
+      margin-top: 25px;
+      font-size: 40px;
+      font-weight: 700;
+      text-shadow: 0 0 15px #ff66cc;
     }
   </style>
 </head>
 <body>
 
-  <div id="circle">Тап</div>
+  <div id="circle">
+    <img id="femboyImg" src="https://i.imgur.com/6Z2c4Tq.png" alt="фембой"/>
+  </div>
   <div id="score">Счет: 0</div>
 
   <script>
     const circle = document.getElementById('circle');
+    const img = document.getElementById('femboyImg');
     const scoreDisplay = document.getElementById('score');
     let score = 0;
+
+    const imgNormal = "https://i.imgur.com/6Z2c4Tq.png";  // фембой исходный
+    const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";  // фембой "нажат" (сменить, если хочешь)
 
     circle.addEventListener('click', () => {
       score++;
       scoreDisplay.textContent = 'Счет: ' + score;
+
+      // Смена картинки на 0.5 секунды
+      img.src = imgActive;
+      setTimeout(() => {
+        img.src = imgNormal;
+      }, 500);
     });
   </script>
 
