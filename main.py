@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 html_content = """
 <!DOCTYPE html>
@@ -61,7 +64,7 @@ html_content = """
 <body>
 
   <div id="circle">
-    <img id="femboyImg" src="https://i.imgur.com/6Z2c4Tq.png" alt="фембой"/>
+    <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой"/>
   </div>
   <div id="score">Счет: 0</div>
 
@@ -71,7 +74,7 @@ html_content = """
     const scoreDisplay = document.getElementById('score');
     let score = 0;
 
-    const imgNormal = "https://i.imgur.com/6Z2c4Tq.png";  // фембой исходный
+    const imgNormal = "/static/Photo_femb_static.jpg";  // фембой исходный
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";  // фембой "нажат" (сменить, если хочешь)
 
     circle.addEventListener('click', () => {
