@@ -11,7 +11,7 @@ html_content = """
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>кружочек в стиле фембой</title>
+  <title>ляжки фембоя</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
 
@@ -64,35 +64,41 @@ html_content = """
 <body>
 
   <div id="circle">
-    <img id="femboyImg" src="/static/femboy_normal.png" alt="фембой"/>
+    <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой"/>
   </div>
   <div id="score">Счет: 0</div>
 
   <script>
-    const circle = document.getElementById('circle');
-    const img = document.getElementById('femboyImg');
-    const scoreDisplay = document.getElementById('score');
+  const circle = document.getElementById('circle');
+  const img = document.getElementById('femboyImg');
+  const scoreDisplay = document.getElementById('score');
 
-    const imgNormal = "/static/femboy_normal.png";
-    const imgActive = "/static/femboy_active.png";
+  const imgNormal = "/static/Photo_femb_static.jpg";
+  const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
-    // Загружаем сохранённый счёт из localStorage или начинаем с 0
-    let score = parseInt(localStorage.getItem('score')) || 0;
+  // Загружаем score из localStorage
+  let score = localStorage.getItem('femboyScore');
+  if (!score) {
+    score = 0;
+  } else {
+    score = parseInt(score);
+  }
+  scoreDisplay.textContent = 'Счет: ' + score;
+
+  circle.addEventListener('click', () => {
+    score++;
     scoreDisplay.textContent = 'Счет: ' + score;
 
-    circle.addEventListener('click', () => {
-      score++;
-      scoreDisplay.textContent = 'Счет: ' + score;
+    // Сохраняем в localStorage
+    localStorage.setItem('femboyScore', score);
 
-      // Сохраняем счёт в localStorage
-      localStorage.setItem('score', score);
-
-      img.src = imgActive;
-      setTimeout(() => {
-        img.src = imgNormal;
-      }, 500);
-    });
-  </script>
+    // Смена картинки на 0.5 секунды
+    img.src = imgActive;
+    setTimeout(() => {
+      img.src = imgNormal;
+    }, 500);
+  });
+</script>
 
 </body>
 </html>
