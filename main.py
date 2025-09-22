@@ -11,7 +11,7 @@ html_content = """
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>ляжки фембоя</title>
+  <title>кружочек в стиле фембой</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
 
@@ -64,7 +64,7 @@ html_content = """
 <body>
 
   <div id="circle">
-    <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой"/>
+    <img id="femboyImg" src="/static/femboy_normal.png" alt="фембой"/>
   </div>
   <div id="score">Счет: 0</div>
 
@@ -72,16 +72,21 @@ html_content = """
     const circle = document.getElementById('circle');
     const img = document.getElementById('femboyImg');
     const scoreDisplay = document.getElementById('score');
-    let score = 0;
 
-    const imgNormal = "/static/Photo_femb_static.jpg";  // фембой исходный
-    const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";  // фембой "нажат" (сменить, если хочешь)
+    const imgNormal = "/static/femboy_normal.png";
+    const imgActive = "/static/femboy_active.png";
+
+    // Загружаем сохранённый счёт из localStorage или начинаем с 0
+    let score = parseInt(localStorage.getItem('score')) || 0;
+    scoreDisplay.textContent = 'Счет: ' + score;
 
     circle.addEventListener('click', () => {
       score++;
       scoreDisplay.textContent = 'Счет: ' + score;
 
-      // Смена картинки на 0.5 секунды
+      // Сохраняем счёт в localStorage
+      localStorage.setItem('score', score);
+
       img.src = imgActive;
       setTimeout(() => {
         img.src = imgNormal;
