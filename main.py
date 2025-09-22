@@ -67,9 +67,10 @@ html_content = """
       user-select: none;
     }
     #coin {
-      width: 32px;
-      height: 32px;
+      width: 50px;
+      height: 50px;
       user-select: none;
+      box-shadow: 0 8px 70px rgba(255, 102, 204, 0.6);
     }
   </style>
 </head>
