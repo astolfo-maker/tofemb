@@ -36,3 +36,4 @@ tzdata==2023.3
 tzlocal==4.3
 urllib3==1.26.16
 uvicorn==0.21.1
+wheel==0.40.0
