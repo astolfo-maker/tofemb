@@ -2,7 +2,7 @@ fastapi==0.95.1
 uvicorn==0.21.1
 aiosqlite==0.17.0
 pydantic<2.0.0,>=1.6.2
-starlette==0.27.0
+starlette<0.27.0,>=0.26.1
 httpx==0.24.1
 python-telegram-bot==13.15
 numpy==1.21.6
