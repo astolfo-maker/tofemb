@@ -2275,3 +2275,7 @@ async def debug_users():
 async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
     return JSONResponse(content={"levels": LEVELS})
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
