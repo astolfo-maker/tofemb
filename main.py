@@ -33,18 +33,18 @@ LEVELS = [
 
 # Определение улучшений
 UPGRADES = [
-    {"id": "upgrade1", "name": "Легкие шаги", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
-    {"id": "upgrade2", "name": "Быстрые пальцы", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
-    {"id": "upgrade3", "name": "Сильный удар", "description": "+5 за клик", "cost": 10000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
-    {"id": "upgrade4", "name": "Монетка в минуту", "description": "+1 каждые 5 сек", "cost": 15000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
-    {"id": "upgrade5", "name": "Мешочек монет", "description": "+5 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
-    {"id": "upgrade6", "name": "Сундук сокровищ", "description": "+10 каждые 5 сек", "cost": 50000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
-    {"id": "upgrade7", "name": "Золотые перчатки", "description": "+10 за клик", "cost": 75000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
-    {"id": "upgrade8", "name": "Серебряные подковы", "description": "+15 за клик", "cost": 100000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
-    {"id": "upgrade9", "name": "Копилка фембоя", "description": "+25 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
-    {"id": "upgrade10", "name": "Алмазные когти", "description": "+25 за клик", "cost": 250000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
-    {"id": "upgrade11", "name": "Фонтан монет", "description": "+50 каждые 5 сек", "cost": 500000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "name": "Корона фембоя", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade1", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "description": "+5 за клик", "cost": 10000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 15000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 50000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "description": "+10 за клик", "cost": 75000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "description": "+15 за клик", "cost": 100000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "description": "+25 за клик", "cost": 250000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 500000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
 # Функция для определения уровня по очкам
@@ -922,7 +922,7 @@ html_content = """
       bottom: 70px;
       left: 0;
       width: 100%;
-      height: 60px;
+      height: 80px;
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.8), rgba(255, 154, 158, 0.8));
       border: none;
       color: white;
@@ -931,6 +931,7 @@ html_content = """
       cursor: pointer;
       z-index: 90;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
@@ -941,6 +942,11 @@ html_content = """
     }
     #upgrades-button:active {
       transform: translateY(2px);
+    }
+    #upgrades-button span {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-top: 5px;
     }
     
     /* Модальное окно улучшений */
@@ -1050,11 +1056,6 @@ html_content = """
       border-radius: 50%;
       object-fit: cover;
     }
-    .upgrade-name {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
     .upgrade-description {
       font-size: 12px;
       opacity: 0.8;
@@ -1097,7 +1098,7 @@ html_content = """
     /* Стили для пассивного дохода */
     #passive-income-display {
       position: fixed;
-      top: 70px;
+      top: 190px;
       right: 10px;
       background: rgba(0, 0, 0, 0.7);
       color: #FFD700;
@@ -1274,7 +1275,10 @@ html_content = """
   </div>
 
   <!-- Кнопка улучшений -->
-  <button id="upgrades-button">УЛУЧШЕНИЯ</button>
+  <button id="upgrades-button">
+    УЛУЧШЕНИЯ
+    <span>(В разработке)</span>
+  </button>
 
   <!-- Модальное окно улучшений -->
   <div id="upgrades-modal-overlay"></div>
@@ -1325,18 +1329,18 @@ html_content = """
     
     // Улучшения игры
     const UPGRADES = [
-      {id: "upgrade1", name: "Легкие шаги", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", name: "Быстрые пальцы", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", name: "Сильный удар", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", name: "Монетка в минуту", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", name: "Мешочек монет", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", name: "Сундук сокровищ", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", name: "Золотые перчатки", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", name: "Серебряные подковы", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", name: "Копилка фембоя", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", name: "Алмазные когти", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", name: "Фонтан монет", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", name: "Корона фембоя", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
+      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
@@ -1696,6 +1700,14 @@ html_content = """
           btn.classList.remove('active');
         }
       });
+
+      // Управляем видимостью кнопки улучшений
+      const upgradesButton = document.getElementById('upgrades-button');
+      if (pageKey === 'clicker') {
+        upgradesButton.style.display = 'flex';
+      } else {
+        upgradesButton.style.display = 'none';
+      }
 
       // При открытии профиля обновляем данные
       if (pageKey === 'profile') {
@@ -2217,8 +2229,7 @@ html_content = """
         upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
         
         upgradeElement.innerHTML = `
-          <img class="upgrade-image" src="${upgrade.image}" alt="${upgrade.name}">
-          <div class="upgrade-name">${upgrade.name}</div>
+          <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
@@ -2275,7 +2286,7 @@ html_content = """
       renderUpgrades();
       
       // Показываем уведомление
-      showNotification(`Вы купили "${upgrade.name}"!`);
+      showNotification(`Вы купили улучшение!`);
     }
     
     // Расчет бонуса за клик
