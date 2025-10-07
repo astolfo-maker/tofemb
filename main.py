@@ -31,6 +31,22 @@ LEVELS = [
     {"score": 10000000, "name": "Бог фембоев"}
 ]
 
+# Определение улучшений
+UPGRADES = [
+    {"id": "upgrade1", "name": "Легкие шаги", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "name": "Быстрые пальцы", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "name": "Сильный удар", "description": "+5 за клик", "cost": 10000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "name": "Монетка в минуту", "description": "+1 каждые 5 сек", "cost": 15000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "name": "Мешочек монет", "description": "+5 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "name": "Сундук сокровищ", "description": "+10 каждые 5 сек", "cost": 50000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "name": "Золотые перчатки", "description": "+10 за клик", "cost": 75000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "name": "Серебряные подковы", "description": "+15 за клик", "cost": 100000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "name": "Копилка фембоя", "description": "+25 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "name": "Алмазные когти", "description": "+25 за клик", "cost": 250000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "name": "Фонтан монет", "description": "+50 каждые 5 сек", "cost": 500000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "name": "Корона фембоя", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+]
+
 # Функция для определения уровня по очкам
 def get_level_by_score(score: int) -> str:
     for i in range(len(LEVELS) - 1, -1, -1):
@@ -65,6 +81,9 @@ def load_users():
                         user_data["energy"] = 250
                     if "lastEnergyUpdate" not in user_data:
                         user_data["lastEnergyUpdate"] = datetime.now().isoformat()
+                    # Добавляем поля для улучшений
+                    if "upgrades" not in user_data:
+                        user_data["upgrades"] = []
                 
                 return users_data
         except:
@@ -896,6 +915,204 @@ html_content = """
     .no-energy.show {
       opacity: 1;
     }
+    
+    /* Стили для улучшений */
+    #upgrades-button {
+      position: fixed;
+      bottom: 70px;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(135deg, rgba(255, 102, 204, 0.8), rgba(255, 154, 158, 0.8));
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
+      transition: all 0.3s ease;
+    }
+    #upgrades-button:hover {
+      background: linear-gradient(135deg, rgba(255, 102, 204, 0.9), rgba(255, 154, 158, 0.9));
+    }
+    #upgrades-button:active {
+      transform: translateY(2px);
+    }
+    
+    /* Модальное окно улучшений */
+    #upgrades-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1001;
+      display: none;
+    }
+    #upgrades-modal-overlay.active {
+      display: block;
+    }
+    #upgrades-modal {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 80vh;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(10px);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 1002;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+    }
+    #upgrades-modal.active {
+      transform: translateY(0);
+    }
+    .upgrades-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .upgrades-modal-title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+    .upgrades-modal-close {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background-color 0.3s;
+    }
+    .upgrades-modal-close:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    .upgrades-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .upgrade-item {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 15px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .upgrade-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-5px);
+    }
+    .upgrade-item.purchased {
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid #4ade80;
+    }
+    .upgrade-item.purchased::after {
+      content: '✓';
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #4ade80;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .upgrade-image {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .upgrade-name {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .upgrade-description {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+    .upgrade-cost {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .upgrade-cost img {
+      width: 16px;
+      height: 16px;
+    }
+    .upgrade-buy-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .upgrade-buy-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(255, 102, 204, 0.4);
+    }
+    .upgrade-buy-button:disabled {
+      background: rgba(255, 255, 255, 0.2);
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Стили для пассивного дохода */
+    #passive-income-display {
+      position: fixed;
+      top: 70px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #FFD700;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 95;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #passive-income-icon {
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -956,6 +1173,8 @@ html_content = """
         <p>Собранные монетки: <span id="profileScore">0</span></p>
         <p>Уровень фембоя: <span id="userLevel">Новичок</span></p>
         <p>Всего кликов: <span id="totalClicks">0</span></p>
+        <p>Бонус за клик: <span id="clickBonus">0</span></p>
+        <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
       </div>
       
       <!-- Секция кошелька -->
@@ -1054,6 +1273,27 @@ html_content = """
     <button id="referral-share-button" class="task-modal-button-secondary">Переслать друзьям</button>
   </div>
 
+  <!-- Кнопка улучшений -->
+  <button id="upgrades-button">УЛУЧШЕНИЯ</button>
+
+  <!-- Модальное окно улучшений -->
+  <div id="upgrades-modal-overlay"></div>
+  <div id="upgrades-modal">
+    <div class="upgrades-modal-header">
+      <div class="upgrades-modal-title">УЛУЧШЕНИЯ</div>
+      <button class="upgrades-modal-close" id="upgrades-modal-close">×</button>
+    </div>
+    <div class="upgrades-container" id="upgrades-container">
+      <!-- Улучшения будут добавлены через JavaScript -->
+    </div>
+  </div>
+
+  <!-- Отображение пассивного дохода -->
+  <div id="passive-income-display">
+    <span id="passive-income-icon">⏱</span>
+    <span id="passive-income-value">0</span>/5 сек
+  </div>
+
   <!-- Уведомления -->
   <div id="notification" class="notification"></div>
   
@@ -1081,6 +1321,22 @@ html_content = """
       {score: 1000000, name: "Владелец фембоев"},
       {score: 5000000, name: "Император фембоев"},
       {score: 10000000, name: "Бог фембоев"}
+    ];
+    
+    // Улучшения игры
+    const UPGRADES = [
+      {id: "upgrade1", name: "Легкие шаги", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
+      {id: "upgrade2", name: "Быстрые пальцы", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", name: "Сильный удар", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", name: "Монетка в минуту", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", name: "Мешочек монет", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", name: "Сундук сокровищ", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", name: "Золотые перчатки", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", name: "Серебряные подковы", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", name: "Копилка фембоя", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", name: "Алмазные когти", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", name: "Фонтан монет", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", name: "Корона фембоя", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
@@ -1122,7 +1378,8 @@ html_content = """
       lastReferralTaskCompletion: null,
       walletTaskCompleted: false,
       energy: 250,
-      lastEnergyUpdate: new Date().toISOString()
+      lastEnergyUpdate: new Date().toISOString(),
+      upgrades: []
     };
     
     // Максимальное количество энергии
@@ -1276,9 +1533,16 @@ html_content = """
             if (!userData.lastEnergyUpdate) {
               userData.lastEnergyUpdate = new Date().toISOString();
             }
+            // Проверяем поля улучшений
+            if (!userData.upgrades) {
+              userData.upgrades = [];
+            }
             
             // Обновляем энергию при загрузке
             updateEnergy();
+            
+            // Обновляем бонусы
+            updateBonuses();
             
             updateScoreDisplay();
             updateLevel();
@@ -1312,7 +1576,8 @@ html_content = """
           lastReferralTaskCompletion: null,
           walletTaskCompleted: false,
           energy: MAX_ENERGY,
-          lastEnergyUpdate: new Date().toISOString()
+          lastEnergyUpdate: new Date().toISOString(),
+          upgrades: []
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1355,6 +1620,7 @@ html_content = """
             const oldLastReferralTaskCompletion = userData.lastReferralTaskCompletion;
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
+            const oldUpgrades = userData.upgrades;
             
             userData = data.user;
             
@@ -1366,6 +1632,7 @@ html_content = """
             userData.lastReferralTaskCompletion = oldLastReferralTaskCompletion;
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
+            userData.upgrades = oldUpgrades;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -1465,6 +1732,13 @@ html_content = """
         // Получаем уровень на основе очков
         const currentLevel = getLevelByScore(userData.score);
         document.getElementById('userLevel').textContent = currentLevel.name;
+        
+        // Обновляем бонусы
+        const clickBonus = calculateClickBonus();
+        const passiveIncome = calculatePassiveIncome();
+        
+        document.getElementById('clickBonus').textContent = clickBonus;
+        document.getElementById('passiveIncomeStat').textContent = passiveIncome;
         
         // Обновляем данные пользователя из Telegram
         if (user) {
@@ -1914,6 +2188,156 @@ html_content = """
         }
       }
     }
+    
+    // Функции для улучшений
+    // Открытие модального окна улучшений
+    function openUpgradesModal() {
+      document.getElementById('upgrades-modal-overlay').classList.add('active');
+      document.getElementById('upgrades-modal').classList.add('active');
+      
+      // Обновляем контейнер улучшений
+      renderUpgrades();
+    }
+    
+    // Закрытие модального окна улучшений
+    function closeUpgradesModal() {
+      document.getElementById('upgrades-modal-overlay').classList.remove('active');
+      document.getElementById('upgrades-modal').classList.remove('active');
+    }
+    
+    // Отрисовка улучшений
+    function renderUpgrades() {
+      const container = document.getElementById('upgrades-container');
+      container.innerHTML = '';
+      
+      UPGRADES.forEach(upgrade => {
+        const isPurchased = userData.upgrades.includes(upgrade.id);
+        
+        const upgradeElement = document.createElement('div');
+        upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
+        
+        upgradeElement.innerHTML = `
+          <img class="upgrade-image" src="${upgrade.image}" alt="${upgrade.name}">
+          <div class="upgrade-name">${upgrade.name}</div>
+          <div class="upgrade-description">${upgrade.description}</div>
+          <div class="upgrade-cost">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>${upgrade.cost}</span>
+          </div>
+          <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
+            ${isPurchased ? 'КУПЛЕНО' : 'КУПИТЬ'}
+          </button>
+        `;
+        
+        container.appendChild(upgradeElement);
+      });
+      
+      // Добавляем обработчики для кнопок покупки
+      document.querySelectorAll('.upgrade-buy-button').forEach(button => {
+        button.addEventListener('click', function() {
+          const upgradeId = this.getAttribute('data-upgrade-id');
+          buyUpgrade(upgradeId);
+        });
+      });
+    }
+    
+    // Покупка улучшения
+    async function buyUpgrade(upgradeId) {
+      // Находим улучшение по ID
+      const upgrade = UPGRADES.find(u => u.id === upgradeId);
+      
+      if (!upgrade) return;
+      
+      // Проверяем, не куплено ли уже это улучшение
+      if (userData.upgrades.includes(upgradeId)) {
+        showNotification('Улучшение уже куплено!');
+        return;
+      }
+      
+      // Проверяем, достаточно ли монет
+      if (userData.score < upgrade.cost) {
+        showNotification('Недостаточно монет!');
+        return;
+      }
+      
+      // Списываем стоимость
+      userData.score -= upgrade.cost;
+      
+      // Добавляем улучшение в список купленных
+      userData.upgrades.push(upgradeId);
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateBonuses();
+      renderUpgrades();
+      
+      // Показываем уведомление
+      showNotification(`Вы купили "${upgrade.name}"!`);
+    }
+    
+    // Расчет бонуса за клик
+    function calculateClickBonus() {
+      let bonus = 0;
+      
+      userData.upgrades.forEach(upgradeId => {
+        const upgrade = UPGRADES.find(u => u.id === upgradeId);
+        if (upgrade && upgrade.effect.clickBonus) {
+          bonus += upgrade.effect.clickBonus;
+        }
+      });
+      
+      return bonus;
+    }
+    
+    // Расчет пассивного дохода
+    function calculatePassiveIncome() {
+      let income = 0;
+      
+      userData.upgrades.forEach(upgradeId => {
+        const upgrade = UPGRADES.find(u => u.id === upgradeId);
+        if (upgrade && upgrade.effect.passiveIncome) {
+          income += upgrade.effect.passiveIncome;
+        }
+      });
+      
+      return income;
+    }
+    
+    // Обновление бонусов
+    function updateBonuses() {
+      const clickBonus = calculateClickBonus();
+      const passiveIncome = calculatePassiveIncome();
+      
+      // Обновляем отображение пассивного дохода
+      document.getElementById('passive-income-value').textContent = passiveIncome;
+      
+      // Если в профиле, обновляем и там
+      if (document.getElementById('profile').classList.contains('active')) {
+        document.getElementById('clickBonus').textContent = clickBonus;
+        document.getElementById('passiveIncomeStat').textContent = passiveIncome;
+      }
+    }
+    
+    // Применение пассивного дохода
+    function applyPassiveIncome() {
+      const passiveIncome = calculatePassiveIncome();
+      
+      if (passiveIncome > 0) {
+        userData.score += passiveIncome;
+        updateScoreDisplay();
+        saveUserData();
+        
+        // Визуальный эффект получения монет
+        const scoreElement = document.getElementById('score');
+        scoreElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+          scoreElement.style.transform = 'scale(1)';
+        }, 300);
+      }
+    }
 
     // Вешаем обработчики на кнопки
     document.addEventListener('DOMContentLoaded', async function() {
@@ -1993,6 +2417,11 @@ html_content = """
         closeReferralTaskModal();
       });
       
+      // Обработчики для улучшений
+      document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
+      document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
+      document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
+      
       // Устанавливаем начальную страницу
       showPage('clicker');
       
@@ -2004,6 +2433,9 @@ html_content = """
       
       // Устанавливаем интервал для обновления энергии каждую секунду
       setInterval(updateEnergy, 1000);
+      
+      // Устанавливаем интервал для пассивного дохода каждые 5 секунд
+      setInterval(applyPassiveIncome, 5000);
       
       // Обновляем уровень при загрузке
       updateLevel();
@@ -2028,8 +2460,11 @@ html_content = """
       // Тратим энергию
       userData.energy--;
       
-      // Увеличиваем счет
-      userData.score++;
+      // Рассчитываем бонус за клик
+      const clickBonus = calculateClickBonus();
+      
+      // Увеличиваем счет с учетом бонуса
+      userData.score += (1 + clickBonus);
       userData.total_clicks++;
       
       // Создаем эффект молнии
@@ -2168,6 +2603,8 @@ async def save_user_data(request: Request):
                     existing_user['energy'] = data['energy']
                 if 'lastEnergyUpdate' in data:
                     existing_user['lastEnergyUpdate'] = data['lastEnergyUpdate']
+                if 'upgrades' in data:
+                    existing_user['upgrades'] = data['upgrades']
                 
                 # Обновляем уровень на основе очков
                 existing_user["level"] = get_level_by_score(existing_user.get("score", 0))
@@ -2185,6 +2622,8 @@ async def save_user_data(request: Request):
                     existing_user["energy"] = 250
                 if "lastEnergyUpdate" not in existing_user:
                     existing_user["lastEnergyUpdate"] = datetime.now().isoformat()
+                if "upgrades" not in existing_user:
+                    existing_user["upgrades"] = []
                 
                 users_db[user_id] = existing_user
             else:
@@ -2204,6 +2643,8 @@ async def save_user_data(request: Request):
                     new_user["energy"] = 250
                 if "lastEnergyUpdate" not in new_user:
                     new_user["lastEnergyUpdate"] = datetime.now().isoformat()
+                if "upgrades" not in new_user:
+                    new_user["upgrades"] = []
                 
                 # Обновляем уровень на основе очков
                 new_user["level"] = get_level_by_score(new_user.get("score", 0))
