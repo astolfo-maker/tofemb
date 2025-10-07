@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -9,8 +10,10 @@ from datetime import datetime, timedelta
 
 app = FastAPI()
 
-# Имя файла для хранения данных пользователей
-USERS_FILE = "users_data.json"
+# Определяем базовую директорию
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+USERS_FILE = BASE_DIR / "users_data.json"
 
 # Определение уровней
 LEVELS = [
@@ -37,7 +40,7 @@ def get_level_by_score(score: int) -> str:
 
 # Функция для загрузки данных пользователей из файла
 def load_users():
-    if os.path.exists(USERS_FILE):
+    if USERS_FILE.exists():
         try:
             with open(USERS_FILE, 'r', encoding='utf-8') as f:
                 users_data = json.load(f)
@@ -74,13 +77,17 @@ def save_users(users_data):
     if "None" in users_data:
         del users_data["None"]
     
+    # Убедимся, что директория существует
+    USERS_FILE.parent.mkdir(exist_ok=True)
+    
     with open(USERS_FILE, 'w', encoding='utf-8') as f:
         json.dump(users_data, f, ensure_ascii=False, indent=2)
 
 # Загружаем данные при запуске
 users_db: Dict[str, Dict[str, Any]] = load_users()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Монтируем статические файлы
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Обработчик для favicon.ico
 @app.get("/favicon.ico")
@@ -111,8 +118,8 @@ html_content = """
       flex-direction: column;
       padding-bottom: 60px;
       overflow-x: hidden;
-      touch-action: none; /* Запрет всех жестов масштабирования */
-      overscroll-behavior: none; /* Запрет инерции прокрутки */
+      touch-action: none;
+      overscroll-behavior: none;
     }
 
     #content {
@@ -288,7 +295,7 @@ html_content = """
     /* Стили для кнопки топа */
     #topButton {
       position: fixed;
-      top: 60px; /* Опускаем ниже розовой полоски */
+      top: 60px;
       left: 0;
       width: 100%;
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.8), rgba(255, 154, 158, 0.8));
@@ -342,7 +349,6 @@ html_content = """
       opacity: 0.5;
       position: relative;
     }
-    /* Эффект исчезновения для третьего места */
     .top-preview-item:nth-child(3)::after {
       content: '';
       position: absolute;
@@ -974,7 +980,7 @@ html_content = """
           <img src="/static/FemboyCoinsPink.png" alt="монетки">
           <span>1000 монеток</span>
         </div>
-        <div id="wallet-task-status" class="task-completed" style="display: none;">✅ Задание выполнено</div>
+        <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
       </div>
       
       <!-- Задание: Пригласить 3 друзей -->
@@ -988,7 +994,7 @@ html_content = """
           <span>5000 монеток</span>
         </div>
         <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
-        <div id="referral-task-status" class="task-completed" style="display: none;">✅ Задание выполнено</div>
+        <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
         <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
       </div>
     </section>
@@ -1128,7 +1134,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://shiny-chainsaw-974ggj75w5wqc7pw-8000.app.github.dev/tonconnect-manifest.json',
+        manifestUrl: 'https://tofemb.onrender.com',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
           twaReturnUrl: 'https://t.me/Fnmby_bot'
@@ -2113,11 +2119,11 @@ async def root():
 @app.get("/tonconnect-manifest.json")
 async def tonconnect_manifest():
     manifest = {
-        "url": "https://shiny-chainsaw-974ggj75w5wqc7pw-8000.app.github.dev/",
+        "url": "https://tofemb.onrender.com",
         "name": "Femboy Gaming",
-        "iconUrl": "https://shiny-chainsaw-974ggj75w5wqc7pw-8000.app.github.dev/static/FemboyCoinsPink.png",
-        "termsOfUseUrl": "https://shiny-chainsaw-974ggj75w5wqc7pw-8000.app.github.dev/terms",
-        "privacyPolicyUrl": "https://shiny-chainsaw-974ggj75w5wqc7pw-8000.app.github.dev/privacy"
+        "iconUrl": "https://tofemb.onrender.com/static/FemboyCoinsPink.png",
+        "termsOfUseUrl": "https://tofemb.onrender.com/terms",
+        "privacyPolicyUrl": "https://tofemb.onrender.com/privacy"
     }
     return JSONResponse(content=manifest)
 
@@ -2276,6 +2282,9 @@ async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
     return JSONResponse(content={"levels": LEVELS})
 
+# Добавляем код для запуска на сервере
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
