@@ -79,22 +79,30 @@ def load_users():
         # Обновляем уровни всех пользователей при загрузке
         for user_id, user_data in users_data.items():
             user_data["level"] = get_level_by_score(user_data.get("score", 0))
-            # Убедимся, что все необходимые поля присутствуют
-            if "referrals" not in user_data:
+            
+            # Гарантированная инициализация всех полей
+            # Рефералы
+            if "referrals" not in user_data or not isinstance(user_data.get("referrals"), list):
                 user_data["referrals"] = []
+                
+            # Кошелек
             if "walletAddress" not in user_data:
                 user_data["walletAddress"] = ""
             if "walletTaskCompleted" not in user_data:
                 user_data["walletTaskCompleted"] = False
+                
+            # Задания
             if "lastReferralTaskCompletion" not in user_data:
                 user_data["lastReferralTaskCompletion"] = None
-            # Добавляем поля для энергии
+                
+            # Энергия
             if "energy" not in user_data:
                 user_data["energy"] = 250
             if "lastEnergyUpdate" not in user_data:
                 user_data["lastEnergyUpdate"] = datetime.now().isoformat()
-            # Добавляем поля для улучшений
-            if "upgrades" not in user_data:
+                
+            # УЛУЧШЕНИЯ - гарантированная инициализация
+            if "upgrades" not in user_data or not isinstance(user_data.get("upgrades"), list):
                 user_data["upgrades"] = []
         
         return users_data
@@ -118,6 +126,11 @@ def save_users(users_data):
     # Удаляем запись с ключом "None" если она есть
     if "None" in users_data:
         del users_data["None"]
+    
+    # Гарантированная инициализация поля "upgrades" для всех пользователей
+    for user_id, user_data in users_data.items():
+        if "upgrades" not in user_data or not isinstance(user_data.get("upgrades"), list):
+            user_data["upgrades"] = []
     
     try:
         # Инициализация GitHub API
@@ -2792,3 +2805,9 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
+
+save_users()
