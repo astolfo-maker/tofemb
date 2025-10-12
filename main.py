@@ -7,8 +7,15 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+import requests
+from github import Github
 
 app = FastAPI()
+
+# Конфигурация GitHub
+GITHUB_TOKEN = "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"  # Замените на ваш токен
+GITHUB_REPO = "astolfo-maker/tofemb"  # Замените на ваш репозиторий
+GITHUB_FILE_PATH = "users_data.json"  # Путь к файлу в репозитории
 
 # Определяем базовую директорию
 BASE_DIR = Path(__file__).resolve().parent
@@ -54,53 +61,99 @@ def get_level_by_score(score: int) -> str:
             return LEVELS[i]["name"]
     return LEVELS[0]["name"]
 
-# Функция для загрузки данных пользователей из файла
+# Функция для загрузки данных пользователей из GitHub
 def load_users():
-    if USERS_FILE.exists():
-        try:
-            with open(USERS_FILE, 'r', encoding='utf-8') as f:
-                users_data = json.load(f)
-                # Удаляем запись с ключом "None" если она есть
-                if "None" in users_data:
-                    del users_data["None"]
-                
-                # Обновляем уровни всех пользователей при загрузке
-                for user_id, user_data in users_data.items():
-                    user_data["level"] = get_level_by_score(user_data.get("score", 0))
-                    # Убедимся, что все необходимые поля присутствуют
-                    if "referrals" not in user_data:
-                        user_data["referrals"] = []
-                    if "walletAddress" not in user_data:
-                        user_data["walletAddress"] = ""
-                    if "walletTaskCompleted" not in user_data:
-                        user_data["walletTaskCompleted"] = False
-                    if "lastReferralTaskCompletion" not in user_data:
-                        user_data["lastReferralTaskCompletion"] = None
-                    # Добавляем поля для энергии
-                    if "energy" not in user_data:
-                        user_data["energy"] = 250
-                    if "lastEnergyUpdate" not in user_data:
-                        user_data["lastEnergyUpdate"] = datetime.now().isoformat()
-                    # Добавляем поля для улучшений
-                    if "upgrades" not in user_data:
-                        user_data["upgrades"] = []
-                
-                return users_data
-        except:
-            return {}
-    return {}
+    try:
+        # Инициализация GitHub API
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        
+        # Получение файла из репозитория
+        file_content = repo.get_contents(GITHUB_FILE_PATH)
+        users_data = json.loads(file_content.decoded_content.decode('utf-8'))
+        
+        # Удаляем запись с ключом "None" если она есть
+        if "None" in users_data:
+            del users_data["None"]
+        
+        # Обновляем уровни всех пользователей при загрузке
+        for user_id, user_data in users_data.items():
+            user_data["level"] = get_level_by_score(user_data.get("score", 0))
+            # Убедимся, что все необходимые поля присутствуют
+            if "referrals" not in user_data:
+                user_data["referrals"] = []
+            if "walletAddress" not in user_data:
+                user_data["walletAddress"] = ""
+            if "walletTaskCompleted" not in user_data:
+                user_data["walletTaskCompleted"] = False
+            if "lastReferralTaskCompletion" not in user_data:
+                user_data["lastReferralTaskCompletion"] = None
+            # Добавляем поля для энергии
+            if "energy" not in user_data:
+                user_data["energy"] = 250
+            if "lastEnergyUpdate" not in user_data:
+                user_data["lastEnergyUpdate"] = datetime.now().isoformat()
+            # Добавляем поля для улучшений
+            if "upgrades" not in user_data:
+                user_data["upgrades"] = []
+        
+        return users_data
+    except Exception as e:
+        print(f"Error loading users from GitHub: {e}")
+        # Если не удалось загрузить из GitHub, пробуем из локального файла
+        if USERS_FILE.exists():
+            try:
+                with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                    users_data = json.load(f)
+                    # Удаляем запись с ключом "None" если она есть
+                    if "None" in users_data:
+                        del users_data["None"]
+                    return users_data
+            except:
+                return {}
+        return {}
 
-# Функция для сохранения данных пользователей в файл
+# Функция для сохранения данных пользователей в GitHub
 def save_users(users_data):
     # Удаляем запись с ключом "None" если она есть
     if "None" in users_data:
         del users_data["None"]
     
-    # Убедимся, что директория существует
-    USERS_FILE.parent.mkdir(exist_ok=True)
-    
-    with open(USERS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(users_data, f, ensure_ascii=False, indent=2)
+    try:
+        # Инициализация GitHub API
+        g = Github(GITHUB_TOKEN)
+        repo = g.get_repo(GITHUB_REPO)
+        
+        # Преобразование данных в JSON
+        json_data = json.dumps(users_data, ensure_ascii=False, indent=2)
+        
+        # Попытка обновить существующий файл
+        try:
+            file = repo.get_contents(GITHUB_FILE_PATH)
+            repo.update_file(
+                path=GITHUB_FILE_PATH,
+                message=f"Update users data - {datetime.now().isoformat()}",
+                content=json_data,
+                sha=file.sha
+            )
+        except:
+            # Если файл не существует, создаем его
+            repo.create_file(
+                path=GITHUB_FILE_PATH,
+                message=f"Create users data - {datetime.now().isoformat()}",
+                content=json_data
+            )
+        
+        # Также сохраняем локально для резервной копии
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users_data, f, ensure_ascii=False, indent=2)
+            
+        print("Users data successfully saved to GitHub")
+    except Exception as e:
+        print(f"Error saving users to GitHub: {e}")
+        # Если не удалось сохранить в GitHub, сохраняем локально
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users_data, f, ensure_ascii=False, indent=2)
 
 # Загружаем данные при запуске
 users_db: Dict[str, Dict[str, Any]] = load_users()
@@ -1535,7 +1588,7 @@ html_content = """
               userData.energy = MAX_ENERGY;
             }
             if (!userData.lastEnergyUpdate) {
-              userData.lastEnergyUpdate = new Date().toISOString();
+              userData.lastEnergyUpdate = new Date().isoString();
             }
             // Проверяем поля улучшений
             if (!userData.upgrades) {
@@ -2662,11 +2715,9 @@ async def save_user_data(request: Request):
                 
                 users_db[user_id] = new_user
             
-            # Удаляем запись с ключом "None" если она есть
-            if "None" in users_db:
-                del users_db["None"]
-                
-            save_users(users_db)  # Сохраняем в файл
+            # Сохраняем в GitHub
+            save_users(users_db)
+            
             return JSONResponse(content={"status": "success", "user": users_db[user_id]})
         else:
             return JSONResponse(content={"status": "error", "message": "Missing user ID"}, status_code=400)
@@ -2692,6 +2743,7 @@ async def handle_referral(request: Request):
                 
                 if referred_id not in referrer_data['referrals']:
                     referrer_data['referrals'].append(referred_id)
+                    # Сохраняем в GitHub
                     save_users(users_db)
                     return JSONResponse(content={"status": "success"})
                 else:
