@@ -2,7 +2,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 import os
 import time
@@ -81,7 +81,7 @@ def init_db():
         print(f"Error initializing database: {e}")
 
 # Функция для загрузки данных пользователя
-def load_user(user_id: str) -> Dict[str, Any]:
+def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
         supabase = get_supabase_client()
         
@@ -114,19 +114,19 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         
         # Подготовка данных для вставки/обновления
         db_data = {
-            "user_id": user_data.get('id'),
+            "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
             "last_name": user_data.get('last_name', ''),
             "username": user_data.get('username', ''),
             "photo_url": user_data.get('photo_url', ''),
-            "score": user_data.get('score', 0),
-            "total_clicks": user_data.get('total_clicks', 0),
-            "level": get_level_by_score(user_data.get('score', 0)),
+            "score": int(user_data.get('score', 0)),
+            "total_clicks": int(user_data.get('total_clicks', 0)),
+            "level": get_level_by_score(int(user_data.get('score', 0))),
             "wallet_address": user_data.get('walletAddress', ''),
-            "wallet_task_completed": user_data.get('walletTaskCompleted', False),
+            "wallet_task_completed": bool(user_data.get('walletTaskCompleted', False)),
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
-            "energy": user_data.get('energy', 250),
+            "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
             "upgrades": user_data.get('upgrades', [])
         }
@@ -1622,7 +1622,7 @@ html_content = """
               userData.energy = MAX_ENERGY;
             }
             if (!userData.lastEnergyUpdate) {
-              userData.lastEnergyUpdate = new Date().isoString();
+              userData.lastEnergyUpdate = new Date().toISOString();
             }
             // Проверяем поля улучшений
             if (!userData.upgrades) {
