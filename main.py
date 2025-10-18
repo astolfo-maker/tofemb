@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from typing import Dict, Any, List
@@ -8,19 +8,16 @@ import os
 import time
 from datetime import datetime, timedelta
 import requests
-from github import Github
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import uvicorn
 
 app = FastAPI()
-
-# Конфигурация GitHub
-GITHUB_TOKEN = "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"  # Замените на ваш токен
-GITHUB_REPO = "astolfo-maker/tofemb"  # Замените на ваш репозиторий
-GITHUB_FILE_PATH = "users_data.json"  # Путь к файлу в репозитории
 
 # Определяем базовую директорию
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-USERS_FILE = BASE_DIR / "users_data.json"
 
 # Определение уровней
 LEVELS = [
@@ -61,115 +58,224 @@ def get_level_by_score(score: int) -> str:
             return LEVELS[i]["name"]
     return LEVELS[0]["name"]
 
-# Функция для загрузки данных пользователей из GitHub
-def load_users():
-    try:
-        # Инициализация GitHub API
-        g = Github(GITHUB_TOKEN)
-        repo = g.get_repo(GITHUB_REPO)
-        
-        # Получение файла из репозитория
-        file_content = repo.get_contents(GITHUB_FILE_PATH)
-        users_data = json.loads(file_content.decoded_content.decode('utf-8'))
-        
-        # Удаляем запись с ключом "None" если она есть
-        if "None" in users_data:
-            del users_data["None"]
-        
-        # Обновляем уровни всех пользователей при загрузке
-        for user_id, user_data in users_data.items():
-            user_data["level"] = get_level_by_score(user_data.get("score", 0))
-            
-            # Гарантированная инициализация всех полей
-            # Рефералы
-            if "referrals" not in user_data or not isinstance(user_data.get("referrals"), list):
-                user_data["referrals"] = []
-                
-            # Кошелек
-            if "walletAddress" not in user_data:
-                user_data["walletAddress"] = ""
-            if "walletTaskCompleted" not in user_data:
-                user_data["walletTaskCompleted"] = False
-                
-            # Задания
-            if "lastReferralTaskCompletion" not in user_data:
-                user_data["lastReferralTaskCompletion"] = None
-                
-            # Энергия
-            if "energy" not in user_data:
-                user_data["energy"] = 250
-            if "lastEnergyUpdate" not in user_data:
-                user_data["lastEnergyUpdate"] = datetime.now().isoformat()
-                
-            # УЛУЧШЕНИЯ - гарантированная инициализация
-            if "upgrades" not in user_data or not isinstance(user_data.get("upgrades"), list):
-                user_data["upgrades"] = []
-        
-        return users_data
-    except Exception as e:
-        print(f"Error loading users from GitHub: {e}")
-        # Если не удалось загрузить из GitHub, пробуем из локального файла
-        if USERS_FILE.exists():
-            try:
-                with open(USERS_FILE, 'r', encoding='utf-8') as f:
-                    users_data = json.load(f)
-                    # Удаляем запись с ключом "None" если она есть
-                    if "None" in users_data:
-                        del users_data["None"]
-                    return users_data
-            except:
-                return {}
-        return {}
-
-# Функция для сохранения данных пользователей в GitHub
-def save_users(users_data):
-    # Удаляем запись с ключом "None" если она есть
-    if "None" in users_data:
-        del users_data["None"]
-    
-    # Гарантированная инициализация поля "upgrades" для всех пользователей
-    for user_id, user_data in users_data.items():
-        if "upgrades" not in user_data or not isinstance(user_data.get("upgrades"), list):
-            user_data["upgrades"] = []
+# Функция для получения соединения с базой данных
+def get_db_connection():
+    database_url = os.environ.get("DATABASE_URL", "postgresql://postgres.cfuonvsvbesytaovejpv:Kolyan18291161@cfuonvsvbesytaovejpv.supabase.co:5432/postgres")
     
     try:
-        # Инициализация GitHub API
-        g = Github(GITHUB_TOKEN)
-        repo = g.get_repo(GITHUB_REPO)
-        
-        # Преобразование данных в JSON
-        json_data = json.dumps(users_data, ensure_ascii=False, indent=2)
-        
-        # Попытка обновить существующий файл
-        try:
-            file = repo.get_contents(GITHUB_FILE_PATH)
-            repo.update_file(
-                path=GITHUB_FILE_PATH,
-                message=f"Update users data - {datetime.now().isoformat()}",
-                content=json_data,
-                sha=file.sha
-            )
-        except:
-            # Если файл не существует, создаем его
-            repo.create_file(
-                path=GITHUB_FILE_PATH,
-                message=f"Create users data - {datetime.now().isoformat()}",
-                content=json_data
-            )
-        
-        # Также сохраняем локально для резервной копии
-        with open(USERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(users_data, f, ensure_ascii=False, indent=2)
-            
-        print("Users data successfully saved to GitHub")
+        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        return conn
     except Exception as e:
-        print(f"Error saving users to GitHub: {e}")
-        # Если не удалось сохранить в GitHub, сохраняем локально
-        with open(USERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(users_data, f, ensure_ascii=False, indent=2)
+        print(f"Error connecting to database: {e}")
+        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
 
-# Загружаем данные при запуске
-users_db: Dict[str, Dict[str, Any]] = load_users()
+# Инициализация базы данных
+def init_db():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Создание таблицы пользователей
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            first_name TEXT,
+            last_name TEXT,
+            username TEXT,
+            photo_url TEXT,
+            score INTEGER DEFAULT 0,
+            total_clicks INTEGER DEFAULT 0,
+            level TEXT DEFAULT 'Новичок',
+            wallet_address TEXT DEFAULT '',
+            wallet_task_completed BOOLEAN DEFAULT FALSE,
+            referrals JSONB DEFAULT '[]',
+            last_referral_task_completion TIMESTAMP,
+            energy INTEGER DEFAULT 250,
+            last_energy_update TIMESTAMP,
+            upgrades JSONB DEFAULT '[]',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+        
+        # Создание индекса для быстрого поиска топа
+        cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_users_score ON users(score DESC);
+        """)
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
+# Функция для загрузки данных пользователя
+def load_user(user_id: str) -> Dict[str, Any]:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        SELECT * FROM users WHERE user_id = %s
+        """, (user_id,))
+        
+        user_data = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if user_data:
+            # Преобразуем в словарь
+            user_dict = dict(user_data)
+            
+            # Убедимся, что все поля присутствуют и имеют правильный тип
+            if not isinstance(user_dict.get('referrals'), list):
+                user_dict['referrals'] = []
+                
+            if not isinstance(user_dict.get('upgrades'), list):
+                user_dict['upgrades'] = []
+                
+            # Обновляем уровень на основе очков
+            user_dict['level'] = get_level_by_score(user_dict.get('score', 0))
+            
+            return user_dict
+        else:
+            return None
+    except Exception as e:
+        print(f"Error loading user: {e}")
+        return None
+
+# Функция для сохранения данных пользователя
+def save_user(user_data: Dict[str, Any]) -> bool:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Подготовка данных для вставки/обновления
+        user_id = user_data.get('id')
+        first_name = user_data.get('first_name', '')
+        last_name = user_data.get('last_name', '')
+        username = user_data.get('username', '')
+        photo_url = user_data.get('photo_url', '')
+        score = user_data.get('score', 0)
+        total_clicks = user_data.get('total_clicks', 0)
+        level = get_level_by_score(score)
+        wallet_address = user_data.get('walletAddress', '')
+        wallet_task_completed = user_data.get('walletTaskCompleted', False)
+        referrals = user_data.get('referrals', [])
+        last_referral_task_completion = user_data.get('lastReferralTaskCompletion')
+        energy = user_data.get('energy', 250)
+        last_energy_update = user_data.get('lastEnergyUpdate')
+        upgrades = user_data.get('upgrades', [])
+        
+        # Вставка или обновление пользователя
+        cursor.execute("""
+        INSERT INTO users (
+            user_id, first_name, last_name, username, photo_url, score, total_clicks, 
+            level, wallet_address, wallet_task_completed, referrals, 
+            last_referral_task_completion, energy, last_energy_update, upgrades
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (user_id) 
+        DO UPDATE SET 
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            username = EXCLUDED.username,
+            photo_url = EXCLUDED.photo_url,
+            score = EXCLUDED.score,
+            total_clicks = EXCLUDED.total_clicks,
+            level = EXCLUDED.level,
+            wallet_address = EXCLUDED.wallet_address,
+            wallet_task_completed = EXCLUDED.wallet_task_completed,
+            referrals = EXCLUDED.referrals,
+            last_referral_task_completion = EXCLUDED.last_referral_task_completion,
+            energy = EXCLUDED.energy,
+            last_energy_update = EXCLUDED.last_energy_update,
+            upgrades = EXCLUDED.upgrades,
+            updated_at = CURRENT_TIMESTAMP
+        """, (
+            user_id, first_name, last_name, username, photo_url, score, total_clicks, 
+            level, wallet_address, wallet_task_completed, json.dumps(referrals), 
+            last_referral_task_completion, energy, last_energy_update, json.dumps(upgrades)
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error saving user: {e}")
+        return False
+
+# Функция для получения топа пользователей
+def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        SELECT user_id, first_name, last_name, username, photo_url, score, level
+        FROM users
+        ORDER BY score DESC
+        LIMIT %s
+        """, (limit,))
+        
+        top_users = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # Преобразуем в список словарей
+        return [dict(user) for user in top_users]
+    except Exception as e:
+        print(f"Error getting top users: {e}")
+        return []
+
+# Функция для добавления реферала
+def add_referral(referrer_id: str, referred_id: str) -> bool:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Получаем данные реферера
+        cursor.execute("""
+        SELECT referrals FROM users WHERE user_id = %s
+        """, (referrer_id,))
+        
+        referrer_data = cursor.fetchone()
+        
+        if not referrer_data:
+            cursor.close()
+            conn.close()
+            return False
+        
+        referrals = referrer_data['referrals']
+        
+        # Если реферал уже добавлен, ничего не делаем
+        if referred_id in referrals:
+            cursor.close()
+            conn.close()
+            return True
+        
+        # Добавляем нового реферала
+        referrals.append(referred_id)
+        
+        # Обновляем данные реферера
+        cursor.execute("""
+        UPDATE users
+        SET referrals = %s
+        WHERE user_id = %s
+        """, (json.dumps(referrals), referrer_id))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error adding referral: {e}")
+        return False
+
+# Инициализация базы данных при запуске
+init_db()
 
 # Монтируем статические файлы
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -2643,8 +2749,29 @@ async def tonconnect_manifest():
 async def get_user_data(user_id: str):
     """Получение данных пользователя по ID"""
     try:
-        if user_id in users_db:
-            return JSONResponse(content={"user": users_db[user_id]})
+        user_data = load_user(user_id)
+        
+        if user_data:
+            # Преобразуем данные для фронтенда
+            response_data = {
+                "id": user_data["user_id"],
+                "first_name": user_data["first_name"],
+                "last_name": user_data["last_name"],
+                "username": user_data["username"],
+                "photo_url": user_data["photo_url"],
+                "score": user_data["score"],
+                "total_clicks": user_data["total_clicks"],
+                "level": user_data["level"],
+                "walletAddress": user_data["wallet_address"],
+                "walletTaskCompleted": user_data["wallet_task_completed"],
+                "referrals": user_data["referrals"],
+                "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
+                "energy": user_data["energy"],
+                "lastEnergyUpdate": user_data["last_energy_update"],
+                "upgrades": user_data["upgrades"]
+            }
+            
+            return JSONResponse(content={"user": response_data})
         else:
             return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
     except Exception as e:
@@ -2655,85 +2782,40 @@ async def save_user_data(request: Request):
     """Сохранение данных пользователя на сервере"""
     try:
         data = await request.json()
-        user_id = str(data.get('id'))
         
-        if user_id:
-            # Если пользователь уже существует в базе, обновляем только нужные поля
-            if user_id in users_db:
-                # Сохраняем текущие значения важных полей
-                existing_user = users_db[user_id]
+        # Сохраняем в базу данных
+        success = save_user(data)
+        
+        if success:
+            # Получаем обновленные данные
+            user_id = str(data.get('id'))
+            user_data = load_user(user_id)
+            
+            if user_data:
+                # Преобразуем данные для фронтенда
+                response_data = {
+                    "id": user_data["user_id"],
+                    "first_name": user_data["first_name"],
+                    "last_name": user_data["last_name"],
+                    "username": user_data["username"],
+                    "photo_url": user_data["photo_url"],
+                    "score": user_data["score"],
+                    "total_clicks": user_data["total_clicks"],
+                    "level": user_data["level"],
+                    "walletAddress": user_data["wallet_address"],
+                    "walletTaskCompleted": user_data["wallet_task_completed"],
+                    "referrals": user_data["referrals"],
+                    "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
+                    "energy": user_data["energy"],
+                    "lastEnergyUpdate": user_data["last_energy_update"],
+                    "upgrades": user_data["upgrades"]
+                }
                 
-                # Обновляем только те поля, которые были переданы
-                if 'score' in data:
-                    existing_user['score'] = data['score']
-                if 'total_clicks' in data:
-                    existing_user['total_clicks'] = data['total_clicks']
-                if 'walletAddress' in data:
-                    existing_user['walletAddress'] = data['walletAddress']
-                if 'walletTaskCompleted' in data:
-                    existing_user['walletTaskCompleted'] = data['walletTaskCompleted']
-                if 'referrals' in data:
-                    existing_user['referrals'] = data['referrals']
-                if 'lastReferralTaskCompletion' in data:
-                    existing_user['lastReferralTaskCompletion'] = data['lastReferralTaskCompletion']
-                if 'energy' in data:
-                    existing_user['energy'] = data['energy']
-                if 'lastEnergyUpdate' in data:
-                    existing_user['lastEnergyUpdate'] = data['lastEnergyUpdate']
-                if 'upgrades' in data:
-                    existing_user['upgrades'] = data['upgrades']
-                
-                # Обновляем уровень на основе очков
-                existing_user["level"] = get_level_by_score(existing_user.get("score", 0))
-                
-                # Убедимся, что все необходимые поля присутствуют
-                if "referrals" not in existing_user:
-                    existing_user["referrals"] = []
-                if "walletAddress" not in existing_user:
-                    existing_user["walletAddress"] = ""
-                if "walletTaskCompleted" not in existing_user:
-                    existing_user["walletTaskCompleted"] = False
-                if "lastReferralTaskCompletion" not in existing_user:
-                    existing_user["lastReferralTaskCompletion"] = None
-                if "energy" not in existing_user:
-                    existing_user["energy"] = 250
-                if "lastEnergyUpdate" not in existing_user:
-                    existing_user["lastEnergyUpdate"] = datetime.now().isoformat()
-                if "upgrades" not in existing_user:
-                    existing_user["upgrades"] = []
-                
-                users_db[user_id] = existing_user
+                return JSONResponse(content={"status": "success", "user": response_data})
             else:
-                # Если пользователя нет, создаем новую запись
-                new_user = data
-                
-                # Убедимся, что все необходимые поля присутствуют
-                if "referrals" not in new_user:
-                    new_user["referrals"] = []
-                if "walletAddress" not in new_user:
-                    new_user["walletAddress"] = ""
-                if "walletTaskCompleted" not in new_user:
-                    new_user["walletTaskCompleted"] = False
-                if "lastReferralTaskCompletion" not in new_user:
-                    new_user["lastReferralTaskCompletion"] = None
-                if "energy" not in new_user:
-                    new_user["energy"] = 250
-                if "lastEnergyUpdate" not in new_user:
-                    new_user["lastEnergyUpdate"] = datetime.now().isoformat()
-                if "upgrades" not in new_user:
-                    new_user["upgrades"] = []
-                
-                # Обновляем уровень на основе очков
-                new_user["level"] = get_level_by_score(new_user.get("score", 0))
-                
-                users_db[user_id] = new_user
-            
-            # Сохраняем в GitHub
-            save_users(users_db)
-            
-            return JSONResponse(content={"status": "success", "user": users_db[user_id]})
+                return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
         else:
-            return JSONResponse(content={"status": "error", "message": "Missing user ID"}, status_code=400)
+            return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
@@ -2746,53 +2828,61 @@ async def handle_referral(request: Request):
         referred_id = str(data.get('referred_id'))
         
         if referrer_id and referred_id and referrer_id != referred_id:
-            # Проверяем, не был ли пользователь уже приглашен
-            if referrer_id in users_db:
-                referrer_data = users_db[referrer_id]
-                
-                # Добавляем ID приглашенного пользователя в список рефералов
-                if 'referrals' not in referrer_data or not isinstance(referrer_data['referrals'], list):
-                    referrer_data['referrals'] = []
-                
-                if referred_id not in referrer_data['referrals']:
-                    referrer_data['referrals'].append(referred_id)
-                    # Сохраняем в GitHub
-                    save_users(users_db)
-                    return JSONResponse(content={"status": "success"})
-                else:
-                    return JSONResponse(content={"status": "error", "message": "User already referred"})
+            success = add_referral(referrer_id, referred_id)
+            
+            if success:
+                return JSONResponse(content={"status": "success"})
             else:
-                return JSONResponse(content={"status": "error", "message": "Referrer not found"})
+                return JSONResponse(content={"status": "error", "message": "Failed to add referral"})
         else:
             return JSONResponse(content={"status": "error", "message": "Invalid data"})
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/top")
-async def get_top_users():
+async def get_top_users_endpoint():
     """Получение топа пользователей"""
     try:
-        # Удаляем запись с ключом "None" если она есть
-        if "None" in users_db:
-            del users_db["None"]
-            
-        # Сортируем пользователей по количеству очков
-        sorted_users = sorted(users_db.values(), key=lambda x: x.get('score', 0), reverse=True)
+        top_users = get_top_users()
         
-        # Берем топ 100
-        top_users = sorted_users[:100]
+        # Преобразуем данные для фронтенда
+        response_users = []
+        for user in top_users:
+            response_users.append({
+                "id": user["user_id"],
+                "first_name": user["first_name"],
+                "last_name": user["last_name"],
+                "username": user["username"],
+                "photo_url": user["photo_url"],
+                "score": user["score"],
+                "level": user["level"]
+            })
         
-        return JSONResponse(content={"users": top_users})
+        return JSONResponse(content={"users": response_users})
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/users")
 async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
-    # Удаляем запись с ключом "None" если она есть
-    if "None" in users_db:
-        del users_db["None"]
-    return JSONResponse(content={"users": list(users_db.values())})
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+        SELECT user_id, first_name, last_name, score, level
+        FROM users
+        ORDER BY score DESC
+        LIMIT 50
+        """)
+        
+        users = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return JSONResponse(content={"users": [dict(user) for user in users]})
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/levels")
 async def debug_levels():
@@ -2801,11 +2891,5 @@ async def debug_levels():
 
 # Добавляем код для запуска на сервере
 if __name__ == "__main__":
-    import uvicorn
-    import os
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
