@@ -65,30 +65,45 @@ def get_supabase_client() -> Client:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     
-    if not url or not key:
-        raise Exception("Supabase URL and key must be set in environment variables")
+    # Добавляем логирование для отладки
+    print(f"DEBUG: SUPABASE_URL from env: {url}")
+    print(f"DEBUG: SUPABASE_KEY from env: {'***' if key else 'None'}")
     
-    return create_client(url, key)
+    if not url or not key:
+        error_msg = "Supabase URL and key must be set in environment variables"
+        print(f"ERROR: {error_msg}")
+        print(f"ERROR: URL is {'set' if url else 'not set'}, KEY is {'set' if key else 'not set'}")
+        raise Exception(error_msg)
+    
+    try:
+        print("DEBUG: Creating Supabase client...")
+        client = create_client(url, key)
+        print("DEBUG: Supabase client created successfully")
+        return client
+    except Exception as e:
+        print(f"ERROR: Failed to create Supabase client: {str(e)}")
+        raise
 
 # Инициализация базы данных
 def init_db():
     try:
+        print("DEBUG: Initializing database...")
         supabase = get_supabase_client()
-        # Проверяем, существует ли таблица users
-        # В Supabase таблицы обычно создаются через интерфейс
-        print("Database initialized successfully")
+        print("DEBUG: Database initialized successfully")
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"ERROR: Error initializing database: {e}")
 
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
+        print(f"DEBUG: Loading user with ID: {user_id}")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("*").eq("user_id", user_id).execute()
         
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
+            print(f"DEBUG: User found: {user_data.get('first_name', 'Unknown')}")
             
             # Убедимся, что все поля присутствуют и имеют правильный тип
             if not isinstance(user_data.get('referrals'), list):
@@ -102,14 +117,16 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             
             return user_data
         else:
+            print(f"DEBUG: User not found with ID: {user_id}")
             return None
     except Exception as e:
-        print(f"Error loading user: {e}")
+        print(f"ERROR: Error loading user: {e}")
         return None
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     try:
+        print(f"DEBUG: Saving user: {user_data.get('first_name', 'Unknown')}")
         supabase = get_supabase_client()
         
         # Подготовка данных для вставки/обновления
@@ -135,47 +152,56 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         existing_user = load_user(str(user_data.get('id')))
         
         if existing_user:
+            print("DEBUG: Updating existing user")
             # Обновляем существующего пользователя
             response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
         else:
+            print("DEBUG: Creating new user")
             # Вставляем нового пользователя
             response = supabase.table("users").insert(db_data).execute()
         
+        print(f"DEBUG: Save operation completed with data: {response.data}")
         return response.data is not None
     except Exception as e:
-        print(f"Error saving user: {e}")
+        print(f"ERROR: Error saving user: {e}")
         return False
 
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     try:
+        print(f"DEBUG: Getting top {limit} users")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("user_id, first_name, last_name, username, photo_url, score, level").order("score", desc=True).limit(limit).execute()
         
         if response.data:
+            print(f"DEBUG: Found {len(response.data)} users")
             return response.data
         else:
+            print("DEBUG: No users found")
             return []
     except Exception as e:
-        print(f"Error getting top users: {e}")
+        print(f"ERROR: Error getting top users: {e}")
         return []
 
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
+        print(f"DEBUG: Adding referral: {referrer_id} -> {referred_id}")
         supabase = get_supabase_client()
         
         # Получаем данные реферера
         response = supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
         
         if not response.data or len(response.data) == 0:
+            print(f"DEBUG: Referrer not found: {referrer_id}")
             return False
         
         referrals = response.data[0].get("referrals", [])
         
         # Если реферал уже добавлен, ничего не делаем
         if referred_id in referrals:
+            print(f"DEBUG: Referral already exists")
             return True
         
         # Добавляем нового реферала
@@ -184,9 +210,10 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         # Обновляем данные реферера
         update_response = supabase.table("users").update({"referrals": referrals}).eq("user_id", referrer_id).execute()
         
+        print(f"DEBUG: Referral added successfully")
         return update_response.data is not None
     except Exception as e:
-        print(f"Error adding referral: {e}")
+        print(f"ERROR: Error adding referral: {e}")
         return False
 
 # Инициализация базы данных при запуске
@@ -2664,6 +2691,7 @@ async def tonconnect_manifest():
 async def get_user_data(user_id: str):
     """Получение данных пользователя по ID"""
     try:
+        print(f"DEBUG: GET /user/{user_id} endpoint called")
         user_data = load_user(user_id)
         
         if user_data:
@@ -2686,16 +2714,20 @@ async def get_user_data(user_id: str):
                 "upgrades": user_data["upgrades"]
             }
             
+            print(f"DEBUG: Returning user data for {user_data['first_name']}")
             return JSONResponse(content={"user": response_data})
         else:
+            print(f"DEBUG: User not found with ID {user_id}")
             return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
     except Exception as e:
+        print(f"ERROR: Error in /user/{user_id}: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/user")
 async def save_user_data(request: Request):
     """Сохранение данных пользователя на сервере"""
     try:
+        print(f"DEBUG: POST /user endpoint called")
         data = await request.json()
         
         # Сохраняем в базу данных
@@ -2726,18 +2758,23 @@ async def save_user_data(request: Request):
                     "upgrades": user_data["upgrades"]
                 }
                 
+                print(f"DEBUG: User saved successfully: {user_data['first_name']}")
                 return JSONResponse(content={"status": "success", "user": response_data})
             else:
+                print(f"DEBUG: Failed to retrieve saved user")
                 return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
         else:
+            print(f"DEBUG: Failed to save user")
             return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
     except Exception as e:
+        print(f"ERROR: Error in POST /user: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/referral")
 async def handle_referral(request: Request):
     """Обработка реферальной ссылки"""
     try:
+        print(f"DEBUG: POST /referral endpoint called")
         data = await request.json()
         referrer_id = str(data.get('referrer_id'))
         referred_id = str(data.get('referred_id'))
@@ -2746,18 +2783,23 @@ async def handle_referral(request: Request):
             success = add_referral(referrer_id, referred_id)
             
             if success:
+                print(f"DEBUG: Referral added successfully: {referrer_id} -> {referred_id}")
                 return JSONResponse(content={"status": "success"})
             else:
+                print(f"DEBUG: Failed to add referral")
                 return JSONResponse(content={"status": "error", "message": "Failed to add referral"})
         else:
+            print(f"DEBUG: Invalid referral data")
             return JSONResponse(content={"status": "error", "message": "Invalid data"})
     except Exception as e:
+        print(f"ERROR: Error in POST /referral: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/top")
 async def get_top_users_endpoint():
     """Получение топа пользователей"""
     try:
+        print(f"DEBUG: GET /top endpoint called")
         top_users = get_top_users()
         
         # Преобразуем данные для фронтенда
@@ -2773,31 +2815,39 @@ async def get_top_users_endpoint():
                 "level": user["level"]
             })
         
+        print(f"DEBUG: Returning {len(response_users)} top users")
         return JSONResponse(content={"users": response_users})
     except Exception as e:
+        print(f"ERROR: Error in GET /top: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/users")
 async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
     try:
+        print(f"DEBUG: GET /debug/users endpoint called")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("user_id, first_name, last_name, score, level").order("score", desc=True).limit(50).execute()
         
         if response.data:
+            print(f"DEBUG: Found {len(response.data)} users")
             return JSONResponse(content={"users": response.data})
         else:
+            print(f"DEBUG: No users found")
             return JSONResponse(content={"users": []})
     except Exception as e:
+        print(f"ERROR: Error in GET /debug/users: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/levels")
 async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
+    print(f"DEBUG: GET /debug/levels endpoint called")
     return JSONResponse(content={"levels": LEVELS})
 
 # Добавляем код для запуска на сервере
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
+    print(f"DEBUG: Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
