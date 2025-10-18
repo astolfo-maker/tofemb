@@ -8,10 +8,12 @@ import os
 import time
 from datetime import datetime, timedelta
 import requests
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import uvicorn
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+# Загрузка переменных окружения
+load_dotenv()
 
 app = FastAPI()
 
@@ -58,55 +60,22 @@ def get_level_by_score(score: int) -> str:
             return LEVELS[i]["name"]
     return LEVELS[0]["name"]
 
-# Функция для получения соединения с базой данных
-def get_db_connection():
-    database_url = os.environ.get("DATABASE_URL", "postgresql://postgres.cfuonvsvbesytaovejpv:Kolyan18291161@cfuonvsvbesytaovejpv.supabase.co:5432/postgres")
+# Инициализация Supabase клиента
+def get_supabase_client() -> Client:
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
     
-    try:
-        conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        return conn
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
-        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+    if not url or not key:
+        raise Exception("Supabase URL and key must be set in environment variables")
+    
+    return create_client(url, key)
 
 # Инициализация базы данных
 def init_db():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Создание таблицы пользователей
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY,
-            first_name TEXT,
-            last_name TEXT,
-            username TEXT,
-            photo_url TEXT,
-            score INTEGER DEFAULT 0,
-            total_clicks INTEGER DEFAULT 0,
-            level TEXT DEFAULT 'Новичок',
-            wallet_address TEXT DEFAULT '',
-            wallet_task_completed BOOLEAN DEFAULT FALSE,
-            referrals JSONB DEFAULT '[]',
-            last_referral_task_completion TIMESTAMP,
-            energy INTEGER DEFAULT 250,
-            last_energy_update TIMESTAMP,
-            upgrades JSONB DEFAULT '[]',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """)
-        
-        # Создание индекса для быстрого поиска топа
-        cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_users_score ON users(score DESC);
-        """)
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
+        supabase = get_supabase_client()
+        # Проверяем, существует ли таблица users
+        # В Supabase таблицы обычно создаются через интерфейс
         print("Database initialized successfully")
     except Exception as e:
         print(f"Error initializing database: {e}")
@@ -114,32 +83,24 @@ def init_db():
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Dict[str, Any]:
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_supabase_client()
         
-        cursor.execute("""
-        SELECT * FROM users WHERE user_id = %s
-        """, (user_id,))
+        response = supabase.table("users").select("*").eq("user_id", user_id).execute()
         
-        user_data = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if user_data:
-            # Преобразуем в словарь
-            user_dict = dict(user_data)
+        if response.data and len(response.data) > 0:
+            user_data = response.data[0]
             
             # Убедимся, что все поля присутствуют и имеют правильный тип
-            if not isinstance(user_dict.get('referrals'), list):
-                user_dict['referrals'] = []
+            if not isinstance(user_data.get('referrals'), list):
+                user_data['referrals'] = []
                 
-            if not isinstance(user_dict.get('upgrades'), list):
-                user_dict['upgrades'] = []
+            if not isinstance(user_data.get('upgrades'), list):
+                user_data['upgrades'] = []
                 
             # Обновляем уровень на основе очков
-            user_dict['level'] = get_level_by_score(user_dict.get('score', 0))
+            user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
-            return user_dict
+            return user_data
         else:
             return None
     except Exception as e:
@@ -149,60 +110,38 @@ def load_user(user_id: str) -> Dict[str, Any]:
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_supabase_client()
         
         # Подготовка данных для вставки/обновления
-        user_id = user_data.get('id')
-        first_name = user_data.get('first_name', '')
-        last_name = user_data.get('last_name', '')
-        username = user_data.get('username', '')
-        photo_url = user_data.get('photo_url', '')
-        score = user_data.get('score', 0)
-        total_clicks = user_data.get('total_clicks', 0)
-        level = get_level_by_score(score)
-        wallet_address = user_data.get('walletAddress', '')
-        wallet_task_completed = user_data.get('walletTaskCompleted', False)
-        referrals = user_data.get('referrals', [])
-        last_referral_task_completion = user_data.get('lastReferralTaskCompletion')
-        energy = user_data.get('energy', 250)
-        last_energy_update = user_data.get('lastEnergyUpdate')
-        upgrades = user_data.get('upgrades', [])
+        db_data = {
+            "user_id": user_data.get('id'),
+            "first_name": user_data.get('first_name', ''),
+            "last_name": user_data.get('last_name', ''),
+            "username": user_data.get('username', ''),
+            "photo_url": user_data.get('photo_url', ''),
+            "score": user_data.get('score', 0),
+            "total_clicks": user_data.get('total_clicks', 0),
+            "level": get_level_by_score(user_data.get('score', 0)),
+            "wallet_address": user_data.get('walletAddress', ''),
+            "wallet_task_completed": user_data.get('walletTaskCompleted', False),
+            "referrals": user_data.get('referrals', []),
+            "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
+            "energy": user_data.get('energy', 250),
+            "last_energy_update": user_data.get('lastEnergyUpdate'),
+            "upgrades": user_data.get('upgrades', [])
+        }
         
-        # Вставка или обновление пользователя
-        cursor.execute("""
-        INSERT INTO users (
-            user_id, first_name, last_name, username, photo_url, score, total_clicks, 
-            level, wallet_address, wallet_task_completed, referrals, 
-            last_referral_task_completion, energy, last_energy_update, upgrades
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (user_id) 
-        DO UPDATE SET 
-            first_name = EXCLUDED.first_name,
-            last_name = EXCLUDED.last_name,
-            username = EXCLUDED.username,
-            photo_url = EXCLUDED.photo_url,
-            score = EXCLUDED.score,
-            total_clicks = EXCLUDED.total_clicks,
-            level = EXCLUDED.level,
-            wallet_address = EXCLUDED.wallet_address,
-            wallet_task_completed = EXCLUDED.wallet_task_completed,
-            referrals = EXCLUDED.referrals,
-            last_referral_task_completion = EXCLUDED.last_referral_task_completion,
-            energy = EXCLUDED.energy,
-            last_energy_update = EXCLUDED.last_energy_update,
-            upgrades = EXCLUDED.upgrades,
-            updated_at = CURRENT_TIMESTAMP
-        """, (
-            user_id, first_name, last_name, username, photo_url, score, total_clicks, 
-            level, wallet_address, wallet_task_completed, json.dumps(referrals), 
-            last_referral_task_completion, energy, last_energy_update, json.dumps(upgrades)
-        ))
+        # Проверяем, существует ли пользователь
+        existing_user = load_user(str(user_data.get('id')))
         
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return True
+        if existing_user:
+            # Обновляем существующего пользователя
+            response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
+        else:
+            # Вставляем нового пользователя
+            response = supabase.table("users").insert(db_data).execute()
+        
+        return response.data is not None
     except Exception as e:
         print(f"Error saving user: {e}")
         return False
@@ -210,22 +149,14 @@ def save_user(user_data: Dict[str, Any]) -> bool:
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_supabase_client()
         
-        cursor.execute("""
-        SELECT user_id, first_name, last_name, username, photo_url, score, level
-        FROM users
-        ORDER BY score DESC
-        LIMIT %s
-        """, (limit,))
+        response = supabase.table("users").select("user_id, first_name, last_name, username, photo_url, score, level").order("score", desc=True).limit(limit).execute()
         
-        top_users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        # Преобразуем в список словарей
-        return [dict(user) for user in top_users]
+        if response.data:
+            return response.data
+        else:
+            return []
     except Exception as e:
         print(f"Error getting top users: {e}")
         return []
@@ -233,43 +164,27 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_supabase_client()
         
         # Получаем данные реферера
-        cursor.execute("""
-        SELECT referrals FROM users WHERE user_id = %s
-        """, (referrer_id,))
+        response = supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
         
-        referrer_data = cursor.fetchone()
-        
-        if not referrer_data:
-            cursor.close()
-            conn.close()
+        if not response.data or len(response.data) == 0:
             return False
         
-        referrals = referrer_data['referrals']
+        referrals = response.data[0].get("referrals", [])
         
         # Если реферал уже добавлен, ничего не делаем
         if referred_id in referrals:
-            cursor.close()
-            conn.close()
             return True
         
         # Добавляем нового реферала
         referrals.append(referred_id)
         
         # Обновляем данные реферера
-        cursor.execute("""
-        UPDATE users
-        SET referrals = %s
-        WHERE user_id = %s
-        """, (json.dumps(referrals), referrer_id))
+        update_response = supabase.table("users").update({"referrals": referrals}).eq("user_id", referrer_id).execute()
         
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return True
+        return update_response.data is not None
     except Exception as e:
         print(f"Error adding referral: {e}")
         return False
@@ -2866,21 +2781,14 @@ async def get_top_users_endpoint():
 async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        supabase = get_supabase_client()
         
-        cursor.execute("""
-        SELECT user_id, first_name, last_name, score, level
-        FROM users
-        ORDER BY score DESC
-        LIMIT 50
-        """)
+        response = supabase.table("users").select("user_id, first_name, last_name, score, level").order("score", desc=True).limit(50).execute()
         
-        users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        return JSONResponse(content={"users": [dict(user) for user in users]})
+        if response.data:
+            return JSONResponse(content={"users": response.data})
+        else:
+            return JSONResponse(content={"users": []})
     except Exception as e:
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
