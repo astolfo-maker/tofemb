@@ -2846,6 +2846,17 @@ async def debug_levels():
     print(f"DEBUG: GET /debug/levels endpoint called")
     return JSONResponse(content={"levels": LEVELS})
 
+@app.get("/debug/env")
+async def debug_env():
+    """Эндпоинт для проверки переменных окружения"""
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    
+    return JSONResponse(content={
+        "SUPABASE_URL": url if url else "NOT SET",
+        "SUPABASE_KEY": "***" if key else "NOT SET"
+    })
+
 # Добавляем код для запуска на сервере
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
