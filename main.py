@@ -1,4 +1,4 @@
-\from pathlib import Path
+from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -130,7 +130,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
-            "upgrades": user_data.get('upgrades', [])
+            "upgrades": user_data.get('upgrades', []),
+            "last_daily_reward": user_data.get('lastDailyReward')
         }
         
         # Проверяем, существует ли пользователь
@@ -1224,6 +1225,19 @@ html_content = """
     #top #passive-income-display {
       display: none !important;
     }
+    
+    /* Стили для ежедневной награды */
+    .daily-reward-icon {
+      font-size: 24px;
+      margin-right: 10px;
+      color: #FFD700;
+    }
+    
+    .daily-reward-streak {
+      font-size: 14px;
+      color: #FFD700;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -1299,6 +1313,24 @@ html_content = """
     <!-- Окно заданий -->
     <section id="tasks" class="page" aria-label="задания нах">
       <h2>Задания</h2>
+      
+      <!-- Задание: Ежедневная награда -->
+      <div class="task-item">
+        <div class="task-header">
+          <div class="task-title">
+            <span class="daily-reward-icon">🎁</span>
+            Ежедневная награда
+          </div>
+          <button id="daily-reward-button" class="task-button">ЗАБРАТЬ</button>
+        </div>
+        <div class="task-reward">
+          <img src="/static/FemboyCoinsPink.png" alt="FMG">
+          <span>500 FMG</span>
+        </div>
+        <div id="daily-reward-status" class="task-completed" style="display: none;">Награда получена</div>
+        <div id="daily-reward-timer" class="task-timer" style="display: none;"></div>
+        <div id="daily-reward-streak" class="daily-reward-streak">Дней подряд: <span id="daily-streak-value">0</span></div>
+      </div>
       
       <!-- Задание: Подключить TON кошелек -->
       <div class="task-item">
@@ -1493,7 +1525,9 @@ html_content = """
       walletTaskCompleted: false,
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
-      upgrades: []
+      upgrades: [],
+      lastDailyReward: null,
+      dailyStreak: 0
     };
     
     // Максимальное количество энергии
@@ -1651,6 +1685,13 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
+            // Проверяем поля ежедневной награды
+            if (!userData.lastDailyReward) {
+              userData.lastDailyReward = null;
+            }
+            if (!userData.dailyStreak) {
+              userData.dailyStreak = 0;
+            }
             
             // Обновляем энергию при загрузке
             updateEnergy();
@@ -1670,6 +1711,7 @@ html_content = """
             // Проверяем задания
             checkWalletTask();
             checkReferralTask();
+            checkDailyReward();
             
             return;
           }
@@ -1691,7 +1733,9 @@ html_content = """
           walletTaskCompleted: false,
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
-          upgrades: []
+          upgrades: [],
+          lastDailyReward: null,
+          dailyStreak: 0
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1699,11 +1743,13 @@ html_content = """
         // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkReferralTask();
+        checkDailyReward();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkReferralTask();
+        checkDailyReward();
       }
     }
     
@@ -1735,6 +1781,8 @@ html_content = """
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
+            const oldLastDailyReward = userData.lastDailyReward;
+            const oldDailyStreak = userData.dailyStreak;
             
             userData = data.user;
             
@@ -1747,6 +1795,8 @@ html_content = """
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
+            userData.lastDailyReward = oldLastDailyReward;
+            userData.dailyStreak = oldDailyStreak;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -1833,6 +1883,7 @@ html_content = """
       if (pageKey === 'tasks') {
         checkWalletTask();
         checkReferralTask();
+        checkDailyReward();
       }
     }
 
@@ -2108,6 +2159,53 @@ html_content = """
       }
     }
     
+    // Проверка ежедневной награды
+    function checkDailyReward() {
+      // Обновляем счетчик дней подряд
+      document.getElementById('daily-streak-value').textContent = userData.dailyStreak || 0;
+      
+      // Проверяем, можно ли получить награду
+      const now = new Date();
+      const lastReward = userData.lastDailyReward ? 
+        new Date(userData.lastDailyReward) : null;
+      
+      // Если награда уже получена сегодня
+      if (lastReward && isSameDay(now, lastReward)) {
+        // Показываем статус выполненного задания
+        document.getElementById('daily-reward-button').style.display = 'none';
+        document.getElementById('daily-reward-status').style.display = 'block';
+        document.getElementById('daily-reward-timer').style.display = 'none';
+      } else {
+        // Проверяем, был ли перерыв в получении награды
+        if (lastReward && !isConsecutiveDay(now, lastReward)) {
+          // Если был перерыв, сбрасываем счетчик дней подряд
+          userData.dailyStreak = 0;
+        }
+        
+        // Задание доступно для выполнения
+        document.getElementById('daily-reward-button').textContent = 'ЗАБРАТЬ';
+        document.getElementById('daily-reward-button').disabled = false;
+        document.getElementById('daily-reward-button').style.display = 'block';
+        document.getElementById('daily-reward-status').style.display = 'none';
+        document.getElementById('daily-reward-timer').style.display = 'none';
+      }
+    }
+    
+    // Функция для проверки, что это один и тот же день
+    function isSameDay(date1, date2) {
+      return date1.getFullYear() === date2.getFullYear() &&
+             date1.getMonth() === date2.getMonth() &&
+             date1.getDate() === date2.getDate();
+    }
+    
+    // Функция для проверки, что даты идут подряд
+    function isConsecutiveDay(date1, date2) {
+      const nextDay = new Date(date2);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      return isSameDay(date1, nextDay);
+    }
+    
     // Обновление таймера реферального задания
     function updateReferralTimer() {
       const lastCompletion = userData.lastReferralTaskCompletion ? 
@@ -2138,6 +2236,41 @@ html_content = """
       
       // Запускаем обновление через секунду
       setTimeout(updateReferralTimer, 1000);
+    }
+    
+    // Обновление таймера ежедневной награды
+    function updateDailyRewardTimer() {
+      const lastReward = userData.lastDailyReward ? 
+        new Date(userData.lastDailyReward) : null;
+      
+      if (!lastReward) return;
+      
+      const now = new Date();
+      const endOfToday = new Date(now);
+      endOfToday.setHours(23, 59, 59, 999);
+      
+      const timeLeft = endOfToday - now;
+      
+      if (timeLeft <= 0) {
+        // Время истекло
+        document.getElementById('daily-reward-timer').style.display = 'none';
+        document.getElementById('daily-reward-button').style.display = 'block';
+        document.getElementById('daily-reward-button').textContent = 'ЗАБРАТЬ';
+        document.getElementById('daily-reward-status').style.display = 'none';
+        return;
+      }
+      
+      // Вычисляем часы, минуты и секунды
+      const hours = Math.floor(timeLeft / (60 * 60 * 1000));
+      const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+      const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+      
+      // Обновляем текст таймера
+      document.getElementById('daily-reward-timer').textContent = 
+        `Новая награда через: ${hours}ч ${minutes}м ${seconds}с`;
+      
+      // Запускаем обновление через секунду
+      setTimeout(updateDailyRewardTimer, 1000);
     }
     
     // Получение награды за задание с кошельком
@@ -2188,6 +2321,51 @@ html_content = """
       
       // Показываем уведомление
       showNotification('Вы получили 5000 FMG!');
+    }
+    
+    // Получение ежедневной награды
+    async function claimDailyReward() {
+      const now = new Date();
+      const lastReward = userData.lastDailyReward ? 
+        new Date(userData.lastDailyReward) : null;
+      
+      // Проверяем, получена ли уже награда сегодня
+      if (lastReward && isSameDay(now, lastReward)) {
+        showNotification('Вы уже получили сегодняшнюю награду');
+        return;
+      }
+      
+      // Проверяем, был ли перерыв в получении награды
+      if (lastReward && isConsecutiveDay(now, lastReward)) {
+        // Если нет перерыва, увеличиваем счетчик дней подряд
+        userData.dailyStreak = (userData.dailyStreak || 0) + 1;
+      } else {
+        // Если был перерыв, сбрасываем счетчик дней подряд
+        userData.dailyStreak = 1;
+      }
+      
+      // Рассчитываем награду в зависимости от дней подряд
+      let reward = 500; // Базовая награда
+      
+      // Увеличиваем награду за каждый день подряд
+      if (userData.dailyStreak > 1) {
+        reward += 100 * (userData.dailyStreak - 1);
+      }
+      
+      // Добавляем награду
+      userData.score += reward;
+      userData.lastDailyReward = now.toISOString();
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      checkDailyReward();
+      
+      // Показываем уведомление
+      showNotification(`Вы получили ${reward} FMG! Дней подряд: ${userData.dailyStreak}`);
     }
     
     // Копирование реферальной ссылки
@@ -2543,6 +2721,9 @@ html_content = """
       document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
       document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
       
+      // Обработчик для ежедневной награды
+      document.getElementById('daily-reward-button').addEventListener('click', claimDailyReward);
+      
       // Устанавливаем начальную страницу
       showPage('clicker');
       
@@ -2707,7 +2888,9 @@ async def get_user_data(user_id: str):
                 "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
-                "upgrades": user_data["upgrades"]
+                "upgrades": user_data["upgrades"],
+                "lastDailyReward": user_data["last_daily_reward"],
+                "dailyStreak": user_data["daily_streak"]
             }
             
             print(f"DEBUG: Returning user data for {user_data['first_name']}")
@@ -2751,7 +2934,9 @@ async def save_user_data(request: Request):
                     "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"]
+                    "upgrades": user_data["upgrades"],
+                    "lastDailyReward": user_data["last_daily_reward"],
+                    "dailyStreak": user_data["daily_streak"]
                 }
                 
                 print(f"DEBUG: User saved successfully: {user_data['first_name']}")
