@@ -347,24 +347,21 @@ html_content = """
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
+      -webkit-tap-highlight-color: transparent;
     }
     #bottom-menu button.active {
       background-color: #ff66cc;
       color: #fff;
       box-shadow: 0 0 8px #ff66cc;
     }
-    #bottom-menu button:focus, #bottom-menu button:active {
+    #bottom-menu button:focus {
       outline: none;
-      -webkit-tap-highlight-color: transparent;
     }
 
     #profile, #tasks, #top {
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
-      overflow-y: auto;
-      max-height: calc(100vh - 180px); /* 60px заголовок + 60px меню + 60px запас */
-      padding-bottom: 20px;
     }
     
     #userProfile {
@@ -402,6 +399,8 @@ html_content = """
       margin-top: 20px;
       width: 100%;
       box-sizing: border-box;
+      max-height: 50vh;
+      overflow-y: auto;
     }
     .profile-stats p {
       margin: 10px 0;
@@ -450,6 +449,7 @@ html_content = """
       backdrop-filter: blur(5px);
       min-height: 120px;
       justify-content: center;
+      -webkit-tap-highlight-color: transparent;
     }
     #topButton:hover {
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.9), rgba(255, 154, 158, 0.9));
@@ -573,6 +573,7 @@ html_content = """
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
     }
     
     /* Стили для прогресс-бара уровня */
@@ -749,6 +750,7 @@ html_content = """
       cursor: pointer;
       font-size: 16px;
       transition: all 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     .levelUpButton:hover {
       background: rgba(255, 255, 255, 0.4);
@@ -814,6 +816,7 @@ html_content = """
       font-size: 14px;
       transition: all 0.3s ease;
       white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
     .task-button:hover {
       transform: translateY(-2px);
@@ -878,6 +881,7 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-top: 10px;
+      -webkit-tap-highlight-color: transparent;
     }
     #ton-connect-button:hover {
       transform: translateY(-2px);
@@ -939,6 +943,7 @@ html_content = """
       justify-content: center;
       border-radius: 50%;
       transition: background-color 0.3s;
+      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-close:hover {
       background-color: rgba(255, 255, 255, 0.2);
@@ -962,6 +967,7 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-bottom: 10px;
+      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-button:hover {
       transform: translateY(-2px);
@@ -978,6 +984,7 @@ html_content = """
       font-size: 16px;
       transition: all 0.3s ease;
       width: 100%;
+      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-button-secondary:hover {
       background: rgba(255, 255, 255, 0.3);
@@ -1053,6 +1060,7 @@ html_content = """
       justify-content: center;
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       transition: all 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     #upgrades-button:hover {
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.9), rgba(255, 154, 158, 0.9));
@@ -1123,6 +1131,7 @@ html_content = """
       justify-content: center;
       border-radius: 50%;
       transition: background-color 0.3s;
+      -webkit-tap-highlight-color: transparent;
     }
     .upgrades-modal-close:hover {
       background-color: rgba(255, 255, 255, 0.2);
@@ -1201,6 +1210,7 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-top: 8px;
+      -webkit-tap-highlight-color: transparent;
     }
     .upgrade-buy-button:hover {
       transform: translateY(-2px);
@@ -1231,12 +1241,6 @@ html_content = """
     #passive-income-icon {
       font-size: 16px;
     }
-    
-    /* Стили для всех кнопок */
-    button:focus, button:active {
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
   </style>
 </head>
 <body>
@@ -1257,7 +1261,7 @@ html_content = """
         <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой" />
       </div>
       <div id="score" aria-live="polite">
-        Счет: 0 FMG
+        Счет: 0
         <img id="coin" src="/static/FemboyCoinsPink.png" alt="FMG" />
       </div>
       
@@ -1498,7 +1502,7 @@ html_content = """
     // Глобальные переменные для хранения данных пользователя
     let userData = {
       score: 0,
-      total_clicks: 0,
+      totalClicks: 0,
       level: "Новичок",
       walletAddress: "",
       referrals: [],
@@ -1527,7 +1531,6 @@ html_content = """
       
       // Обработка подключения кошелька
       tonConnectUI.onStatusChange(wallet => {
-        console.log('Wallet status changed:', wallet);
         if (wallet) {
           // Кошелек подключен
           const address = wallet.account.address;
@@ -1557,20 +1560,6 @@ html_content = """
           
           // Показываем уведомление
           showNotification('TON кошелек отключен');
-        }
-      });
-      
-      // Проверяем текущий статус кошелька
-      tonConnectUI.getWallet().then(wallet => {
-        if (wallet) {
-          const address = wallet.account.address;
-          const formattedAddress = formatWalletAddress(address);
-          
-          userData.walletAddress = address;
-          document.getElementById('wallet-address').textContent = formattedAddress;
-          document.getElementById('ton-connect-button').textContent = 'Отключить кошелек';
-          
-          checkWalletTask();
         }
       });
     }
@@ -1790,7 +1779,7 @@ html_content = """
     function updateScoreDisplay() {
       const scoreDisplay = document.getElementById('score');
       if(scoreDisplay.firstChild) {
-        scoreDisplay.firstChild.textContent = 'Счет: ' + userData.score + ' FMG';
+        scoreDisplay.firstChild.textContent = 'Счет: ' + userData.score;
       }
     }
     
@@ -1846,8 +1835,8 @@ html_content = """
       } else {
         upgradesButton.style.display = 'none';
       }
-      
-      // Управляем видимостью пассивного дохода
+
+      // Управляем видимостью индикатора пассивного дохода
       const passiveIncomeDisplay = document.getElementById('passive-income-display');
       if (pageKey === 'clicker') {
         passiveIncomeDisplay.style.display = 'flex';
@@ -1968,7 +1957,7 @@ html_content = """
       topUsers.forEach((user, index) => {
         const item = document.createElement('div');
         item.className = 'top-preview-item';
-        item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score} FMG`;
+        item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score}`;
         topPreview.appendChild(item);
       });
     }
@@ -1991,7 +1980,7 @@ html_content = """
           <div class="top-info">
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
-              ${user.score} FMG
+              ${user.score}
               <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="FMG">
               <span class="top-level">${user.level}</span>
             </div>
