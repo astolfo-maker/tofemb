@@ -131,7 +131,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
             "upgrades": user_data.get('upgrades', []),
-            "last_daily_reward": user_data.get('lastDailyReward')
+            "last_daily_reward": user_data.get('lastDailyReward'),
+            "daily_streak": user_data.get('dailyStreak')
         }
         
         # Проверяем, существует ли пользователь
@@ -1998,11 +1999,11 @@ html_content = """
       
       users.forEach((user, index) => {
         const topItem = document.createElement('div');
-        topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
+        topItem.className = `top-item ${user.user_id === currentUserId ? 'current-user' : ''}`;
         
         topItem.innerHTML = `
           <div class="top-rank">${index + 1}</div>
-          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`}" alt="${user.first_name}">
+          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.user_id}.jpg`}" alt="${user.first_name}">
           <div class="top-info">
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
