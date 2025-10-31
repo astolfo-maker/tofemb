@@ -65,45 +65,32 @@ def get_supabase_client() -> Client:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     
-    # Добавляем логирование для отладки
-    print(f"DEBUG: SUPABASE_URL from env: {url}")
-    print(f"DEBUG: SUPABASE_KEY from env: {'***' if key else 'None'}")
-    
     if not url or not key:
         error_msg = "Supabase URL and key must be set in environment variables"
-        print(f"ERROR: {error_msg}")
-        print(f"ERROR: URL is {'set' if url else 'not set'}, KEY is {'set' if key else 'not set'}")
         raise Exception(error_msg)
     
     try:
-        print("DEBUG: Creating Supabase client...")
         client = create_client(url, key)
-        print("DEBUG: Supabase client created successfully")
         return client
     except Exception as e:
-        print(f"ERROR: Failed to create Supabase client: {str(e)}")
-        raise
+        raise Exception(f"Failed to create Supabase client: {str(e)}")
 
 # Инициализация базы данных
 def init_db():
     try:
-        print("DEBUG: Initializing database...")
         supabase = get_supabase_client()
-        print("DEBUG: Database initialized successfully")
     except Exception as e:
-        print(f"ERROR: Error initializing database: {e}")
+        print(f"Error initializing database: {e}")
 
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
-        print(f"DEBUG: Loading user with ID: {user_id}")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("*").eq("user_id", user_id).execute()
         
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
-            print(f"DEBUG: User found: {user_data.get('first_name', 'Unknown')}")
             
             # Убедимся, что все поля присутствуют и имеют правильный тип
             if not isinstance(user_data.get('referrals'), list):
@@ -117,16 +104,14 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             
             return user_data
         else:
-            print(f"DEBUG: User not found with ID: {user_id}")
             return None
     except Exception as e:
-        print(f"ERROR: Error loading user: {e}")
+        print(f"Error loading user: {e}")
         return None
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     try:
-        print(f"DEBUG: Saving user: {user_data.get('first_name', 'Unknown')}")
         supabase = get_supabase_client()
         
         # Подготовка данных для вставки/обновления
@@ -152,56 +137,47 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         existing_user = load_user(str(user_data.get('id')))
         
         if existing_user:
-            print("DEBUG: Updating existing user")
             # Обновляем существующего пользователя
             response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
         else:
-            print("DEBUG: Creating new user")
             # Вставляем нового пользователя
             response = supabase.table("users").insert(db_data).execute()
         
-        print(f"DEBUG: Save operation completed with data: {response.data}")
         return response.data is not None
     except Exception as e:
-        print(f"ERROR: Error saving user: {e}")
+        print(f"Error saving user: {e}")
         return False
 
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     try:
-        print(f"DEBUG: Getting top {limit} users")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("user_id, first_name, last_name, username, photo_url, score, level").order("score", desc=True).limit(limit).execute()
         
         if response.data:
-            print(f"DEBUG: Found {len(response.data)} users")
             return response.data
         else:
-            print("DEBUG: No users found")
             return []
     except Exception as e:
-        print(f"ERROR: Error getting top users: {e}")
+        print(f"Error getting top users: {e}")
         return []
 
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
-        print(f"DEBUG: Adding referral: {referrer_id} -> {referred_id}")
         supabase = get_supabase_client()
         
         # Получаем данные реферера
         response = supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
         
         if not response.data or len(response.data) == 0:
-            print(f"DEBUG: Referrer not found: {referrer_id}")
             return False
         
         referrals = response.data[0].get("referrals", [])
         
         # Если реферал уже добавлен, ничего не делаем
         if referred_id in referrals:
-            print(f"DEBUG: Referral already exists")
             return True
         
         # Добавляем нового реферала
@@ -210,10 +186,9 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         # Обновляем данные реферера
         update_response = supabase.table("users").update({"referrals": referrals}).eq("user_id", referrer_id).execute()
         
-        print(f"DEBUG: Referral added successfully")
         return update_response.data is not None
     except Exception as e:
-        print(f"ERROR: Error adding referral: {e}")
+        print(f"Error adding referral: {e}")
         return False
 
 # Инициализация базы данных при запуске
@@ -363,8 +338,8 @@ html_content = """
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
-      max-height: calc(100vh - 120px);
       overflow-y: auto;
+      max-height: calc(100vh - 120px);
     }
     
     #userProfile {
@@ -1242,6 +1217,13 @@ html_content = """
     #passive-income-icon {
       font-size: 16px;
     }
+    
+    /* Скрытие пассивного дохода на всех страницах кроме кликера */
+    #profile #passive-income-display,
+    #tasks #passive-income-display,
+    #top #passive-income-display {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -1503,7 +1485,7 @@ html_content = """
     // Глобальные переменные для хранения данных пользователя
     let userData = {
       score: 0,
-      totalClicks: 0,
+      total_clicks: 0,
       level: "Новичок",
       walletAddress: "",
       referrals: [],
@@ -1835,14 +1817,6 @@ html_content = """
         upgradesButton.style.display = 'flex';
       } else {
         upgradesButton.style.display = 'none';
-      }
-
-      // Управляем видимостью индикатора пассивного дохода
-      const passiveIncomeDisplay = document.getElementById('passive-income-display');
-      if (pageKey === 'clicker') {
-        passiveIncomeDisplay.style.display = 'flex';
-      } else {
-        passiveIncomeDisplay.style.display = 'none';
       }
 
       // При открытии профиля обновляем данные
@@ -2575,8 +2549,8 @@ html_content = """
       // Загружаем превью топа
       await updateTopData();
       
-      // Устанавливаем периодическое обновление топа каждые 3 секунды
-      setInterval(updateTopData, 3000);
+      // Устанавливаем периодическое обновление топа каждые 10 секунд (увеличили интервал для оптимизации)
+      setInterval(updateTopData, 10000);
       
       // Устанавливаем интервал для обновления энергии каждую секунду
       setInterval(updateEnergy, 1000);
