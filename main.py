@@ -53,17 +53,6 @@ UPGRADES = [
     {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
-# Определение ежедневных наград
-DAILY_REWARDS = [
-    {"day": 1, "reward": 1000},
-    {"day": 2, "reward": 1500},
-    {"day": 3, "reward": 2000},
-    {"day": 4, "reward": 3000},
-    {"day": 5, "reward": 5000},
-    {"day": 6, "reward": 7500},
-    {"day": 7, "reward": 10000}
-]
-
 # Функция для определения уровня по очкам
 def get_level_by_score(score: int) -> str:
     for i in range(len(LEVELS) - 1, -1, -1):
@@ -123,16 +112,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if not isinstance(user_data.get('upgrades'), list):
                 user_data['upgrades'] = []
                 
-            # Проверяем поля ежедневных наград
-            if not user_data.get('last_daily_reward_claimed'):
-                user_data['last_daily_reward_claimed'] = None
-                
-            if not user_data.get('daily_reward_streak'):
-                user_data['daily_reward_streak'] = 0
-                
-            if not user_data.get('daily_reward_claimed_today'):
-                user_data['daily_reward_claimed_today'] = False
-                
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
@@ -167,9 +146,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
             "upgrades": user_data.get('upgrades', []),
-            "last_daily_reward_claimed": user_data.get('last_daily_reward_claimed'),
-            "daily_reward_streak": int(user_data.get('daily_reward_streak', 0)),
-            "daily_reward_claimed_today": bool(user_data.get('daily_reward_claimed_today', False))
+            "last_daily_reward": user_data.get('lastDailyReward'),
+            "daily_reward_streak": int(user_data.get('dailyRewardStreak', 1))
         }
         
         # Проверяем, существует ли пользователь
@@ -1286,9 +1264,6 @@ html_content = """
       align-items: center;
       z-index: 1003;
     }
-    #daily-reward-modal.active {
-      display: flex;
-    }
     .daily-reward-content {
       background: linear-gradient(135deg, #ff66cc, #ff9a9e);
       border-radius: 20px;
@@ -1313,20 +1288,14 @@ html_content = """
     .daily-reward-amount {
       font-size: 24px;
       margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .daily-reward-amount img {
-      width: 30px;
-      height: 30px;
+      color: #FFD700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
     }
     .daily-reward-button {
       background: rgba(255, 255, 255, 0.3);
       border: none;
       border-radius: 15px;
-      padding: 12px 20px;
+      padding: 10px 20px;
       color: white;
       font-weight: bold;
       cursor: pointer;
@@ -1338,28 +1307,41 @@ html_content = """
       background: rgba(255, 255, 255, 0.4);
       transform: translateY(-2px);
     }
-    .daily-reward-progress {
+    .daily-reward-calendar {
       display: flex;
       justify-content: space-between;
-      margin-top: 20px;
+      margin: 20px 0;
     }
     .daily-reward-day-item {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
       font-weight: bold;
+      position: relative;
     }
-    .daily-reward-day-item.claimed {
-      background: rgba(76, 175, 80, 0.5);
+    .daily-reward-day-item.active {
+      background: rgba(255, 215, 0, 0.3);
+      border: 2px solid #FFD700;
     }
-    .daily-reward-day-item.current {
-      background: rgba(255, 215, 0, 0.5);
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+    .daily-reward-day-item.completed {
+      background: rgba(76, 175, 80, 0.3);
+      border: 2px solid #4ade80;
+    }
+    .daily-reward-day-item.future {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+    }
+    .daily-reward-day-item::after {
+      content: attr(data-amount);
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -1423,7 +1405,7 @@ html_content = """
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
         <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
-        <p>Дней подряд: <span id="dailyRewardStreak">0</span></p>
+        <p>День в цикле наград: <span id="dailyRewardDay">1</span>/7</p>
       </div>
       
       <!-- Секция кошелька -->
@@ -1490,16 +1472,21 @@ html_content = """
   <!-- Модальное окно ежедневной награды -->
   <div id="daily-reward-modal">
     <div class="daily-reward-content">
-      <div class="daily-reward-title">🎁 Ежедневная награда 🎁</div>
-      <div class="daily-reward-day">День <span id="daily-reward-day-number">1</span></div>
-      <div class="daily-reward-amount">
-        <img src="/static/FemboyCoinsPink.png" alt="FMG">
-        <span id="daily-reward-amount-value">1000</span> FMG
+      <div class="daily-reward-title">🎁 Ежедневная награда! 🎁</div>
+      <div class="daily-reward-day" id="daily-reward-modal-day">День 1</div>
+      <div class="daily-reward-amount" id="daily-reward-modal-amount">1000 FMG</div>
+      
+      <div class="daily-reward-calendar" id="daily-reward-calendar">
+        <div class="daily-reward-day-item active" data-day="1" data-amount="1000">1</div>
+        <div class="daily-reward-day-item future" data-day="2" data-amount="2000">2</div>
+        <div class="daily-reward-day-item future" data-day="3" data-amount="3000">3</div>
+        <div class="daily-reward-day-item future" data-day="4" data-amount="4000">4</div>
+        <div class="daily-reward-day-item future" data-day="5" data-amount="5000">5</div>
+        <div class="daily-reward-day-item future" data-day="6" data-amount="7000">6</div>
+        <div class="daily-reward-day-item future" data-day="7" data-amount="10000">7</div>
       </div>
+      
       <button class="daily-reward-button" id="daily-reward-button">Забрать награду</button>
-      <div class="daily-reward-progress" id="daily-reward-progress">
-        <!-- Дни недели будут добавлены через JavaScript -->
-      </div>
     </div>
   </div>
 
@@ -1609,13 +1596,13 @@ html_content = """
     
     // Ежедневные награды
     const DAILY_REWARDS = [
-      {day: 1, reward: 1000},
-      {day: 2, reward: 1500},
-      {day: 3, reward: 2000},
-      {day: 4, reward: 3000},
-      {day: 5, reward: 5000},
-      {day: 6, reward: 7500},
-      {day: 7, reward: 10000}
+      { day: 1, amount: 1000 },
+      { day: 2, amount: 2000 },
+      { day: 3, amount: 3000 },
+      { day: 4, amount: 4000 },
+      { day: 5, amount: 5000 },
+      { day: 6, amount: 7000 },
+      { day: 7, amount: 10000 }
     ];
     
     // Функция для определения уровня по очкам
@@ -1659,9 +1646,8 @@ html_content = """
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
       upgrades: [],
-      lastDailyRewardClaimed: null,
-      dailyRewardStreak: 0,
-      dailyRewardClaimedToday: false
+      lastDailyReward: null,
+      dailyRewardStreak: 1
     };
     
     // Максимальное количество энергии
@@ -1784,6 +1770,83 @@ html_content = """
       energyText.innerHTML = `<span id="energyIcon">⚡</span><span>Энергия: ${userData.energy}/${MAX_ENERGY}</span>`;
     }
     
+    // Функция для проверки ежедневной награды
+    function checkDailyReward() {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const lastReward = userData.lastDailyReward ? new Date(userData.lastDailyReward) : null;
+      
+      // Если последняя награда была сегодня, то ничего не делаем
+      if (lastReward && lastReward.getTime() === today.getTime()) {
+        return;
+      }
+      
+      // Проверяем, была ли награда вчера
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (lastReward && lastReward.getTime() === yesterday.getTime()) {
+        // Если вчера была награда, то увеличиваем streak
+        userData.dailyRewardStreak = Math.min(userData.dailyRewardStreak + 1, 7);
+      } else {
+        // Если не было награды вчера, то сбрасываем streak на 1
+        userData.dailyRewardStreak = 1;
+      }
+      
+      // Определяем награду
+      const rewardIndex = userData.dailyRewardStreak - 1;
+      const reward = DAILY_REWARDS[rewardIndex];
+      
+      // Начисляем награду
+      userData.score += reward.amount;
+      
+      // Обновляем дату последней награды
+      userData.lastDailyReward = today.toISOString();
+      
+      // Сохраняем данные
+      saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      updateDailyRewardDisplay();
+      
+      // Показываем модальное окно
+      showDailyRewardModal(reward);
+    }
+    
+    // Функция для отображения модального окна ежедневной награды
+    function showDailyRewardModal(reward) {
+      // Обновляем данные в модальном окне
+      document.getElementById('daily-reward-modal-day').textContent = `День ${reward.day}`;
+      document.getElementById('daily-reward-modal-amount').textContent = `${reward.amount} FMG`;
+      
+      // Обновляем календарь наград
+      const calendarItems = document.querySelectorAll('.daily-reward-day-item');
+      calendarItems.forEach((item, index) => {
+        const day = index + 1;
+        item.setAttribute('data-day', day);
+        item.setAttribute('data-amount', DAILY_REWARDS[index].amount);
+        item.textContent = day;
+        
+        if (day < reward.day) {
+          item.className = 'daily-reward-day-item completed';
+        } else if (day === reward.day) {
+          item.className = 'daily-reward-day-item active';
+        } else {
+          item.className = 'daily-reward-day-item future';
+        }
+      });
+      
+      // Показываем модальное окно
+      document.getElementById('daily-reward-modal').style.display = 'flex';
+    }
+    
+    // Функция для обновления отображения ежедневной награды в профиле
+    function updateDailyRewardDisplay() {
+      document.getElementById('dailyRewardDay').textContent = userData.dailyRewardStreak;
+    }
+    
     // Функция для загрузки данных пользователя с сервера
     async function loadUserData() {
       if (!user) return;
@@ -1819,15 +1882,12 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
-            // Проверяем поля ежедневных наград
-            if (!userData.lastDailyRewardClaimed) {
-              userData.lastDailyRewardClaimed = null;
+            // Проверяем поля ежедневной награды
+            if (!userData.lastDailyReward) {
+              userData.lastDailyReward = null;
             }
             if (!userData.dailyRewardStreak) {
-              userData.dailyRewardStreak = 0;
-            }
-            if (userData.dailyRewardClaimedToday === undefined) {
-              userData.dailyRewardClaimedToday = false;
+              userData.dailyRewardStreak = 1;
             }
             
             // Обновляем энергию при загрузке
@@ -1835,6 +1895,9 @@ html_content = """
             
             // Обновляем бонусы
             updateBonuses();
+            
+            // Обновляем отображение ежедневной награды
+            updateDailyRewardDisplay();
             
             updateScoreDisplay();
             updateLevel();
@@ -1873,9 +1936,8 @@ html_content = """
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
           upgrades: [],
-          lastDailyRewardClaimed: null,
-          dailyRewardStreak: 0,
-          dailyRewardClaimedToday: false
+          lastDailyReward: null,
+          dailyRewardStreak: 1
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1883,6 +1945,7 @@ html_content = """
         // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkReferralTask();
+        // Проверяем ежедневную награду
         checkDailyReward();
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -1921,9 +1984,8 @@ html_content = """
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
-            const oldLastDailyRewardClaimed = userData.lastDailyRewardClaimed;
+            const oldLastDailyReward = userData.lastDailyReward;
             const oldDailyRewardStreak = userData.dailyRewardStreak;
-            const oldDailyRewardClaimedToday = userData.dailyRewardClaimedToday;
             
             userData = data.user;
             
@@ -1936,9 +1998,8 @@ html_content = """
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
-            userData.lastDailyRewardClaimed = oldLastDailyRewardClaimed;
+            userData.lastDailyReward = oldLastDailyReward;
             userData.dailyRewardStreak = oldDailyRewardStreak;
-            userData.dailyRewardClaimedToday = oldDailyRewardClaimedToday;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -2050,7 +2111,6 @@ html_content = """
         // Обновляем счет
         document.getElementById('profileScore').textContent = userData.score;
         document.getElementById('totalClicks').textContent = userData.total_clicks;
-        document.getElementById('dailyRewardStreak').textContent = userData.dailyRewardStreak;
         
         // Получаем уровень на основе очков
         const currentLevel = getLevelByScore(userData.score);
@@ -2062,6 +2122,9 @@ html_content = """
         
         document.getElementById('clickBonus').textContent = clickBonus;
         document.getElementById('passiveIncomeStat').textContent = passiveIncome;
+        
+        // Обновляем день в цикле наград
+        document.getElementById('dailyRewardDay').textContent = userData.dailyRewardStreak;
         
         // Обновляем данные пользователя из Telegram
         if (user) {
@@ -2660,102 +2723,6 @@ html_content = """
         }, 300);
       }
     }
-    
-    // Функции для ежедневной награды
-    // Проверка ежедневной награды
-    function checkDailyReward() {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      // Проверяем, получена ли награда сегодня
-      if (userData.lastDailyRewardClaimed) {
-        const lastClaimed = new Date(userData.lastDailyRewardClaimed);
-        const lastClaimedDay = new Date(lastClaimed.getFullYear(), lastClaimed.getMonth(), lastClaimed.getDate());
-        
-        // Если награда уже получена сегодня
-        if (today.getTime() === lastClaimedDay.getTime()) {
-          userData.dailyRewardClaimedToday = true;
-          return;
-        }
-        
-        // Проверяем, был ли пропуск (если прошло больше 1 дня)
-        const diffDays = Math.floor((today - lastClaimedDay) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays > 1) {
-          // Если был пропуск, сбрасываем streak
-          userData.dailyRewardStreak = 0;
-        }
-      }
-      
-      // Если награда еще не получена сегодня, показываем модальное окно
-      if (!userData.dailyRewardClaimedToday) {
-        showDailyRewardModal();
-      }
-    }
-    
-    // Показать модальное окно ежедневной награды
-    function showDailyRewardModal() {
-      // Определяем текущий день награды
-      const currentDay = (userData.dailyRewardStreak % 7) + 1;
-      const currentReward = DAILY_REWARDS.find(reward => reward.day === currentDay);
-      
-      // Обновляем данные в модальном окне
-      document.getElementById('daily-reward-day-number').textContent = currentDay;
-      document.getElementById('daily-reward-amount-value').textContent = currentReward.reward;
-      
-      // Обновляем прогресс дней
-      const progressContainer = document.getElementById('daily-reward-progress');
-      progressContainer.innerHTML = '';
-      
-      for (let i = 1; i <= 7; i++) {
-        const dayItem = document.createElement('div');
-        dayItem.className = 'daily-reward-day-item';
-        dayItem.textContent = i;
-        
-        if (i < currentDay) {
-          dayItem.classList.add('claimed');
-        } else if (i === currentDay) {
-          dayItem.classList.add('current');
-        }
-        
-        progressContainer.appendChild(dayItem);
-      }
-      
-      // Показываем модальное окно
-      document.getElementById('daily-reward-modal').classList.add('active');
-    }
-    
-    // Закрыть модальное окно ежедневной награды
-    function closeDailyRewardModal() {
-      document.getElementById('daily-reward-modal').classList.remove('active');
-    }
-    
-    // Получить ежедневную награду
-    async function claimDailyReward() {
-      const currentDay = (userData.dailyRewardStreak % 7) + 1;
-      const currentReward = DAILY_REWARDS.find(reward => reward.day === currentDay);
-      
-      if (!currentReward) return;
-      
-      // Добавляем награду
-      userData.score += currentReward.reward;
-      userData.dailyRewardStreak += 1;
-      userData.lastDailyRewardClaimed = new Date().toISOString();
-      userData.dailyRewardClaimedToday = true;
-      
-      // Сохраняем данные
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      updateScoreDisplay();
-      updateLevel();
-      
-      // Закрываем модальное окно
-      closeDailyRewardModal();
-      
-      // Показываем уведомление
-      showNotification(`Вы получили ${currentReward.reward} FMG!`);
-    }
 
     // Вешаем обработчики на кнопки
     document.addEventListener('DOMContentLoaded', async function() {
@@ -2790,6 +2757,11 @@ html_content = """
       // Обработчик для кнопки закрытия модального окна
       document.getElementById('levelUpButton').addEventListener('click', function() {
         document.getElementById('levelUpModal').style.display = 'none';
+      });
+      
+      // Обработчик для кнопки закрытия модального окна ежедневной награды
+      document.getElementById('daily-reward-button').addEventListener('click', function() {
+        document.getElementById('daily-reward-modal').style.display = 'none';
       });
       
       // Обработчики для задания с кошельком
@@ -2839,9 +2811,6 @@ html_content = """
       document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
       document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
       document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
-      
-      // Обработчики для ежедневной награды
-      document.getElementById('daily-reward-button').addEventListener('click', claimDailyReward);
       
       // Устанавливаем начальную страницу
       showPage('clicker');
@@ -3008,9 +2977,8 @@ async def get_user_data(user_id: str):
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
                 "upgrades": user_data["upgrades"],
-                "lastDailyRewardClaimed": user_data["last_daily_reward_claimed"],
-                "dailyRewardStreak": user_data["daily_reward_streak"],
-                "dailyRewardClaimedToday": user_data["daily_reward_claimed_today"]
+                "lastDailyReward": user_data["last_daily_reward"],
+                "dailyRewardStreak": user_data["daily_reward_streak"]
             }
             
             print(f"DEBUG: Returning user data for {user_data['first_name']}")
@@ -3055,9 +3023,8 @@ async def save_user_data(request: Request):
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
                     "upgrades": user_data["upgrades"],
-                    "lastDailyRewardClaimed": user_data["last_daily_reward_claimed"],
-                    "dailyRewardStreak": user_data["daily_reward_streak"],
-                    "dailyRewardClaimedToday": user_data["daily_reward_claimed_today"]
+                    "lastDailyReward": user_data["last_daily_reward"],
+                    "dailyRewardStreak": user_data["daily_reward_streak"]
                 }
                 
                 print(f"DEBUG: User saved successfully: {user_data['first_name']}")
