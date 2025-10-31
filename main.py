@@ -353,15 +353,18 @@ html_content = """
       color: #fff;
       box-shadow: 0 0 8px #ff66cc;
     }
-    #bottom-menu button:focus {
-      outline: 2px solid #ff66cc;
-      outline-offset: 2px;
+    #bottom-menu button:focus, #bottom-menu button:active {
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #profile, #tasks, #top {
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
+      overflow-y: auto;
+      max-height: calc(100vh - 180px); /* 60px заголовок + 60px меню + 60px запас */
+      padding-bottom: 20px;
     }
     
     #userProfile {
@@ -1228,6 +1231,12 @@ html_content = """
     #passive-income-icon {
       font-size: 16px;
     }
+    
+    /* Стили для всех кнопок */
+    button:focus, button:active {
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -1248,8 +1257,8 @@ html_content = """
         <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой" />
       </div>
       <div id="score" aria-live="polite">
-        Счет: 0
-        <img id="coin" src="/static/FemboyCoinsPink.png" alt="монетки" />
+        Счет: 0 FMG
+        <img id="coin" src="/static/FemboyCoinsPink.png" alt="FMG" />
       </div>
       
       <!-- Прогресс-бар уровня -->
@@ -1285,7 +1294,7 @@ html_content = """
       </div>
       
       <div class="profile-stats">
-        <p>Собранные монетки: <span id="profileScore">0</span></p>
+        <p>Собранные FMG: <span id="profileScore">0</span></p>
         <p>Уровень фембоя: <span id="userLevel">Новичок</span></p>
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
@@ -1311,8 +1320,8 @@ html_content = """
           <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
-          <span>1000 монеток</span>
+          <img src="/static/FemboyCoinsPink.png" alt="FMG">
+          <span>1000 FMG</span>
         </div>
         <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
       </div>
@@ -1324,8 +1333,8 @@ html_content = """
           <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
-          <span>5000 монеток</span>
+          <img src="/static/FemboyCoinsPink.png" alt="FMG">
+          <span>5000 FMG</span>
         </div>
         <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
         <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
@@ -1364,7 +1373,7 @@ html_content = """
     </div>
     <div class="task-modal-content">
       <div class="task-modal-description">
-        Подключите свой TON кошелек через TonConnect, чтобы получить 1000 монеток. 
+        Подключите свой TON кошелек через TonConnect, чтобы получить 1000 FMG. 
         Ваш кошелек будет привязан к вашему профилю и отображен в разделе "Профиль".
       </div>
     </div>
@@ -1379,7 +1388,7 @@ html_content = """
     </div>
     <div class="task-modal-content">
       <div class="task-modal-description">
-        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
+        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 FMG. 
         Задание можно выполнять раз в 24 часа.
       </div>
       <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
@@ -1489,7 +1498,7 @@ html_content = """
     // Глобальные переменные для хранения данных пользователя
     let userData = {
       score: 0,
-      totalClicks: 0,
+      total_clicks: 0,
       level: "Новичок",
       walletAddress: "",
       referrals: [],
@@ -1509,7 +1518,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com',
+        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
           twaReturnUrl: 'https://t.me/Fnmby_bot'
@@ -1518,6 +1527,7 @@ html_content = """
       
       // Обработка подключения кошелька
       tonConnectUI.onStatusChange(wallet => {
+        console.log('Wallet status changed:', wallet);
         if (wallet) {
           // Кошелек подключен
           const address = wallet.account.address;
@@ -1547,6 +1557,20 @@ html_content = """
           
           // Показываем уведомление
           showNotification('TON кошелек отключен');
+        }
+      });
+      
+      // Проверяем текущий статус кошелька
+      tonConnectUI.getWallet().then(wallet => {
+        if (wallet) {
+          const address = wallet.account.address;
+          const formattedAddress = formatWalletAddress(address);
+          
+          userData.walletAddress = address;
+          document.getElementById('wallet-address').textContent = formattedAddress;
+          document.getElementById('ton-connect-button').textContent = 'Отключить кошелек';
+          
+          checkWalletTask();
         }
       });
     }
@@ -1766,7 +1790,7 @@ html_content = """
     function updateScoreDisplay() {
       const scoreDisplay = document.getElementById('score');
       if(scoreDisplay.firstChild) {
-        scoreDisplay.firstChild.textContent = 'Счет: ' + userData.score;
+        scoreDisplay.firstChild.textContent = 'Счет: ' + userData.score + ' FMG';
       }
     }
     
@@ -1821,6 +1845,14 @@ html_content = """
         upgradesButton.style.display = 'flex';
       } else {
         upgradesButton.style.display = 'none';
+      }
+      
+      // Управляем видимостью пассивного дохода
+      const passiveIncomeDisplay = document.getElementById('passive-income-display');
+      if (pageKey === 'clicker') {
+        passiveIncomeDisplay.style.display = 'flex';
+      } else {
+        passiveIncomeDisplay.style.display = 'none';
       }
 
       // При открытии профиля обновляем данные
@@ -1936,7 +1968,7 @@ html_content = """
       topUsers.forEach((user, index) => {
         const item = document.createElement('div');
         item.className = 'top-preview-item';
-        item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score}`;
+        item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score} FMG`;
         topPreview.appendChild(item);
       });
     }
@@ -1959,8 +1991,8 @@ html_content = """
           <div class="top-info">
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
-              ${user.score}
-              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
+              ${user.score} FMG
+              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="FMG">
               <span class="top-level">${user.level}</span>
             </div>
           </div>
@@ -2161,7 +2193,7 @@ html_content = """
       checkWalletTask();
       
       // Показываем уведомление
-      showNotification('Вы получили 1000 монеток!');
+      showNotification('Вы получили 1000 FMG!');
     }
     
     // Получение награды за задание с рефералами
@@ -2191,7 +2223,7 @@ html_content = """
       checkReferralTask();
       
       // Показываем уведомление
-      showNotification('Вы получили 5000 монеток!');
+      showNotification('Вы получили 5000 FMG!');
     }
     
     // Копирование реферальной ссылки
@@ -2346,7 +2378,7 @@ html_content = """
           <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
-            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <img src="/static/FemboyCoinsPink.png" alt="FMG">
             <span>${upgrade.cost}</span>
           </div>
           <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
@@ -2381,7 +2413,7 @@ html_content = """
       
       // Проверяем, достаточно ли монет
       if (userData.score < upgrade.cost) {
-        showNotification('Недостаточно монет!');
+        showNotification('Недостаточно FMG!');
         return;
       }
       
