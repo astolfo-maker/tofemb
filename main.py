@@ -1,4 +1,4 @@
-from pathlib import Path
+\from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -1900,7 +1900,7 @@ html_content = """
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
-      }, 300); // Уменьшаем задержку до 300мс
+      }, 100); // Уменьшаем задержку до 100мс
     }
 
     // Загрузка топа пользователей с сервера
@@ -2549,8 +2549,8 @@ html_content = """
       // Загружаем превью топа
       await updateTopData();
       
-      // Устанавливаем периодическое обновление топа каждые 10 секунд (увеличили интервал для оптимизации)
-      setInterval(updateTopData, 10000);
+      // Устанавливаем периодическое обновление топа каждые 30 секунд (увеличили интервал для оптимизации)
+      setInterval(updateTopData, 30000);
       
       // Устанавливаем интервал для обновления энергии каждую секунду
       setInterval(updateEnergy, 1000);
