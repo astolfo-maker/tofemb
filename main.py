@@ -355,13 +355,16 @@ html_content = """
       box-shadow: 0 0 8px #ff66cc;
     }
     #bottom-menu button:focus {
-      outline: none;
+      outline: 2px solid #ff66cc;
+      outline-offset: 2px;
     }
 
     #profile, #tasks, #top {
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
     }
     
     #userProfile {
@@ -399,8 +402,6 @@ html_content = """
       margin-top: 20px;
       width: 100%;
       box-sizing: border-box;
-      max-height: 50vh;
-      overflow-y: auto;
     }
     .profile-stats p {
       margin: 10px 0;
