@@ -65,32 +65,45 @@ def get_supabase_client() -> Client:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     
+    # Добавляем логирование для отладки
+    print(f"DEBUG: SUPABASE_URL from env: {url}")
+    print(f"DEBUG: SUPABASE_KEY from env: {'***' if key else 'None'}")
+    
     if not url or not key:
         error_msg = "Supabase URL and key must be set in environment variables"
+        print(f"ERROR: {error_msg}")
+        print(f"ERROR: URL is {'set' if url else 'not set'}, KEY is {'set' if key else 'not set'}")
         raise Exception(error_msg)
     
     try:
+        print("DEBUG: Creating Supabase client...")
         client = create_client(url, key)
+        print("DEBUG: Supabase client created successfully")
         return client
     except Exception as e:
-        raise Exception(f"Failed to create Supabase client: {str(e)}")
+        print(f"ERROR: Failed to create Supabase client: {str(e)}")
+        raise
 
 # Инициализация базы данных
 def init_db():
     try:
+        print("DEBUG: Initializing database...")
         supabase = get_supabase_client()
+        print("DEBUG: Database initialized successfully")
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"ERROR: Error initializing database: {e}")
 
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
+        print(f"DEBUG: Loading user with ID: {user_id}")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("*").eq("user_id", user_id).execute()
         
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
+            print(f"DEBUG: User found: {user_data.get('first_name', 'Unknown')}")
             
             # Убедимся, что все поля присутствуют и имеют правильный тип
             if not isinstance(user_data.get('referrals'), list):
@@ -104,14 +117,16 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             
             return user_data
         else:
+            print(f"DEBUG: User not found with ID: {user_id}")
             return None
     except Exception as e:
-        print(f"Error loading user: {e}")
+        print(f"ERROR: Error loading user: {e}")
         return None
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     try:
+        print(f"DEBUG: Saving user: {user_data.get('first_name', 'Unknown')}")
         supabase = get_supabase_client()
         
         # Подготовка данных для вставки/обновления
@@ -130,56 +145,63 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
-            "upgrades": user_data.get('upgrades', []),
-            "last_daily_reward": user_data.get('lastDailyReward'),
-            "daily_streak": user_data.get('dailyStreak')
+            "upgrades": user_data.get('upgrades', [])
         }
         
         # Проверяем, существует ли пользователь
         existing_user = load_user(str(user_data.get('id')))
         
         if existing_user:
+            print("DEBUG: Updating existing user")
             # Обновляем существующего пользователя
             response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
         else:
+            print("DEBUG: Creating new user")
             # Вставляем нового пользователя
             response = supabase.table("users").insert(db_data).execute()
         
+        print(f"DEBUG: Save operation completed with data: {response.data}")
         return response.data is not None
     except Exception as e:
-        print(f"Error saving user: {e}")
+        print(f"ERROR: Error saving user: {e}")
         return False
 
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     try:
+        print(f"DEBUG: Getting top {limit} users")
         supabase = get_supabase_client()
         
         response = supabase.table("users").select("user_id, first_name, last_name, username, photo_url, score, level").order("score", desc=True).limit(limit).execute()
         
         if response.data:
+            print(f"DEBUG: Found {len(response.data)} users")
             return response.data
         else:
+            print("DEBUG: No users found")
             return []
     except Exception as e:
-        print(f"Error getting top users: {e}")
+        print(f"ERROR: Error getting top users: {e}")
         return []
 
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
+        print(f"DEBUG: Adding referral: {referrer_id} -> {referred_id}")
         supabase = get_supabase_client()
         
         # Получаем данные реферера
         response = supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
         
         if not response.data or len(response.data) == 0:
+            print(f"DEBUG: Referrer not found: {referrer_id}")
             return False
         
         referrals = response.data[0].get("referrals", [])
         
         # Если реферал уже добавлен, ничего не делаем
         if referred_id in referrals:
+            print(f"DEBUG: Referral already exists")
             return True
         
         # Добавляем нового реферала
@@ -188,9 +210,10 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         # Обновляем данные реферера
         update_response = supabase.table("users").update({"referrals": referrals}).eq("user_id", referrer_id).execute()
         
+        print(f"DEBUG: Referral added successfully")
         return update_response.data is not None
     except Exception as e:
-        print(f"Error adding referral: {e}")
+        print(f"ERROR: Error adding referral: {e}")
         return False
 
 # Инициализация базы данных при запуске
@@ -1220,24 +1243,10 @@ html_content = """
       font-size: 16px;
     }
     
-    /* Скрытие пассивного дохода на всех страницах кроме кликера */
-    #profile #passive-income-display,
-    #tasks #passive-income-display,
-    #top #passive-income-display {
-      display: none !important;
-    }
-    
-    /* Стили для ежедневной награды */
-    .daily-reward-icon {
-      font-size: 24px;
-      margin-right: 10px;
+    /* Стили для FMG вместо монеток */
+    .fmg-text {
       color: #FFD700;
-    }
-    
-    .daily-reward-streak {
-      font-size: 14px;
-      color: #FFD700;
-      margin-top: 5px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -1314,24 +1323,6 @@ html_content = """
     <!-- Окно заданий -->
     <section id="tasks" class="page" aria-label="задания нах">
       <h2>Задания</h2>
-      
-      <!-- Задание: Ежедневная награда -->
-      <div class="task-item">
-        <div class="task-header">
-          <div class="task-title">
-            <span class="daily-reward-icon">🎁</span>
-            Ежедневная награда
-          </div>
-          <button id="daily-reward-button" class="task-button">ЗАБРАТЬ</button>
-        </div>
-        <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="FMG">
-          <span>500 FMG</span>
-        </div>
-        <div id="daily-reward-status" class="task-completed" style="display: none;">Награда получена</div>
-        <div id="daily-reward-timer" class="task-timer" style="display: none;"></div>
-        <div id="daily-reward-streak" class="daily-reward-streak">Дней подряд: <span id="daily-streak-value">0</span></div>
-      </div>
       
       <!-- Задание: Подключить TON кошелек -->
       <div class="task-item">
@@ -1473,7 +1464,7 @@ html_content = """
     // Улучшения игры
     const UPGRADES = [
       {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade2", "description": "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
       {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
       {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
       {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
@@ -1518,7 +1509,7 @@ html_content = """
     // Глобальные переменные для хранения данных пользователя
     let userData = {
       score: 0,
-      total_clicks: 0,
+      totalClicks: 0,
       level: "Новичок",
       walletAddress: "",
       referrals: [],
@@ -1526,9 +1517,7 @@ html_content = """
       walletTaskCompleted: false,
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
-      upgrades: [],
-      lastDailyReward: null,
-      dailyStreak: 0
+      upgrades: []
     };
     
     // Максимальное количество энергии
@@ -1686,13 +1675,6 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
-            // Проверяем поля ежедневной награды
-            if (!userData.lastDailyReward) {
-              userData.lastDailyReward = null;
-            }
-            if (!userData.dailyStreak) {
-              userData.dailyStreak = 0;
-            }
             
             // Обновляем энергию при загрузке
             updateEnergy();
@@ -1712,7 +1694,6 @@ html_content = """
             // Проверяем задания
             checkWalletTask();
             checkReferralTask();
-            checkDailyReward();
             
             return;
           }
@@ -1734,9 +1715,7 @@ html_content = """
           walletTaskCompleted: false,
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
-          upgrades: [],
-          lastDailyReward: null,
-          dailyStreak: 0
+          upgrades: []
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1744,13 +1723,11 @@ html_content = """
         // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkReferralTask();
-        checkDailyReward();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkReferralTask();
-        checkDailyReward();
       }
     }
     
@@ -1782,8 +1759,6 @@ html_content = """
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
-            const oldLastDailyReward = userData.lastDailyReward;
-            const oldDailyStreak = userData.dailyStreak;
             
             userData = data.user;
             
@@ -1796,8 +1771,6 @@ html_content = """
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
-            userData.lastDailyReward = oldLastDailyReward;
-            userData.dailyStreak = oldDailyStreak;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -1870,6 +1843,14 @@ html_content = """
         upgradesButton.style.display = 'none';
       }
 
+      // Управляем видимостью индикатора пассивного дохода
+      const passiveIncomeDisplay = document.getElementById('passive-income-display');
+      if (pageKey === 'clicker') {
+        passiveIncomeDisplay.style.display = 'flex';
+      } else {
+        passiveIncomeDisplay.style.display = 'none';
+      }
+
       // При открытии профиля обновляем данные
       if (pageKey === 'profile') {
         updateProfile();
@@ -1884,7 +1865,6 @@ html_content = """
       if (pageKey === 'tasks') {
         checkWalletTask();
         checkReferralTask();
-        checkDailyReward();
       }
     }
 
@@ -1952,7 +1932,7 @@ html_content = """
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
-      }, 100); // Уменьшаем задержку до 100мс
+      }, 300); // Уменьшаем задержку до 300мс
     }
 
     // Загрузка топа пользователей с сервера
@@ -1999,11 +1979,11 @@ html_content = """
       
       users.forEach((user, index) => {
         const topItem = document.createElement('div');
-        topItem.className = `top-item ${user.user_id === currentUserId ? 'current-user' : ''}`;
+        topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
         
         topItem.innerHTML = `
           <div class="top-rank">${index + 1}</div>
-          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.user_id}.jpg`}" alt="${user.first_name}">
+          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`}" alt="${user.first_name}">
           <div class="top-info">
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
@@ -2160,53 +2140,6 @@ html_content = """
       }
     }
     
-    // Проверка ежедневной награды
-    function checkDailyReward() {
-      // Обновляем счетчик дней подряд
-      document.getElementById('daily-streak-value').textContent = userData.dailyStreak || 0;
-      
-      // Проверяем, можно ли получить награду
-      const now = new Date();
-      const lastReward = userData.lastDailyReward ? 
-        new Date(userData.lastDailyReward) : null;
-      
-      // Если награда уже получена сегодня
-      if (lastReward && isSameDay(now, lastReward)) {
-        // Показываем статус выполненного задания
-        document.getElementById('daily-reward-button').style.display = 'none';
-        document.getElementById('daily-reward-status').style.display = 'block';
-        document.getElementById('daily-reward-timer').style.display = 'none';
-      } else {
-        // Проверяем, был ли перерыв в получении награды
-        if (lastReward && !isConsecutiveDay(now, lastReward)) {
-          // Если был перерыв, сбрасываем счетчик дней подряд
-          userData.dailyStreak = 0;
-        }
-        
-        // Задание доступно для выполнения
-        document.getElementById('daily-reward-button').textContent = 'ЗАБРАТЬ';
-        document.getElementById('daily-reward-button').disabled = false;
-        document.getElementById('daily-reward-button').style.display = 'block';
-        document.getElementById('daily-reward-status').style.display = 'none';
-        document.getElementById('daily-reward-timer').style.display = 'none';
-      }
-    }
-    
-    // Функция для проверки, что это один и тот же день
-    function isSameDay(date1, date2) {
-      return date1.getFullYear() === date2.getFullYear() &&
-             date1.getMonth() === date2.getMonth() &&
-             date1.getDate() === date2.getDate();
-    }
-    
-    // Функция для проверки, что даты идут подряд
-    function isConsecutiveDay(date1, date2) {
-      const nextDay = new Date(date2);
-      nextDay.setDate(nextDay.getDate() + 1);
-      
-      return isSameDay(date1, nextDay);
-    }
-    
     // Обновление таймера реферального задания
     function updateReferralTimer() {
       const lastCompletion = userData.lastReferralTaskCompletion ? 
@@ -2237,41 +2170,6 @@ html_content = """
       
       // Запускаем обновление через секунду
       setTimeout(updateReferralTimer, 1000);
-    }
-    
-    // Обновление таймера ежедневной награды
-    function updateDailyRewardTimer() {
-      const lastReward = userData.lastDailyReward ? 
-        new Date(userData.lastDailyReward) : null;
-      
-      if (!lastReward) return;
-      
-      const now = new Date();
-      const endOfToday = new Date(now);
-      endOfToday.setHours(23, 59, 59, 999);
-      
-      const timeLeft = endOfToday - now;
-      
-      if (timeLeft <= 0) {
-        // Время истекло
-        document.getElementById('daily-reward-timer').style.display = 'none';
-        document.getElementById('daily-reward-button').style.display = 'block';
-        document.getElementById('daily-reward-button').textContent = 'ЗАБРАТЬ';
-        document.getElementById('daily-reward-status').style.display = 'none';
-        return;
-      }
-      
-      // Вычисляем часы, минуты и секунды
-      const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-      const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-      const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
-      
-      // Обновляем текст таймера
-      document.getElementById('daily-reward-timer').textContent = 
-        `Новая награда через: ${hours}ч ${minutes}м ${seconds}с`;
-      
-      // Запускаем обновление через секунду
-      setTimeout(updateDailyRewardTimer, 1000);
     }
     
     // Получение награды за задание с кошельком
@@ -2322,51 +2220,6 @@ html_content = """
       
       // Показываем уведомление
       showNotification('Вы получили 5000 FMG!');
-    }
-    
-    // Получение ежедневной награды
-    async function claimDailyReward() {
-      const now = new Date();
-      const lastReward = userData.lastDailyReward ? 
-        new Date(userData.lastDailyReward) : null;
-      
-      // Проверяем, получена ли уже награда сегодня
-      if (lastReward && isSameDay(now, lastReward)) {
-        showNotification('Вы уже получили сегодняшнюю награду');
-        return;
-      }
-      
-      // Проверяем, был ли перерыв в получении награды
-      if (lastReward && isConsecutiveDay(now, lastReward)) {
-        // Если нет перерыва, увеличиваем счетчик дней подряд
-        userData.dailyStreak = (userData.dailyStreak || 0) + 1;
-      } else {
-        // Если был перерыв, сбрасываем счетчик дней подряд
-        userData.dailyStreak = 1;
-      }
-      
-      // Рассчитываем награду в зависимости от дней подряд
-      let reward = 500; // Базовая награда
-      
-      // Увеличиваем награду за каждый день подряд
-      if (userData.dailyStreak > 1) {
-        reward += 100 * (userData.dailyStreak - 1);
-      }
-      
-      // Добавляем награду
-      userData.score += reward;
-      userData.lastDailyReward = now.toISOString();
-      
-      // Сохраняем данные
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      updateScoreDisplay();
-      updateLevel();
-      checkDailyReward();
-      
-      // Показываем уведомление
-      showNotification(`Вы получили ${reward} FMG! Дней подряд: ${userData.dailyStreak}`);
     }
     
     // Копирование реферальной ссылки
@@ -2722,17 +2575,14 @@ html_content = """
       document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
       document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
       
-      // Обработчик для ежедневной награды
-      document.getElementById('daily-reward-button').addEventListener('click', claimDailyReward);
-      
       // Устанавливаем начальную страницу
       showPage('clicker');
       
       // Загружаем превью топа
       await updateTopData();
       
-      // Устанавливаем периодическое обновление топа каждые 30 секунд (увеличили интервал для оптимизации)
-      setInterval(updateTopData, 30000);
+      // Устанавливаем периодическое обновление топа каждые 3 секунды
+      setInterval(updateTopData, 3000);
       
       // Устанавливаем интервал для обновления энергии каждую секунду
       setInterval(updateEnergy, 1000);
@@ -2889,9 +2739,7 @@ async def get_user_data(user_id: str):
                 "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
-                "upgrades": user_data["upgrades"],
-                "lastDailyReward": user_data["last_daily_reward"],
-                "dailyStreak": user_data["daily_streak"]
+                "upgrades": user_data["upgrades"]
             }
             
             print(f"DEBUG: Returning user data for {user_data['first_name']}")
@@ -2935,9 +2783,7 @@ async def save_user_data(request: Request):
                     "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"],
-                    "lastDailyReward": user_data["last_daily_reward"],
-                    "dailyStreak": user_data["daily_streak"]
+                    "upgrades": user_data["upgrades"]
                 }
                 
                 print(f"DEBUG: User saved successfully: {user_data['first_name']}")
