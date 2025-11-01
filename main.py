@@ -250,7 +250,7 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return False
 
 # Монтируем статические файлы
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static"))
 
 # Обработчик для favicon.ico
 @app.get("/favicon.ico")
