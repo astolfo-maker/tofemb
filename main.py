@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from typing import Dict, Any, List, Optional
@@ -211,7 +211,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', [])
         }
         
@@ -1364,11 +1364,11 @@ html_content = """
       </button>
       
       <div id="circle" tabindex="0" role="button" aria-pressed="false">
-        <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой" />
+        <img id="femboyImg" src="https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg" alt="фембой" />
       </div>
       <div id="score" aria-live="polite">
         Счет: 0
-        <img id="coin" src="/static/FemboyCoinsPink.png" alt="монетки" />
+        <img id="coin" src="https://i.imgur.com/XeBmQ2k.png" alt="монетки" />
       </div>
       
       <!-- Прогресс-бар уровня -->
@@ -1430,7 +1430,7 @@ html_content = """
           <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
+          <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
           <span>1000 монеток</span>
         </div>
         <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
@@ -1443,7 +1443,7 @@ html_content = """
           <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
+          <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
           <span>5000 монеток</span>
         </div>
         <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
@@ -1562,18 +1562,18 @@ html_content = """
     
     // Улучшения игры
     const UPGRADES = [
-      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "https://i.imgur.com/upgrade1.png"},
+      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "https://i.imgur.com/upgrade2.png"},
+      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "https://i.imgur.com/upgrade3.png"},
+      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "https://i.imgur.com/upgrade4.png"},
+      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "https://i.imgur.com/upgrade5.png"},
+      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "https://i.imgur.com/upgrade6.png"},
+      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "https://i.imgur.com/upgrade7.png"},
+      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "https://i.imgur.com/upgrade8.png"},
+      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "https://i.imgur.com/upgrade9.png"},
+      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "https://i.imgur.com/upgrade10.png"},
+      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "https://i.imgur.com/upgrade11.png"},
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "https://i.imgur.com/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
@@ -2044,7 +2044,7 @@ html_content = """
           // Если данные пользователя недоступны (открыто вне Telegram)
           document.getElementById('userName').textContent = 'Гость';
           document.getElementById('userHandle').textContent = '@guest';
-          document.getElementById('userAvatar').src = '/static/default-avatar.png';
+          document.getElementById('userAvatar').src = 'https://t.me/i/userpic/320/0.jpg';
           userProfile.style.display = 'flex';
         }
         
@@ -2114,7 +2114,7 @@ html_content = """
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
               ${user.score}
-              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
+              <img class="top-coin" src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
               <span class="top-level">${user.level}</span>
             </div>
           </div>
@@ -2499,7 +2499,7 @@ html_content = """
           <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
-            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
             <span>${upgrade.cost}</span>
           </div>
           <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
@@ -2725,7 +2725,7 @@ html_content = """
     const img = document.getElementById('femboyImg');
     const scoreDisplay = document.getElementById('score');
 
-    const imgNormal = "/static/Photo_femb_static.jpg";
+    const imgNormal = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
     function incrementScore() {
