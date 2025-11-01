@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import requests
 import uvicorn
 from supabase import create_client, Client
@@ -127,12 +127,16 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if last_energy_update:
                 try:
                     # Парсим дату с учетом возможного часового пояса
-                    if last_energy_update.endswith('Z'):
-                        last_update_time = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
+                    if isinstance(last_energy_update, str):
+                        # Убираем 'Z' если есть и парсим как UTC
+                        if last_energy_update.endswith('Z'):
+                            last_update_time = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
+                        else:
+                            last_update_time = datetime.fromisoformat(last_energy_update)
                     else:
-                        last_update_time = datetime.fromisoformat(last_energy_update)
+                        last_update_time = last_energy_update
                     
-                    current_time = datetime.now(timezone.utc)
+                    current_time = datetime.utcnow()
                     time_diff_seconds = (current_time - last_update_time).total_seconds()
                     
                     # Восстанавливаем энергию (1 единица в секунду)
@@ -173,7 +177,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.utcnow().isoformat()),
             "upgrades": user_data.get('upgrades', [])
         }
         
@@ -250,7 +254,7 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return False
 
 # Монтируем статические файлы
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static"))
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Обработчик для favicon.ico
 @app.get("/favicon.ico")
