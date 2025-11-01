@@ -11,6 +11,11 @@ import requests
 import uvicorn
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -60,50 +65,31 @@ def get_level_by_score(score: int) -> str:
             return LEVELS[i]["name"]
     return LEVELS[0]["name"]
 
-# Инициализация Supabase клиента
-def get_supabase_client() -> Client:
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-    
-    # Добавляем логирование для отладки
-    print(f"DEBUG: SUPABASE_URL from env: {url}")
-    print(f"DEBUG: SUPABASE_KEY from env: {'***' if key else 'None'}")
-    
-    if not url or not key:
-        error_msg = "Supabase URL and key must be set in environment variables"
-        print(f"ERROR: {error_msg}")
-        print(f"ERROR: URL is {'set' if url else 'not set'}, KEY is {'set' if key else 'not set'}")
-        raise Exception(error_msg)
-    
-    try:
-        print("DEBUG: Creating Supabase client...")
-        client = create_client(url, key)
-        print("DEBUG: Supabase client created successfully")
-        return client
-    except Exception as e:
-        print(f"ERROR: Failed to create Supabase client: {str(e)}")
-        raise
+# Инициализация Supabase клиента (один раз для всего приложения)
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
 
-# Инициализация базы данных
-def init_db():
-    try:
-        print("DEBUG: Initializing database...")
-        supabase = get_supabase_client()
-        print("DEBUG: Database initialized successfully")
-    except Exception as e:
-        print(f"ERROR: Error initializing database: {e}")
+if not supabase_url or not supabase_key:
+    logger.error("Supabase URL and key must be set in environment variables")
+    raise Exception("Supabase URL and key must be set in environment variables")
+
+try:
+    supabase: Client = create_client(supabase_url, supabase_key)
+    logger.info("Supabase client initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize Supabase client: {str(e)}")
+    raise
 
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
-        print(f"DEBUG: Loading user with ID: {user_id}")
-        supabase = get_supabase_client()
+        logger.info(f"Loading user with ID: {user_id}")
         
         response = supabase.table("users").select("*").eq("user_id", user_id).execute()
         
         if response.data and len(response.data) > 0:
             user_data = response.data[0]
-            print(f"DEBUG: User found: {user_data.get('first_name', 'Unknown')}")
+            logger.info(f"User found: {user_data.get('first_name', 'Unknown')}")
             
             # Убедимся, что все поля присутствуют и имеют правильный тип
             if not isinstance(user_data.get('referrals'), list):
@@ -117,17 +103,16 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             
             return user_data
         else:
-            print(f"DEBUG: User not found with ID: {user_id}")
+            logger.info(f"User not found with ID: {user_id}")
             return None
     except Exception as e:
-        print(f"ERROR: Error loading user: {e}")
+        logger.error(f"Error loading user: {e}")
         return None
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     try:
-        print(f"DEBUG: Saving user: {user_data.get('first_name', 'Unknown')}")
-        supabase = get_supabase_client()
+        logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
         # Подготовка данных для вставки/обновления
         db_data = {
@@ -145,65 +130,61 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', 250)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
-            "upgrades": user_data.get('upgrades', []),
-            "last_daily_reward": user_data.get('lastDailyReward'),
-            "daily_reward_streak": int(user_data.get('dailyRewardStreak', 1))
+            "upgrades": user_data.get('upgrades', [])
         }
         
         # Проверяем, существует ли пользователь
         existing_user = load_user(str(user_data.get('id')))
         
         if existing_user:
-            print("DEBUG: Updating existing user")
+            logger.info("Updating existing user")
             # Обновляем существующего пользователя
             response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
         else:
-            print("DEBUG: Creating new user")
+            logger.info("Creating new user")
             # Вставляем нового пользователя
             response = supabase.table("users").insert(db_data).execute()
         
-        print(f"DEBUG: Save operation completed with data: {response.data}")
+        logger.info(f"Save operation completed with data: {response.data}")
         return response.data is not None
     except Exception as e:
-        print(f"ERROR: Error saving user: {e}")
+        logger.error(f"Error saving user: {e}")
         return False
 
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     try:
-        print(f"DEBUG: Getting top {limit} users")
-        supabase = get_supabase_client()
+        logger.info(f"Getting top {limit} users")
         
         response = supabase.table("users").select("user_id, first_name, last_name, username, photo_url, score, level").order("score", desc=True).limit(limit).execute()
         
         if response.data:
-            print(f"DEBUG: Found {len(response.data)} users")
+            logger.info(f"Found {len(response.data)} users")
             return response.data
         else:
-            print("DEBUG: No users found")
+            logger.info("No users found")
             return []
     except Exception as e:
-        print(f"ERROR: Error getting top users: {e}")
+        logger.error(f"Error getting top users: {e}")
         return []
 
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
-        print(f"DEBUG: Adding referral: {referrer_id} -> {referred_id}")
-        supabase = get_supabase_client()
+        logger.info(f"Adding referral: {referrer_id} -> {referred_id}")
         
         # Получаем данные реферера
         response = supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
         
         if not response.data or len(response.data) == 0:
-            print(f"DEBUG: Referrer not found: {referrer_id}")
+            logger.info(f"Referrer not found: {referrer_id}")
             return False
         
         referrals = response.data[0].get("referrals", [])
         
         # Если реферал уже добавлен, ничего не делаем
         if referred_id in referrals:
-            print(f"DEBUG: Referral already exists")
+            logger.info("Referral already exists")
             return True
         
         # Добавляем нового реферала
@@ -212,14 +193,11 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         # Обновляем данные реферера
         update_response = supabase.table("users").update({"referrals": referrals}).eq("user_id", referrer_id).execute()
         
-        print(f"DEBUG: Referral added successfully")
+        logger.info("Referral added successfully")
         return update_response.data is not None
     except Exception as e:
-        print(f"ERROR: Error adding referral: {e}")
+        logger.error(f"Error adding referral: {e}")
         return False
-
-# Инициализация базы данных при запуске
-init_db()
 
 # Монтируем статические файлы
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -349,7 +327,6 @@ html_content = """
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
-      -webkit-tap-highlight-color: transparent;
     }
     #bottom-menu button.active {
       background-color: #ff66cc;
@@ -365,8 +342,6 @@ html_content = """
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
-      overflow-y: auto;
-      max-height: calc(100vh - 120px);
     }
     
     #userProfile {
@@ -452,7 +427,6 @@ html_content = """
       backdrop-filter: blur(5px);
       min-height: 120px;
       justify-content: center;
-      -webkit-tap-highlight-color: transparent;
     }
     #topButton:hover {
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.9), rgba(255, 154, 158, 0.9));
@@ -576,7 +550,6 @@ html_content = """
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
-      -webkit-tap-highlight-color: transparent;
     }
     
     /* Стили для прогресс-бара уровня */
@@ -753,7 +726,6 @@ html_content = """
       cursor: pointer;
       font-size: 16px;
       transition: all 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
     }
     .levelUpButton:hover {
       background: rgba(255, 255, 255, 0.4);
@@ -819,7 +791,6 @@ html_content = """
       font-size: 14px;
       transition: all 0.3s ease;
       white-space: nowrap;
-      -webkit-tap-highlight-color: transparent;
     }
     .task-button:hover {
       transform: translateY(-2px);
@@ -884,7 +855,6 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-top: 10px;
-      -webkit-tap-highlight-color: transparent;
     }
     #ton-connect-button:hover {
       transform: translateY(-2px);
@@ -946,7 +916,6 @@ html_content = """
       justify-content: center;
       border-radius: 50%;
       transition: background-color 0.3s;
-      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-close:hover {
       background-color: rgba(255, 255, 255, 0.2);
@@ -970,7 +939,6 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-bottom: 10px;
-      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-button:hover {
       transform: translateY(-2px);
@@ -987,7 +955,6 @@ html_content = """
       font-size: 16px;
       transition: all 0.3s ease;
       width: 100%;
-      -webkit-tap-highlight-color: transparent;
     }
     .task-modal-button-secondary:hover {
       background: rgba(255, 255, 255, 0.3);
@@ -1063,7 +1030,6 @@ html_content = """
       justify-content: center;
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       transition: all 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
     }
     #upgrades-button:hover {
       background: linear-gradient(135deg, rgba(255, 102, 204, 0.9), rgba(255, 154, 158, 0.9));
@@ -1134,7 +1100,6 @@ html_content = """
       justify-content: center;
       border-radius: 50%;
       transition: background-color 0.3s;
-      -webkit-tap-highlight-color: transparent;
     }
     .upgrades-modal-close:hover {
       background-color: rgba(255, 255, 255, 0.2);
@@ -1213,7 +1178,6 @@ html_content = """
       transition: all 0.3s ease;
       width: 100%;
       margin-top: 8px;
-      -webkit-tap-highlight-color: transparent;
     }
     .upgrade-buy-button:hover {
       transform: translateY(-2px);
@@ -1244,105 +1208,6 @@ html_content = """
     #passive-income-icon {
       font-size: 16px;
     }
-    
-    /* Стили для FMG вместо монеток */
-    .fmg-text {
-      color: #FFD700;
-      font-weight: bold;
-    }
-    
-    /* Стили для ежедневной награды */
-    #daily-reward-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1003;
-    }
-    .daily-reward-content {
-      background: linear-gradient(135deg, #ff66cc, #ff9a9e);
-      border-radius: 20px;
-      padding: 30px;
-      text-align: center;
-      max-width: 80%;
-      box-shadow: 0 10px 30px rgba(255, 102, 204, 0.6);
-      transform: scale(0);
-      animation: popIn 0.5s forwards;
-    }
-    .daily-reward-title {
-      font-size: 28px;
-      margin-bottom: 15px;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    }
-    .daily-reward-day {
-      font-size: 36px;
-      margin-bottom: 20px;
-      color: #fff;
-      text-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
-    }
-    .daily-reward-amount {
-      font-size: 24px;
-      margin-bottom: 20px;
-      color: #FFD700;
-      text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
-    }
-    .daily-reward-button {
-      background: rgba(255, 255, 255, 0.3);
-      border: none;
-      border-radius: 15px;
-      padding: 10px 20px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .daily-reward-button:hover {
-      background: rgba(255, 255, 255, 0.4);
-      transform: translateY(-2px);
-    }
-    .daily-reward-calendar {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-    }
-    .daily-reward-day-item {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      position: relative;
-    }
-    .daily-reward-day-item.active {
-      background: rgba(255, 215, 0, 0.3);
-      border: 2px solid #FFD700;
-    }
-    .daily-reward-day-item.completed {
-      background: rgba(76, 175, 80, 0.3);
-      border: 2px solid #4ade80;
-    }
-    .daily-reward-day-item.future {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.5);
-    }
-    .daily-reward-day-item::after {
-      content: attr(data-amount);
-      position: absolute;
-      bottom: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 10px;
-      white-space: nowrap;
-    }
   </style>
 </head>
 <body>
@@ -1364,7 +1229,7 @@ html_content = """
       </div>
       <div id="score" aria-live="polite">
         Счет: 0
-        <img id="coin" src="/static/FemboyCoinsPink.png" alt="FMG" />
+        <img id="coin" src="/static/FemboyCoinsPink.png" alt="монетки" />
       </div>
       
       <!-- Прогресс-бар уровня -->
@@ -1400,12 +1265,11 @@ html_content = """
       </div>
       
       <div class="profile-stats">
-        <p>Собранные FMG: <span id="profileScore">0</span></p>
+        <p>Собранные монетки: <span id="profileScore">0</span></p>
         <p>Уровень фембоя: <span id="userLevel">Новичок</span></p>
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
         <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
-        <p>День в цикле наград: <span id="dailyRewardDay">1</span>/7</p>
       </div>
       
       <!-- Секция кошелька -->
@@ -1427,8 +1291,8 @@ html_content = """
           <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="FMG">
-          <span>1000 FMG</span>
+          <img src="/static/FemboyCoinsPink.png" alt="монетки">
+          <span>1000 монеток</span>
         </div>
         <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
       </div>
@@ -1440,8 +1304,8 @@ html_content = """
           <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="FMG">
-          <span>5000 FMG</span>
+          <img src="/static/FemboyCoinsPink.png" alt="монетки">
+          <span>5000 монеток</span>
         </div>
         <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
         <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
@@ -1469,27 +1333,6 @@ html_content = """
     </div>
   </div>
 
-  <!-- Модальное окно ежедневной награды -->
-  <div id="daily-reward-modal">
-    <div class="daily-reward-content">
-      <div class="daily-reward-title">🎁 Ежедневная награда! 🎁</div>
-      <div class="daily-reward-day" id="daily-reward-modal-day">День 1</div>
-      <div class="daily-reward-amount" id="daily-reward-modal-amount">1000 FMG</div>
-      
-      <div class="daily-reward-calendar" id="daily-reward-calendar">
-        <div class="daily-reward-day-item active" data-day="1" data-amount="1000">1</div>
-        <div class="daily-reward-day-item future" data-day="2" data-amount="2000">2</div>
-        <div class="daily-reward-day-item future" data-day="3" data-amount="3000">3</div>
-        <div class="daily-reward-day-item future" data-day="4" data-amount="4000">4</div>
-        <div class="daily-reward-day-item future" data-day="5" data-amount="5000">5</div>
-        <div class="daily-reward-day-item future" data-day="6" data-amount="7000">6</div>
-        <div class="daily-reward-day-item future" data-day="7" data-amount="10000">7</div>
-      </div>
-      
-      <button class="daily-reward-button" id="daily-reward-button">Забрать награду</button>
-    </div>
-  </div>
-
   <!-- Затемнение фона для модальных окон -->
   <div id="task-modal-overlay" class="task-modal-overlay"></div>
 
@@ -1501,7 +1344,7 @@ html_content = """
     </div>
     <div class="task-modal-content">
       <div class="task-modal-description">
-        Подключите свой TON кошелек через TonConnect, чтобы получить 1000 FMG. 
+        Подключите свой TON кошелек через TonConnect, чтобы получить 1000 монеток. 
         Ваш кошелек будет привязан к вашему профилю и отображен в разделе "Профиль".
       </div>
     </div>
@@ -1516,7 +1359,7 @@ html_content = """
     </div>
     <div class="task-modal-content">
       <div class="task-modal-description">
-        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 FMG. 
+        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
         Задание можно выполнять раз в 24 часа.
       </div>
       <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
@@ -1594,17 +1437,6 @@ html_content = """
       {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
-    // Ежедневные награды
-    const DAILY_REWARDS = [
-      { day: 1, amount: 1000 },
-      { day: 2, amount: 2000 },
-      { day: 3, amount: 3000 },
-      { day: 4, amount: 4000 },
-      { day: 5, amount: 5000 },
-      { day: 6, amount: 7000 },
-      { day: 7, amount: 10000 }
-    ];
-    
     // Функция для определения уровня по очкам
     function getLevelByScore(score) {
       for (let i = LEVELS.length - 1; i >= 0; i--) {
@@ -1645,9 +1477,7 @@ html_content = """
       walletTaskCompleted: false,
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
-      upgrades: [],
-      lastDailyReward: null,
-      dailyRewardStreak: 1
+      upgrades: []
     };
     
     // Максимальное количество энергии
@@ -1659,7 +1489,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+        manifestUrl: 'https://tofemb.onrender.com',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
           twaReturnUrl: 'https://t.me/Fnmby_bot'
@@ -1770,83 +1600,6 @@ html_content = """
       energyText.innerHTML = `<span id="energyIcon">⚡</span><span>Энергия: ${userData.energy}/${MAX_ENERGY}</span>`;
     }
     
-    // Функция для проверки ежедневной награды
-    function checkDailyReward() {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const lastReward = userData.lastDailyReward ? new Date(userData.lastDailyReward) : null;
-      
-      // Если последняя награда была сегодня, то ничего не делаем
-      if (lastReward && lastReward.getTime() === today.getTime()) {
-        return;
-      }
-      
-      // Проверяем, была ли награда вчера
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      if (lastReward && lastReward.getTime() === yesterday.getTime()) {
-        // Если вчера была награда, то увеличиваем streak
-        userData.dailyRewardStreak = Math.min(userData.dailyRewardStreak + 1, 7);
-      } else {
-        // Если не было награды вчера, то сбрасываем streak на 1
-        userData.dailyRewardStreak = 1;
-      }
-      
-      // Определяем награду
-      const rewardIndex = userData.dailyRewardStreak - 1;
-      const reward = DAILY_REWARDS[rewardIndex];
-      
-      // Начисляем награду
-      userData.score += reward.amount;
-      
-      // Обновляем дату последней награды
-      userData.lastDailyReward = today.toISOString();
-      
-      // Сохраняем данные
-      saveUserData();
-      
-      // Обновляем интерфейс
-      updateScoreDisplay();
-      updateLevel();
-      updateDailyRewardDisplay();
-      
-      // Показываем модальное окно
-      showDailyRewardModal(reward);
-    }
-    
-    // Функция для отображения модального окна ежедневной награды
-    function showDailyRewardModal(reward) {
-      // Обновляем данные в модальном окне
-      document.getElementById('daily-reward-modal-day').textContent = `День ${reward.day}`;
-      document.getElementById('daily-reward-modal-amount').textContent = `${reward.amount} FMG`;
-      
-      // Обновляем календарь наград
-      const calendarItems = document.querySelectorAll('.daily-reward-day-item');
-      calendarItems.forEach((item, index) => {
-        const day = index + 1;
-        item.setAttribute('data-day', day);
-        item.setAttribute('data-amount', DAILY_REWARDS[index].amount);
-        item.textContent = day;
-        
-        if (day < reward.day) {
-          item.className = 'daily-reward-day-item completed';
-        } else if (day === reward.day) {
-          item.className = 'daily-reward-day-item active';
-        } else {
-          item.className = 'daily-reward-day-item future';
-        }
-      });
-      
-      // Показываем модальное окно
-      document.getElementById('daily-reward-modal').style.display = 'flex';
-    }
-    
-    // Функция для обновления отображения ежедневной награды в профиле
-    function updateDailyRewardDisplay() {
-      document.getElementById('dailyRewardDay').textContent = userData.dailyRewardStreak;
-    }
-    
     // Функция для загрузки данных пользователя с сервера
     async function loadUserData() {
       if (!user) return;
@@ -1882,22 +1635,12 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
-            // Проверяем поля ежедневной награды
-            if (!userData.lastDailyReward) {
-              userData.lastDailyReward = null;
-            }
-            if (!userData.dailyRewardStreak) {
-              userData.dailyRewardStreak = 1;
-            }
             
             // Обновляем энергию при загрузке
             updateEnergy();
             
             // Обновляем бонусы
             updateBonuses();
-            
-            // Обновляем отображение ежедневной награды
-            updateDailyRewardDisplay();
             
             updateScoreDisplay();
             updateLevel();
@@ -1911,9 +1654,6 @@ html_content = """
             // Проверяем задания
             checkWalletTask();
             checkReferralTask();
-            
-            // Проверяем ежедневную награду
-            checkDailyReward();
             
             return;
           }
@@ -1935,9 +1675,7 @@ html_content = """
           walletTaskCompleted: false,
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
-          upgrades: [],
-          lastDailyReward: null,
-          dailyRewardStreak: 1
+          upgrades: []
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1945,14 +1683,11 @@ html_content = """
         // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkReferralTask();
-        // Проверяем ежедневную награду
-        checkDailyReward();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkReferralTask();
-        checkDailyReward();
       }
     }
     
@@ -1984,8 +1719,6 @@ html_content = """
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
-            const oldLastDailyReward = userData.lastDailyReward;
-            const oldDailyRewardStreak = userData.dailyRewardStreak;
             
             userData = data.user;
             
@@ -1998,8 +1731,6 @@ html_content = """
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
-            userData.lastDailyReward = oldLastDailyReward;
-            userData.dailyRewardStreak = oldDailyRewardStreak;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -2072,14 +1803,6 @@ html_content = """
         upgradesButton.style.display = 'none';
       }
 
-      // Управляем видимостью индикатора пассивного дохода
-      const passiveIncomeDisplay = document.getElementById('passive-income-display');
-      if (pageKey === 'clicker') {
-        passiveIncomeDisplay.style.display = 'flex';
-      } else {
-        passiveIncomeDisplay.style.display = 'none';
-      }
-
       // При открытии профиля обновляем данные
       if (pageKey === 'profile') {
         updateProfile();
@@ -2122,9 +1845,6 @@ html_content = """
         
         document.getElementById('clickBonus').textContent = clickBonus;
         document.getElementById('passiveIncomeStat').textContent = passiveIncome;
-        
-        // Обновляем день в цикле наград
-        document.getElementById('dailyRewardDay').textContent = userData.dailyRewardStreak;
         
         // Обновляем данные пользователя из Telegram
         if (user) {
@@ -2220,7 +1940,7 @@ html_content = """
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
               ${user.score}
-              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="FMG">
+              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
               <span class="top-level">${user.level}</span>
             </div>
           </div>
@@ -2421,7 +2141,7 @@ html_content = """
       checkWalletTask();
       
       // Показываем уведомление
-      showNotification('Вы получили 1000 FMG!');
+      showNotification('Вы получили 1000 монеток!');
     }
     
     // Получение награды за задание с рефералами
@@ -2451,7 +2171,7 @@ html_content = """
       checkReferralTask();
       
       // Показываем уведомление
-      showNotification('Вы получили 5000 FMG!');
+      showNotification('Вы получили 5000 монеток!');
     }
     
     // Копирование реферальной ссылки
@@ -2606,7 +2326,7 @@ html_content = """
           <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
-            <img src="/static/FemboyCoinsPink.png" alt="FMG">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${upgrade.cost}</span>
           </div>
           <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
@@ -2641,7 +2361,7 @@ html_content = """
       
       // Проверяем, достаточно ли монет
       if (userData.score < upgrade.cost) {
-        showNotification('Недостаточно FMG!');
+        showNotification('Недостаточно монет!');
         return;
       }
       
@@ -2757,11 +2477,6 @@ html_content = """
       // Обработчик для кнопки закрытия модального окна
       document.getElementById('levelUpButton').addEventListener('click', function() {
         document.getElementById('levelUpModal').style.display = 'none';
-      });
-      
-      // Обработчик для кнопки закрытия модального окна ежедневной награды
-      document.getElementById('daily-reward-button').addEventListener('click', function() {
-        document.getElementById('daily-reward-modal').style.display = 'none';
       });
       
       // Обработчики для задания с кошельком
@@ -2956,7 +2671,7 @@ async def tonconnect_manifest():
 async def get_user_data(user_id: str):
     """Получение данных пользователя по ID"""
     try:
-        print(f"DEBUG: GET /user/{user_id} endpoint called")
+        logger.info(f"GET /user/{user_id} endpoint called")
         user_data = load_user(user_id)
         
         if user_data:
@@ -2976,25 +2691,23 @@ async def get_user_data(user_id: str):
                 "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
-                "upgrades": user_data["upgrades"],
-                "lastDailyReward": user_data["last_daily_reward"],
-                "dailyRewardStreak": user_data["daily_reward_streak"]
+                "upgrades": user_data["upgrades"]
             }
             
-            print(f"DEBUG: Returning user data for {user_data['first_name']}")
+            logger.info(f"Returning user data for {user_data['first_name']}")
             return JSONResponse(content={"user": response_data})
         else:
-            print(f"DEBUG: User not found with ID {user_id}")
+            logger.info(f"User not found with ID {user_id}")
             return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
     except Exception as e:
-        print(f"ERROR: Error in /user/{user_id}: {e}")
+        logger.error(f"Error in /user/{user_id}: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/user")
 async def save_user_data(request: Request):
     """Сохранение данных пользователя на сервере"""
     try:
-        print(f"DEBUG: POST /user endpoint called")
+        logger.info(f"POST /user endpoint called")
         data = await request.json()
         
         # Сохраняем в базу данных
@@ -3022,28 +2735,26 @@ async def save_user_data(request: Request):
                     "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"],
-                    "lastDailyReward": user_data["last_daily_reward"],
-                    "dailyRewardStreak": user_data["daily_reward_streak"]
+                    "upgrades": user_data["upgrades"]
                 }
                 
-                print(f"DEBUG: User saved successfully: {user_data['first_name']}")
+                logger.info(f"User saved successfully: {user_data['first_name']}")
                 return JSONResponse(content={"status": "success", "user": response_data})
             else:
-                print(f"DEBUG: Failed to retrieve saved user")
+                logger.info(f"Failed to retrieve saved user")
                 return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
         else:
-            print(f"DEBUG: Failed to save user")
+            logger.info(f"Failed to save user")
             return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
     except Exception as e:
-        print(f"ERROR: Error in POST /user: {e}")
+        logger.error(f"Error in POST /user: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/referral")
 async def handle_referral(request: Request):
     """Обработка реферальной ссылки"""
     try:
-        print(f"DEBUG: POST /referral endpoint called")
+        logger.info(f"POST /referral endpoint called")
         data = await request.json()
         referrer_id = str(data.get('referrer_id'))
         referred_id = str(data.get('referred_id'))
@@ -3052,23 +2763,23 @@ async def handle_referral(request: Request):
             success = add_referral(referrer_id, referred_id)
             
             if success:
-                print(f"DEBUG: Referral added successfully: {referrer_id} -> {referred_id}")
+                logger.info(f"Referral added successfully: {referrer_id} -> {referred_id}")
                 return JSONResponse(content={"status": "success"})
             else:
-                print(f"DEBUG: Failed to add referral")
+                logger.info(f"Failed to add referral")
                 return JSONResponse(content={"status": "error", "message": "Failed to add referral"})
         else:
-            print(f"DEBUG: Invalid referral data")
+            logger.info(f"Invalid referral data")
             return JSONResponse(content={"status": "error", "message": "Invalid data"})
     except Exception as e:
-        print(f"ERROR: Error in POST /referral: {e}")
+        logger.error(f"Error in POST /referral: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/top")
 async def get_top_users_endpoint():
     """Получение топа пользователей"""
     try:
-        print(f"DEBUG: GET /top endpoint called")
+        logger.info(f"GET /top endpoint called")
         top_users = get_top_users()
         
         # Преобразуем данные для фронтенда
@@ -3084,50 +2795,38 @@ async def get_top_users_endpoint():
                 "level": user["level"]
             })
         
-        print(f"DEBUG: Returning {len(response_users)} top users")
+        logger.info(f"Returning {len(response_users)} top users")
         return JSONResponse(content={"users": response_users})
     except Exception as e:
-        print(f"ERROR: Error in GET /top: {e}")
+        logger.error(f"Error in GET /top: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/users")
 async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
     try:
-        print(f"DEBUG: GET /debug/users endpoint called")
-        supabase = get_supabase_client()
+        logger.info(f"GET /debug/users endpoint called")
         
         response = supabase.table("users").select("user_id, first_name, last_name, score, level").order("score", desc=True).limit(50).execute()
         
         if response.data:
-            print(f"DEBUG: Found {len(response.data)} users")
+            logger.info(f"Found {len(response.data)} users")
             return JSONResponse(content={"users": response.data})
         else:
-            print(f"DEBUG: No users found")
+            logger.info(f"No users found")
             return JSONResponse(content={"users": []})
     except Exception as e:
-        print(f"ERROR: Error in GET /debug/users: {e}")
+        logger.error(f"Error in GET /debug/users: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/debug/levels")
 async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
-    print(f"DEBUG: GET /debug/levels endpoint called")
+    logger.info(f"GET /debug/levels endpoint called")
     return JSONResponse(content={"levels": LEVELS})
-
-@app.get("/debug/env")
-async def debug_env():
-    """Эндпоинт для проверки переменных окружения"""
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-    
-    return JSONResponse(content={
-        "SUPABASE_URL": url if url else "NOT SET",
-        "SUPABASE_KEY": "***" if key else "NOT SET"
-    })
 
 # Добавляем код для запуска на сервере
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"DEBUG: Starting server on port {port}")
+    logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
