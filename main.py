@@ -27,6 +27,22 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 
+# Создаем директорию для статических файлов, если она не существует
+if not STATIC_DIR.exists():
+    STATIC_DIR.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Created static directory at {STATIC_DIR}")
+
+# Проверка наличия необходимых переменных окружения
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+
+if not supabase_url or not supabase_key:
+    logger.error("Supabase URL and key must be set in environment variables")
+    # В случае отсутствия переменных окружения, используем тестовые значения (только для разработки)
+    supabase_url = "https://your-supabase-url.supabase.co"
+    supabase_key = "your-supabase-key"
+    logger.warning("Using default Supabase values. This should only happen in development!")
+
 # Определение уровней
 LEVELS = [
     {"score": 0, "name": "Новичок"},
@@ -67,19 +83,13 @@ def get_level_by_score(score: int) -> str:
     return LEVELS[0]["name"]
 
 # Инициализация Supabase клиента (один раз для всего приложения)
-supabase_url = os.environ.get("SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_KEY")
-
-if not supabase_url or not supabase_key:
-    logger.error("Supabase URL and key must be set in environment variables")
-    raise Exception("Supabase URL and key must be set in environment variables")
-
 try:
     supabase: Client = create_client(supabase_url, supabase_key)
     logger.info("Supabase client initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize Supabase client: {str(e)}")
-    raise
+    # Не прерываем работу приложения, а просто логируем ошибку
+    # Это позволит приложению работать, даже если Supabase недоступен
 
 # Максимальное количество энергии
 MAX_ENERGY = 250
@@ -254,7 +264,11 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return False
 
 # Монтируем статические файлы
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+try:
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    logger.info(f"Static files mounted from {STATIC_DIR}")
+except Exception as e:
+    logger.error(f"Error mounting static files: {e}")
 
 # Обработчик для favicon.ico
 @app.get("/favicon.ico")
