@@ -85,37 +85,29 @@ except Exception as e:
 MAX_ENERGY = 250
 
 # Функция для обновления энергии на основе времени
-def update_energy_based_on_time(user_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Обновляет энергию пользователя на основе времени, прошедшего с последнего обновления"""
+def update_energy_based_on_time(energy: int, last_energy_update: str) -> tuple:
+    """
+    Обновляет энергию на основе времени, прошедшего с последнего обновления.
+    Возвращает кортеж (обновленная энергия, текущее время в формате ISO)
+    """
     now = datetime.now()
-    last_energy_update = user_data.get("last_energy_update")
+    last_update = datetime.fromisoformat(last_energy_update) if last_energy_update else now
     
-    if last_energy_update:
-        # Преобразуем строку в datetime, если необходимо
-        if isinstance(last_energy_update, str):
-            try:
-                last_energy_update = datetime.fromisoformat(last_energy_update)
-            except ValueError:
-                # Если формат неверный, используем текущее время
-                last_energy_update = now
-    else:
-        # Если время последнего обновления не установлено, используем текущее время
-        last_energy_update = now
-    
-    # Вычисляем разницу в секундах
-    time_diff = (now - last_energy_update).total_seconds()
+    # Разница в секундах
+    time_diff = (now - last_update).total_seconds()
     
     # Восстанавливаем энергию (1 единица в секунду)
-    if time_diff > 0:
-        current_energy = user_data.get("energy", MAX_ENERGY)
-        new_energy = min(MAX_ENERGY, current_energy + int(time_diff))
-        user_data["energy"] = new_energy
-        user_data["last_energy_update"] = now.isoformat()
+    new_energy = min(MAX_ENERGY, energy + int(time_diff))
     
-    return user_data
+    return new_energy, now.isoformat()
 
-# Функция для загрузки данных пользователя
-def load_user(user_id: str) -> Optional[Dict[str, Any]]:
+# Декоратор для повторных попыток при ошибках соединения
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(Exception)
+)
+def load_user_with_retry(user_id: str) -> Optional[Dict[str, Any]]:
     try:
         logger.info(f"Loading user with ID: {user_id}")
         
@@ -133,7 +125,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['upgrades'] = []
             
             # Обновляем энергию на основе времени
-            user_data = update_energy_based_on_time(user_data)
+            if user_data.get('last_energy_update'):
+                user_data['energy'], user_data['last_energy_update'] = update_energy_based_on_time(
+                    user_data.get('energy', MAX_ENERGY),
+                    user_data['last_energy_update']
+                )
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -144,22 +140,35 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             return None
     except Exception as e:
         logger.error(f"Error loading user: {e}")
+        raise
+
+# Функция для загрузки данных пользователя
+def load_user(user_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        return load_user_with_retry(user_id)
+    except Exception as e:
+        logger.error(f"Failed to load user after retries: {e}")
         return None
 
-# Декоратор для повторных попыток при сохранении пользователя
+# Декоратор для повторных попыток при ошибках соединения
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type(Exception)
 )
 def save_user_with_retry(user_data: Dict[str, Any]) -> bool:
-    """Сохранение данных пользователя с повторными попытками при ошибках соединения"""
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
+        # Проверяем, что user_id не пустой
+        user_id = str(user_data.get('id', ''))
+        if not user_id:
+            logger.error("User ID is empty, cannot save user")
+            return False
+        
         # Подготовка данных для вставки/обновления
         db_data = {
-            "user_id": str(user_data.get('id', '')),
+            "user_id": user_id,
             "first_name": user_data.get('first_name', ''),
             "last_name": user_data.get('last_name', ''),
             "username": user_data.get('username', ''),
@@ -172,17 +181,17 @@ def save_user_with_retry(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate'),
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now().isoformat()),
             "upgrades": user_data.get('upgrades', [])
         }
         
         # Проверяем, существует ли пользователь
-        existing_user = load_user(str(user_data.get('id')))
+        existing_user = load_user(user_id)
         
         if existing_user:
             logger.info("Updating existing user")
             # Обновляем существующего пользователя
-            response = supabase.table("users").update(db_data).eq("user_id", str(user_data.get('id'))).execute()
+            response = supabase.table("users").update(db_data).eq("user_id", user_id).execute()
         else:
             logger.info("Creating new user")
             # Вставляем нового пользователя
@@ -196,15 +205,19 @@ def save_user_with_retry(user_data: Dict[str, Any]) -> bool:
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
-    """Сохранение данных пользователя с обработкой ошибок"""
     try:
         return save_user_with_retry(user_data)
     except Exception as e:
         logger.error(f"Failed to save user after retries: {e}")
         return False
 
-# Функция для получения топа пользователей
-def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
+# Декоратор для повторных попыток при ошибках соединения
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(Exception)
+)
+def get_top_users_with_retry(limit: int = 100) -> List[Dict[str, Any]]:
     try:
         logger.info(f"Getting top {limit} users")
         
@@ -218,10 +231,23 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
             return []
     except Exception as e:
         logger.error(f"Error getting top users: {e}")
+        raise
+
+# Функция для получения топа пользователей
+def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
+    try:
+        return get_top_users_with_retry(limit)
+    except Exception as e:
+        logger.error(f"Failed to get top users after retries: {e}")
         return []
 
-# Функция для добавления реферала
-def add_referral(referrer_id: str, referred_id: str) -> bool:
+# Декоратор для повторных попыток при ошибках соединения
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(Exception)
+)
+def add_referral_with_retry(referrer_id: str, referred_id: str) -> bool:
     try:
         logger.info(f"Adding referral: {referrer_id} -> {referred_id}")
         
@@ -249,6 +275,14 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return update_response.data is not None
     except Exception as e:
         logger.error(f"Error adding referral: {e}")
+        raise
+
+# Функция для добавления реферала
+def add_referral(referrer_id: str, referred_id: str) -> bool:
+    try:
+        return add_referral_with_retry(referrer_id, referred_id)
+    except Exception as e:
+        logger.error(f"Failed to add referral after retries: {e}")
         return False
 
 # Монтируем статические файлы
@@ -1476,17 +1510,17 @@ html_content = """
     // Улучшения игры
     const UPGRADES = [
       {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", "description": "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", "description": "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", "description": "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", "description": "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", "description": "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", "description": "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", "description": "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", "description": "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", "description": "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", "description": "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", "description": "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
@@ -2762,12 +2796,17 @@ async def save_user_data(request: Request):
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
+        # Проверяем, что user_id не пустой
+        user_id = str(data.get('id', ''))
+        if not user_id:
+            logger.error("User ID is empty, cannot save user")
+            return JSONResponse(content={"status": "error", "message": "User ID is empty"}, status_code=400)
+        
         # Сохраняем в базу данных
         success = save_user(data)
         
         if success:
             # Получаем обновленные данные
-            user_id = str(data.get('id'))
             user_data = load_user(user_id)
             
             if user_data:
