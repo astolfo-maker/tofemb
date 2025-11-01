@@ -91,7 +91,16 @@ def update_energy_based_on_time(energy: int, last_energy_update: str) -> tuple:
     Возвращает кортеж (обновленная энергия, текущее время в формате ISO)
     """
     now = datetime.now()
-    last_update = datetime.fromisoformat(last_energy_update) if last_energy_update else now
+    
+    # Безопасное получение времени последнего обновления
+    try:
+        if last_energy_update:
+            last_update = datetime.fromisoformat(last_energy_update)
+        else:
+            last_update = now
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Error parsing last_energy_update: {last_energy_update}, error: {e}")
+        last_update = now
     
     # Разница в секундах
     time_diff = (now - last_update).total_seconds()
@@ -126,10 +135,16 @@ def load_user_with_retry(user_id: str) -> Optional[Dict[str, Any]]:
             
             # Обновляем энергию на основе времени
             if user_data.get('last_energy_update'):
-                user_data['energy'], user_data['last_energy_update'] = update_energy_based_on_time(
-                    user_data.get('energy', MAX_ENERGY),
-                    user_data['last_energy_update']
-                )
+                try:
+                    user_data['energy'], user_data['last_energy_update'] = update_energy_based_on_time(
+                        user_data.get('energy', MAX_ENERGY),
+                        user_data['last_energy_update']
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating energy for user {user_id}: {e}")
+                    # Если не удалось обновить энергию, используем текущие значения
+                    user_data['energy'] = user_data.get('energy', MAX_ENERGY)
+                    user_data['last_energy_update'] = datetime.now().isoformat()
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -195,7 +210,15 @@ def save_user_with_retry(user_data: Dict[str, Any]) -> bool:
         else:
             logger.info("Creating new user")
             # Вставляем нового пользователя
-            response = supabase.table("users").insert(db_data).execute()
+            try:
+                response = supabase.table("users").insert(db_data).execute()
+            except Exception as insert_error:
+                # Если возникает ошибка дублирования ключа, попробуем обновить
+                if "duplicate key" in str(insert_error):
+                    logger.warning(f"Duplicate key error, trying to update instead: {insert_error}")
+                    response = supabase.table("users").update(db_data).eq("user_id", user_id).execute()
+                else:
+                    raise insert_error
         
         logger.info(f"Save operation completed with data: {response.data}")
         return response.data is not None
