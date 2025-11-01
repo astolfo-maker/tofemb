@@ -12,6 +12,7 @@ import uvicorn
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import logging
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +81,39 @@ except Exception as e:
     logger.error(f"Failed to initialize Supabase client: {str(e)}")
     raise
 
+# Максимальное количество энергии
+MAX_ENERGY = 250
+
+# Функция для обновления энергии на основе времени
+def update_energy_based_on_time(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Обновляет энергию пользователя на основе времени, прошедшего с последнего обновления"""
+    now = datetime.now()
+    last_energy_update = user_data.get("last_energy_update")
+    
+    if last_energy_update:
+        # Преобразуем строку в datetime, если необходимо
+        if isinstance(last_energy_update, str):
+            try:
+                last_energy_update = datetime.fromisoformat(last_energy_update)
+            except ValueError:
+                # Если формат неверный, используем текущее время
+                last_energy_update = now
+    else:
+        # Если время последнего обновления не установлено, используем текущее время
+        last_energy_update = now
+    
+    # Вычисляем разницу в секундах
+    time_diff = (now - last_energy_update).total_seconds()
+    
+    # Восстанавливаем энергию (1 единица в секунду)
+    if time_diff > 0:
+        current_energy = user_data.get("energy", MAX_ENERGY)
+        new_energy = min(MAX_ENERGY, current_energy + int(time_diff))
+        user_data["energy"] = new_energy
+        user_data["last_energy_update"] = now.isoformat()
+    
+    return user_data
+
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     try:
@@ -97,7 +131,10 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 
             if not isinstance(user_data.get('upgrades'), list):
                 user_data['upgrades'] = []
-                
+            
+            # Обновляем энергию на основе времени
+            user_data = update_energy_based_on_time(user_data)
+            
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
@@ -109,8 +146,14 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error loading user: {e}")
         return None
 
-# Функция для сохранения данных пользователя
-def save_user(user_data: Dict[str, Any]) -> bool:
+# Декоратор для повторных попыток при сохранении пользователя
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(Exception)
+)
+def save_user_with_retry(user_data: Dict[str, Any]) -> bool:
+    """Сохранение данных пользователя с повторными попытками при ошибках соединения"""
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
@@ -128,7 +171,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "wallet_task_completed": bool(user_data.get('walletTaskCompleted', False)),
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
-            "energy": int(user_data.get('energy', 250)),
+            "energy": int(user_data.get('energy', MAX_ENERGY)),
             "last_energy_update": user_data.get('lastEnergyUpdate'),
             "upgrades": user_data.get('upgrades', [])
         }
@@ -149,6 +192,15 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         return response.data is not None
     except Exception as e:
         logger.error(f"Error saving user: {e}")
+        raise
+
+# Функция для сохранения данных пользователя
+def save_user(user_data: Dict[str, Any]) -> bool:
+    """Сохранение данных пользователя с обработкой ошибок"""
+    try:
+        return save_user_with_retry(user_data)
+    except Exception as e:
+        logger.error(f"Failed to save user after retries: {e}")
         return False
 
 # Функция для получения топа пользователей
@@ -1424,17 +1476,17 @@ html_content = """
     // Улучшения игры
     const UPGRADES = [
       {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade2", "description": "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", "description": "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", "description": "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", "description": "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", "description": "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", "description": "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", "description": "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", "description": "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", "description": "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", "description": "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", "description": "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
