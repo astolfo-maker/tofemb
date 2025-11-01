@@ -90,6 +90,7 @@ except Exception as e:
     logger.error(f"Failed to initialize Supabase client: {str(e)}")
     # Не прерываем работу приложения, а просто логируем ошибку
     # Это позволит приложению работать, даже если Supabase недоступен
+    supabase = None
 
 # Максимальное количество энергии
 MAX_ENERGY = 250
@@ -102,6 +103,10 @@ MAX_ENERGY = 250
 )
 def execute_supabase_query(func):
     """Выполняет запрос к Supabase с повторными попытками при ошибках"""
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        raise Exception("Supabase client is not initialized")
+    
     try:
         return func()
     except Exception as e:
@@ -110,6 +115,10 @@ def execute_supabase_query(func):
 
 # Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return None
+        
     try:
         logger.info(f"Loading user with ID: {user_id}")
         
@@ -169,6 +178,10 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
 
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
@@ -208,6 +221,10 @@ def save_user(user_data: Dict[str, Any]) -> bool:
 
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return []
+        
     try:
         logger.info(f"Getting top {limit} users")
         
@@ -228,6 +245,10 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
 
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
     try:
         logger.info(f"Adding referral: {referrer_id} -> {referred_id}")
         
@@ -2874,6 +2895,9 @@ async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
     try:
         logger.info(f"GET /debug/users endpoint called")
+        
+        if supabase is None:
+            return JSONResponse(content={"status": "error", "message": "Supabase client is not initialized"})
         
         response = supabase.table("users").select("user_id, first_name, last_name, score, level").order("score", desc=True).limit(50).execute()
         
