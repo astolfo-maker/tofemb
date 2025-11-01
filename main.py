@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 import json
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import uvicorn
 from supabase import create_client, Client
@@ -125,21 +125,29 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             # Восстанавливаем энергию на основе времени последнего обновления
             last_energy_update = user_data.get('last_energy_update')
             if last_energy_update:
-                last_update_time = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
-                current_time = datetime.utcnow()
-                time_diff_seconds = (current_time - last_update_time).total_seconds()
-                
-                # Восстанавливаем энергию (1 единица в секунду)
-                current_energy = user_data.get('energy', MAX_ENERGY)
-                restored_energy = min(MAX_ENERGY, current_energy + int(time_diff_seconds))
-                
-                # Обновляем энергию и время последнего обновления
-                user_data['energy'] = restored_energy
-                user_data['last_energy_update'] = current_time.isoformat()
+                try:
+                    # Парсим дату с учетом возможного часового пояса
+                    if last_energy_update.endswith('Z'):
+                        last_update_time = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
+                    else:
+                        last_update_time = datetime.fromisoformat(last_energy_update)
+                    
+                    current_time = datetime.now(timezone.utc)
+                    time_diff_seconds = (current_time - last_update_time).total_seconds()
+                    
+                    # Восстанавливаем энергию (1 единица в секунду)
+                    current_energy = user_data.get('energy', MAX_ENERGY)
+                    restored_energy = min(MAX_ENERGY, current_energy + int(time_diff_seconds))
+                    
+                    # Обновляем энергию и время последнего обновления
+                    user_data['energy'] = restored_energy
+                    user_data['last_energy_update'] = current_time.isoformat()
+                except Exception as e:
+                    logger.error(f"Error restoring energy: {e}")
             
             return user_data
         else:
-            logger.info(f"User not found with ID: {user_id}")
+            logger.info(f"User not found with ID {user_id}")
             return None
     except Exception as e:
         logger.error(f"Error loading user: {e}")
@@ -165,7 +173,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.utcnow().isoformat()),
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', [])
         }
         
