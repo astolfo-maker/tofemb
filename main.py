@@ -13,9 +13,6 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import hashlib
-import hmac
-import urllib.parse
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +35,6 @@ if not STATIC_DIR.exists():
 # Проверка наличия необходимых переменных окружения
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
-telegram_bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 if not supabase_url or not supabase_key:
     logger.error("Supabase URL and key must be set in environment variables")
@@ -155,8 +151,7 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                         if last_energy_update.endswith('Z'):
                             last_update_time = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
                         else:
-                            # Явно указываем UTC для дат без 'Z'
-                            last_update_time = datetime.fromisoformat(last_energy_update).replace(tzinfo=timezone.utc)
+                            last_update_time = datetime.fromisoformat(last_energy_update)
                     else:
                         last_update_time = last_energy_update
                     
@@ -190,15 +185,9 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
-        # Проверяем наличие обязательных полей
-        user_id = user_data.get('id')
-        if not user_id:
-            logger.error("User ID is required")
-            return False
-        
         # Подготовка данных для вставки/обновления
         db_data = {
-            "user_id": str(user_id),
+            "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
             "last_name": user_data.get('last_name', ''),
             "username": user_data.get('username', ''),
@@ -211,7 +200,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
+            "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', [])
         }
         
@@ -263,18 +252,6 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
     try:
         logger.info(f"Adding referral: {referrer_id} -> {referred_id}")
         
-        # Проверяем существование реферера
-        referrer = load_user(referrer_id)
-        if not referrer:
-            logger.info(f"Referrer not found: {referrer_id}")
-            return False
-        
-        # Проверяем существование реферала
-        referred = load_user(referred_id)
-        if not referred:
-            logger.info(f"Referred user not found: {referred_id}")
-            return False
-        
         # Получаем данные реферера
         def query():
             return supabase.table("users").select("referrals").eq("user_id", referrer_id).execute()
@@ -305,33 +282,6 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return update_response.data is not None
     except Exception as e:
         logger.error(f"Error adding referral: {e}")
-        return False
-
-# Проверка Telegram initData
-def verify_telegram_init_data(init_data: str) -> bool:
-    """Простая проверка Telegram initData (без полной валидации хеша)"""
-    if not init_data:
-        return False
-    
-    try:
-        # Парсим данные
-        parsed_data = urllib.parse.parse_qs(init_data)
-        
-        # Проверяем наличие обязательных полей
-        if not parsed_data.get('user') or not parsed_data.get('hash'):
-            return False
-        
-        # Проверяем, что пользователь не пустой
-        user_data = json.loads(parsed_data['user'][0])
-        if not user_data.get('id'):
-            return False
-        
-        # В реальном приложении здесь должна быть проверка хеша
-        # Для простоты пропускаем эту проверку
-        
-        return True
-    except Exception as e:
-        logger.error(f"Error verifying Telegram initData: {e}")
         return False
 
 # Монтируем статические файлы
@@ -1364,11 +1314,11 @@ html_content = """
       </button>
       
       <div id="circle" tabindex="0" role="button" aria-pressed="false">
-        <img id="femboyImg" src="https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg" alt="фембой" />
+        <img id="femboyImg" src="/static/Photo_femb_static.jpg" alt="фембой" />
       </div>
       <div id="score" aria-live="polite">
         Счет: 0
-        <img id="coin" src="https://i.imgur.com/XeBmQ2k.png" alt="монетки" />
+        <img id="coin" src="/static/FemboyCoinsPink.png" alt="монетки" />
       </div>
       
       <!-- Прогресс-бар уровня -->
@@ -1430,7 +1380,7 @@ html_content = """
           <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
+          <img src="/static/FemboyCoinsPink.png" alt="монетки">
           <span>1000 монеток</span>
         </div>
         <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
@@ -1443,7 +1393,7 @@ html_content = """
           <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
         </div>
         <div class="task-reward">
-          <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
+          <img src="/static/FemboyCoinsPink.png" alt="монетки">
           <span>5000 монеток</span>
         </div>
         <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
@@ -1562,18 +1512,18 @@ html_content = """
     
     // Улучшения игры
     const UPGRADES = [
-      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "https://i.imgur.com/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "https://i.imgur.com/upgrade2.png"},
-      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "https://i.imgur.com/upgrade3.png"},
-      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "https://i.imgur.com/upgrade4.png"},
-      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "https://i.imgur.com/upgrade5.png"},
-      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "https://i.imgur.com/upgrade6.png"},
-      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "https://i.imgur.com/upgrade7.png"},
-      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "https://i.imgur.com/upgrade8.png"},
-      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "https://i.imgur.com/upgrade9.png"},
-      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "https://i.imgur.com/upgrade10.png"},
-      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "https://i.imgur.com/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "https://i.imgur.com/upgrade12.png"}
+      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
+      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Функция для определения уровня по очкам
@@ -1628,7 +1578,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+        manifestUrl: 'https://tofemb.onrender.com',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
           twaReturnUrl: 'https://t.me/Fnmby_bot'
@@ -1717,15 +1667,6 @@ html_content = """
     function updateEnergy() {
       const now = new Date();
       const lastUpdate = new Date(userData.lastEnergyUpdate);
-      
-      // Проверяем валидность даты
-      if (isNaN(lastUpdate.getTime())) {
-        userData.lastEnergyUpdate = now.toISOString();
-        userData.energy = MAX_ENERGY;
-        updateEnergyDisplay();
-        return;
-      }
-      
       const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
       
       // Восстанавливаем энергию (1 единица в секунду)
@@ -1836,32 +1777,6 @@ html_content = """
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkReferralTask();
-      }
-    }
-    
-    // Буферизация кликов для уменьшения количества запросов
-    let clickBuffer = [];
-    let isSaving = false;
-    
-    async function saveClicks() {
-      if (clickBuffer.length === 0 || isSaving) return;
-      
-      isSaving = true;
-      const clicksToSave = [...clickBuffer];
-      clickBuffer = [];
-      
-      try {
-        await fetch('/user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(clicksToSave[0]) // Сохраняем последнее состояние
-        });
-      } catch (error) {
-        console.error('Error saving clicks:', error);
-      } finally {
-        isSaving = false;
       }
     }
     
@@ -2044,7 +1959,7 @@ html_content = """
           // Если данные пользователя недоступны (открыто вне Telegram)
           document.getElementById('userName').textContent = 'Гость';
           document.getElementById('userHandle').textContent = '@guest';
-          document.getElementById('userAvatar').src = 'https://t.me/i/userpic/320/0.jpg';
+          document.getElementById('userAvatar').src = '/static/default-avatar.png';
           userProfile.style.display = 'flex';
         }
         
@@ -2114,7 +2029,7 @@ html_content = """
             <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
             <div class="top-score">
               ${user.score}
-              <img class="top-coin" src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
+              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
               <span class="top-level">${user.level}</span>
             </div>
           </div>
@@ -2349,33 +2264,34 @@ html_content = """
     }
     
     // Копирование реферальной ссылки
-    async function copyReferralLink() {
+    function copyReferralLink() {
       if (!user) return;
       
       const botUsername = 'Fnmby_bot';
       const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
       
+      // Создаем временный элемент для копирования
+      const tempInput = document.createElement('input');
+      tempInput.value = referralLink;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      
       try {
-        // Используем современный Clipboard API
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(referralLink);
+        // Копируем текст в буфер обмена
+        const successful = document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        
+        if (successful) {
+          // Тактильная обратная связь
+          if (tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+          }
           showNotification('Ссылка скопирована в буфер обмена!');
         } else {
-          // Fallback для старых браузеров
-          const tempInput = document.createElement('input');
-          tempInput.value = referralLink;
-          document.body.appendChild(tempInput);
-          tempInput.select();
-          document.execCommand('copy', false, referralLink);
-          document.body.removeChild(tempInput);
-          showNotification('Ссылка скопирована!');
-        }
-        
-        // Тактильная обратная связь
-        if (tg.HapticFeedback) {
-          tg.HapticFeedback.notificationOccurred('success');
+          showNotification('Не удалось скопировать ссылку');
         }
       } catch (err) {
+        document.body.removeChild(tempInput);
         console.error('Ошибка при копировании ссылки: ', err);
         showNotification('Не удалось скопировать ссылку');
       }
@@ -2499,7 +2415,7 @@ html_content = """
           <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
-            <img src="https://i.imgur.com/XeBmQ2k.png" alt="монетки">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${upgrade.cost}</span>
           </div>
           <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
@@ -2725,7 +2641,7 @@ html_content = """
     const img = document.getElementById('femboyImg');
     const scoreDisplay = document.getElementById('score');
 
-    const imgNormal = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
+    const imgNormal = "/static/Photo_femb_static.jpg";
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
     function incrementScore() {
@@ -2753,9 +2669,8 @@ html_content = """
       updateEnergyDisplay();
       updateLevel();
       
-      // Добавляем клик в буфер для сохранения
-      clickBuffer.push({...userData});
-      setTimeout(saveClicks, 1000); // Сохраняем с задержкой
+      // Сохраняем данные на сервере после каждого клика
+      saveUserData();
     }
 
     function pressVisualOn() {
@@ -3006,4 +2921,4 @@ async def debug_levels():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port) 
