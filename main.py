@@ -75,6 +75,25 @@ UPGRADES = [
     {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
+# Определение заданий
+NORMAL_TASKS = [
+    {
+        "id": "wallet_task",
+        "title": "Подключить TON кошелек",
+        "reward": 1000,
+        "type": "normal"
+    }
+]
+
+DAILY_TASKS = [
+    {
+        "id": "referral_task",
+        "title": "Пригласить 3-х друзей",
+        "reward": 5000,
+        "type": "daily"
+    }
+]
+
 # Функция для определения уровня по очкам
 def get_level_by_score(score: int) -> str:
     for i in range(len(LEVELS) - 1, -1, -1):
@@ -750,20 +769,18 @@ html_content = """
       text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
     }
     
-    /* Стили для пассивного дохода (только в кликере) */
-    #passive-income-container {
-      margin-top: 15px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    /* Стили для пассивного дохода (фиксированный вверху справа) */
     #passive-income-display {
-      background: rgba(0, 0, 0, 0.5);
+      position: fixed;
+      top: 190px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
       color: #FFD700;
       padding: 8px 12px;
       border-radius: 10px;
       font-size: 14px;
       font-weight: bold;
+      z-index: 95;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -884,6 +901,29 @@ html_content = """
     }
     
     /* Стили для заданий */
+    .task-tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .task-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    .task-tab.active {
+      color: #ff66cc;
+      border-bottom: 2px solid #ff66cc;
+    }
+    .task-content {
+      display: none;
+    }
+    .task-content.active {
+      display: block;
+    }
     .task-item {
       background: rgba(0, 0, 0, 0.2);
       border-radius: 15px;
@@ -1351,14 +1391,6 @@ html_content = """
           <span>Энергия: 250/250</span>
         </div>
       </div>
-      
-      <!-- Отображение пассивного дохода (только в кликере) -->
-      <div id="passive-income-container">
-        <div id="passive-income-display">
-          <span id="passive-income-icon">⏱</span>
-          <span id="passive-income-value">0</span>/5 сек
-        </div>
-      </div>
     </section>
 
     <!-- Окно профиля -->
@@ -1395,32 +1427,44 @@ html_content = """
     <section id="tasks" class="page" aria-label="задания нах">
       <h2>Задания</h2>
       
-      <!-- Задание: Подключить TON кошелек -->
-      <div class="task-item">
-        <div class="task-header">
-          <div class="task-title">Подключить TON кошелек</div>
-          <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
-        </div>
-        <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
-          <span>1000 монеток</span>
-        </div>
-        <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+      <!-- Вкладки заданий -->
+      <div class="task-tabs">
+        <div class="task-tab active" data-tab="normal">Обычные</div>
+        <div class="task-tab" data-tab="daily">Повседневные</div>
       </div>
       
-      <!-- Задание: Пригласить 3 друзей -->
-      <div class="task-item">
-        <div class="task-header">
-          <div class="task-title">Пригласить 3-х друзей</div>
-          <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
+      <!-- Содержимое вкладки "Обычные" -->
+      <div class="task-content active" id="normal-tasks">
+        <!-- Задание: Подключить TON кошелек -->
+        <div class="task-item">
+          <div class="task-header">
+            <div class="task-title">Подключить TON кошелек</div>
+            <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
+          </div>
+          <div class="task-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>1000 монеток</span>
+          </div>
+          <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
         </div>
-        <div class="task-reward">
-          <img src="/static/FemboyCoinsPink.png" alt="монетки">
-          <span>5000 монеток</span>
+      </div>
+      
+      <!-- Содержимое вкладки "Повседневные" -->
+      <div class="task-content" id="daily-tasks">
+        <!-- Задание: Пригласить 3 друзей -->
+        <div class="task-item">
+          <div class="task-header">
+            <div class="task-title">Пригласить 3-х друзей</div>
+            <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
+          </div>
+          <div class="task-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>5000 монеток</span>
+          </div>
+          <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
+          <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
         </div>
-        <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
-        <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
-        <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
       </div>
     </section>
     
@@ -1433,6 +1477,12 @@ html_content = """
       </div>
       <div id="topList"></div>
     </section>
+  </div>
+
+  <!-- Отображение пассивного дохода (фиксированное вверху справа) -->
+  <div id="passive-income-display">
+    <span id="passive-income-icon">⏱</span>
+    <span id="passive-income-value">0</span>/5 сек
   </div>
 
   <!-- Модальное окно повышения уровня -->
@@ -1540,6 +1590,15 @@ html_content = """
       {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
       {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
       {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+    ];
+    
+    // Задания игры
+    const NORMAL_TASKS = [
+      {id: "wallet_task", title: "Подключить TON кошелек", reward: 1000, type: "normal"}
+    ];
+    
+    const DAILY_TASKS = [
+      {id: "referral_task", title: "Пригласить 3-х друзей", reward: 5000, type: "daily"}
     ];
     
     // Функция для определения уровня по очкам
@@ -1906,6 +1965,14 @@ html_content = """
         upgradesButton.style.display = 'flex';
       } else {
         upgradesButton.style.display = 'none';
+      }
+
+      // Управляем видимостью индикатора пассивного дохода
+      const passiveIncomeDisplay = document.getElementById('passive-income-display');
+      if (pageKey === 'clicker') {
+        passiveIncomeDisplay.style.display = 'flex';
+      } else {
+        passiveIncomeDisplay.style.display = 'none';
       }
 
       // При открытии профиля обновляем данные
@@ -2521,7 +2588,7 @@ html_content = """
       const clickBonus = calculateClickBonus();
       const passiveIncome = calculatePassiveIncome();
       
-      // Обновляем отображение пассивного дохода (только в кликере)
+      // Обновляем отображение пассивного дохода
       document.getElementById('passive-income-value').textContent = passiveIncome;
       
       // Если в профиле, обновляем и там
@@ -2631,6 +2698,23 @@ html_content = """
       document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
       document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
       document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
+      
+      // Обработчики для вкладок заданий
+      document.querySelectorAll('.task-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabType = this.getAttribute('data-tab');
+          
+          // Обновляем активную вкладку
+          document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Обновляем активное содержимое
+          document.querySelectorAll('.task-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          document.getElementById(`${tabType}-tasks`).classList.add('active');
+        });
+      });
       
       // Устанавливаем начальную страницу
       showPage('clicker');
