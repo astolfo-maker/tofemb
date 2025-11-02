@@ -1394,8 +1394,8 @@ html_content = """
     </section>
 
     <!-- Окно профиля -->
-    <section id="profile" class="page" aria-label="Профиль нах">
-      <h2>Профиль йоу</h2>
+    <section id="profile" class="page" aria-label="Профиль">
+      <h2>Профиль</h2>
       
       <div id="loadingIndicator">
         <p>Загрузка данных профиля...</p>
@@ -1424,7 +1424,7 @@ html_content = """
     </section>
 
     <!-- Окно заданий -->
-    <section id="tasks" class="page" aria-label="задания нах">
+    <section id="tasks" class="page" aria-label="задания">
       <h2>Задания</h2>
       
       <!-- Вкладки заданий -->
@@ -1554,9 +1554,9 @@ html_content = """
   <div id="noEnergyNotification" class="no-energy">Недостаточно энергии!</div>
 
   <nav id="bottom-menu" role="navigation" aria-label="Нижнее меню">
-    <button id="btn-profile" data-page="profile">Профиль нах</button>
-    <button id="btn-clicker" data-page="clicker" class="active">Кликер нах</button>
-    <button id="btn-tasks" data-page="tasks">Задания нах</button>
+    <button id="btn-profile" data-page="profile">Профиль</button>
+    <button id="btn-clicker" data-page="clicker" class="active">Кликер</button>
+    <button id="btn-tasks" data-page="tasks">Задания</button>
   </nav>
 
   <script>
@@ -3022,3 +3022,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
