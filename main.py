@@ -1309,6 +1309,11 @@ html_content = """
     #passive-income-icon {
       font-size: 16px;
     }
+    
+    /* Скрытие элемента пассивного дохода на всех страницах кроме кликера */
+    .page:not(#clicker) ~ #passive-income-display {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
