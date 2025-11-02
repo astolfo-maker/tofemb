@@ -242,7 +242,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0))
         }
@@ -339,6 +339,49 @@ except Exception as e:
 async def favicon():
     return Response(status_code=204)  # Возвращаем пустой ответ без содержимого
 
+# Эндпоинт для обработки уведомлений от Adsgram
+@app.get("/adsgram-reward")
+async def adsgram_reward(request: Request):
+    """Обработка уведомлений о просмотре рекламы от Adsgram"""
+    try:
+        logger.info(f"GET /adsgram-reward endpoint called")
+        
+        # Получаем ID пользователя из параметров запроса
+        user_id = request.query_params.get("userid")
+        
+        if not user_id:
+            logger.warning("Missing userid parameter in Adsgram request")
+            return JSONResponse(content={"status": "error", "message": "Missing userid parameter"}, status_code=400)
+        
+        logger.info(f"Processing Adsgram reward for user {user_id}")
+        
+        # Загружаем данные пользователя
+        user_data = load_user(user_id)
+        
+        if not user_data:
+            logger.warning(f"User not found: {user_id}")
+            return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
+        
+        # Увеличиваем счетчик просмотренной рекламы
+        if 'ads_watched' not in user_data:
+            user_data['ads_watched'] = 0
+        
+        user_data['ads_watched'] += 1
+        
+        # Сохраняем обновленные данные
+        success = save_user(user_data)
+        
+        if success:
+            logger.info(f"Successfully updated ads_watched for user {user_id}: {user_data['ads_watched']}")
+            return JSONResponse(content={"status": "success", "ads_watched": user_data['ads_watched']})
+        else:
+            logger.error(f"Failed to save user data for {user_id}")
+            return JSONResponse(content={"status": "error", "message": "Failed to save user data"}, status_code=500)
+            
+    except Exception as e:
+        logger.error(f"Error in /adsgram-reward: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
 html_content = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -348,6 +391,7 @@ html_content = """
   <title>ляжки фембоя</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
 
@@ -1677,6 +1721,9 @@ html_content = """
     // Инициализация TonConnect
     let tonConnectUI;
     
+    // Инициализация Adsgram
+    let adsgramAd;
+    
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -1719,6 +1766,42 @@ html_content = """
           // Показываем уведомление
           showNotification('TON кошелек отключен');
         }
+      });
+    }
+    
+    // Функция для инициализации Adsgram
+    function initAdsgram() {
+      // Замените 'test' на ваш реальный блок ID от Adsgram
+      adsgramAd = window.Adsgram.init({ blockId: 'test' });
+      
+      // Обработка событий Adsgram
+      adsgramAd.addEventListener('onReward', () => {
+        // Реклама успешно просмотрена
+        console.log('Ad watched successfully');
+        
+        // Увеличиваем счетчик просмотренной рекламы
+        userData.ads_watched = (userData.ads_watched || 0) + 1;
+        
+        // Сохраняем данные
+        saveUserData();
+        
+        // Обновляем интерфейс
+        checkAdsTask();
+        
+        // Показываем уведомление
+        showNotification('Реклама просмотрена!');
+      });
+      
+      adsgramAd.addEventListener('onError', (error) => {
+        // Ошибка при показе рекламы
+        console.error('Ad error:', error);
+        showNotification('Ошибка при показе рекламы');
+      });
+      
+      adsgramAd.addEventListener('onSkip', () => {
+        // Реклама пропущена
+        console.log('Ad skipped');
+        showNotification('Реклама пропущена');
       });
     }
     
@@ -2432,22 +2515,22 @@ html_content = """
       showNotification('Вы получили 5000 монеток!');
     }
     
-    // Просмотр рекламы
-    async function watchAds() {
-      // Имитация просмотра рекламы
-      // В реальном приложении здесь будет интеграция с рекламным SDK
+    // Просмотр рекламы через Adsgram
+    function watchAds() {
+      if (!adsgramAd) {
+        showNotification('Реклама не загружена');
+        return;
+      }
       
-      // Увеличиваем счетчик просмотренной рекламы
-      userData.ads_watched = (userData.ads_watched || 0) + 1;
-      
-      // Сохраняем данные
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      checkAdsTask();
-      
-      // Показываем уведомление
-      showNotification('Реклама просмотрена!');
+      // Показываем рекламу
+      adsgramAd.show().then(() => {
+        // Реклама успешно показана
+        console.log('Ad shown successfully');
+      }).catch((error) => {
+        // Ошибка при показе рекламы
+        console.error('Error showing ad:', error);
+        showNotification('Ошибка при показе рекламы');
+      });
     }
     
     // Копирование реферальной ссылки
@@ -2724,6 +2807,9 @@ html_content = """
     document.addEventListener('DOMContentLoaded', async function() {
       // Инициализируем TonConnect
       initTonConnect();
+      
+      // Инициализируем Adsgram
+      initAdsgram();
       
       // Загружаем данные пользователя при запуске
       if (user) {
