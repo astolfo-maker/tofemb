@@ -750,6 +750,28 @@ html_content = """
       text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
     }
     
+    /* Стили для пассивного дохода (только в кликере) */
+    #passive-income-container {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #passive-income-display {
+      background: rgba(0, 0, 0, 0.5);
+      color: #FFD700;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #passive-income-icon {
+      font-size: 16px;
+    }
+    
     /* Стили для молний */
     .lightning {
       position: absolute;
@@ -1289,31 +1311,6 @@ html_content = """
       cursor: not-allowed;
       transform: none;
     }
-    
-    /* Стили для пассивного дохода */
-    #passive-income-display {
-      position: fixed;
-      top: 190px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.7);
-      color: #FFD700;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: bold;
-      z-index: 95;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    #passive-income-icon {
-      font-size: 16px;
-    }
-    
-    /* Скрытие элемента пассивного дохода на всех страницах кроме кликера */
-    .page:not(#clicker) ~ #passive-income-display {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
@@ -1352,6 +1349,14 @@ html_content = """
         <div id="energyText">
           <span id="energyIcon">⚡</span>
           <span>Энергия: 250/250</span>
+        </div>
+      </div>
+      
+      <!-- Отображение пассивного дохода (только в кликере) -->
+      <div id="passive-income-container">
+        <div id="passive-income-display">
+          <span id="passive-income-icon">⏱</span>
+          <span id="passive-income-value">0</span>/5 сек
         </div>
       </div>
     </section>
@@ -1490,12 +1495,6 @@ html_content = """
     <div class="upgrades-container" id="upgrades-container">
       <!-- Улучшения будут добавлены через JavaScript -->
     </div>
-  </div>
-
-  <!-- Отображение пассивного дохода -->
-  <div id="passive-income-display">
-    <span id="passive-income-icon">⏱</span>
-    <span id="passive-income-value">0</span>/5 сек
   </div>
 
   <!-- Уведомления -->
@@ -2522,7 +2521,7 @@ html_content = """
       const clickBonus = calculateClickBonus();
       const passiveIncome = calculatePassiveIncome();
       
-      // Обновляем отображение пассивного дохода
+      // Обновляем отображение пассивного дохода (только в кликере)
       document.getElementById('passive-income-value').textContent = passiveIncome;
       
       // Если в профиле, обновляем и там
