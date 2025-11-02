@@ -143,7 +143,13 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             
             # Восстанавливаем энергию на основе времени последнего обновления
             last_energy_update = user_data.get('last_energy_update')
-            if last_energy_update:
+            current_time = datetime.now(timezone.utc)
+            
+            if not last_energy_update:
+                # Если время последнего обновления отсутствует, устанавливаем текущее время и максимальную энергию
+                user_data['energy'] = MAX_ENERGY
+                user_data['last_energy_update'] = current_time.isoformat()
+            else:
                 try:
                     # Парсим дату с учетом возможного часового пояса
                     if isinstance(last_energy_update, str):
@@ -155,7 +161,10 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                     else:
                         last_update_time = last_energy_update
                     
-                    current_time = datetime.now(timezone.utc)
+                    # Убедимся, что last_update_time имеет timezone
+                    if last_update_time.tzinfo is None:
+                        last_update_time = last_update_time.replace(tzinfo=timezone.utc)
+                    
                     time_diff_seconds = (current_time - last_update_time).total_seconds()
                     
                     # Восстанавливаем энергию (1 единица в секунду)
@@ -167,6 +176,9 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                     user_data['last_energy_update'] = current_time.isoformat()
                 except Exception as e:
                     logger.error(f"Error restoring energy: {e}")
+                    # В случае ошибки, устанавливаем энергию в максимальное значение и текущее время
+                    user_data['energy'] = MAX_ENERGY
+                    user_data['last_energy_update'] = current_time.isoformat()
             
             return user_data
         else:
@@ -2921,4 +2933,4 @@ async def debug_levels():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
