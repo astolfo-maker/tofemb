@@ -1771,8 +1771,8 @@ html_content = """
     
     // Функция для инициализации Adsgram
     function initAdsgram() {
-      // Замените 'test' на ваш реальный блок ID от Adsgram
-      adsgramAd = window.Adsgram.init({ blockId: 'test' });
+      // Используем ваш UnitID: int-16784
+      adsgramAd = window.Adsgram.init({ blockId: 'int-16784' });
       
       // Обработка событий Adsgram
       adsgramAd.addEventListener('onReward', () => {
@@ -2808,7 +2808,7 @@ html_content = """
       // Инициализируем TonConnect
       initTonConnect();
       
-      // Инициализируем Adsgram
+      // Инициализируем Adsgram с вашим UnitID
       initAdsgram();
       
       // Загружаем данные пользователя при запуске
