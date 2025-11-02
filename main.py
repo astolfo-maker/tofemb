@@ -91,6 +91,13 @@ DAILY_TASKS = [
         "title": "Пригласить 3-х друзей",
         "reward": 5000,
         "type": "daily"
+    },
+    {
+        "id": "ads_task",
+        "title": "Просмотр рекламы",
+        "reward": 5000,
+        "type": "daily",
+        "no_reset": True  # Флаг, что задание не сбрасывается
     }
 ]
 
@@ -156,6 +163,10 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 
             if not isinstance(user_data.get('upgrades'), list):
                 user_data['upgrades'] = []
+            
+            # Добавляем поле для счетчика рекламы, если его нет
+            if 'ads_watched' not in user_data:
+                user_data['ads_watched'] = 0
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -232,7 +243,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
             "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
-            "upgrades": user_data.get('upgrades', [])
+            "upgrades": user_data.get('upgrades', []),
+            "ads_watched": int(user_data.get('ads_watched', 0))
         }
         
         def query():
@@ -1465,6 +1477,20 @@ html_content = """
           <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
           <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
         </div>
+        
+        <!-- Задание: Просмотр рекламы -->
+        <div class="task-item">
+          <div class="task-header">
+            <div class="task-title">Просмотр рекламы</div>
+            <button id="ads-task-button" class="task-button">НАЧАТЬ</button>
+          </div>
+          <div class="task-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>5000 монеток</span>
+          </div>
+          <div class="task-progress">Просмотрено: <span id="ads-count-value">0</span>/10</div>
+          <div id="ads-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+        </div>
       </div>
     </section>
     
@@ -1597,7 +1623,8 @@ html_content = """
     ];
     
     const DAILY_TASKS = [
-      {id: "referral_task", title: "Пригласить 3-х друзей", reward: 5000, type: "daily"}
+      {id: "referral_task", title: "Пригласить 3-х друзей", reward: 5000, type: "daily"},
+      {id: "ads_task", title: "Просмотр рекламы", reward: 5000, type: "daily", no_reset: true}
     ];
     
     // Функция для определения уровня по очкам
@@ -1640,7 +1667,8 @@ html_content = """
       walletTaskCompleted: false,
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
-      upgrades: []
+      upgrades: [],
+      ads_watched: 0
     };
     
     // Максимальное количество энергии
@@ -1798,6 +1826,10 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
+            // Проверяем поле счетчика рекламы
+            if (!userData.ads_watched) {
+              userData.ads_watched = 0;
+            }
             
             // Обновляем энергию при загрузке
             updateEnergy();
@@ -1817,6 +1849,7 @@ html_content = """
             // Проверяем задания
             checkWalletTask();
             checkReferralTask();
+            checkAdsTask();
             
             return;
           }
@@ -1838,7 +1871,8 @@ html_content = """
           walletTaskCompleted: false,
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
-          upgrades: []
+          upgrades: [],
+          ads_watched: 0
         };
         
         // Сохраняем нового пользователя на сервере
@@ -1846,11 +1880,13 @@ html_content = """
         // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkReferralTask();
+        checkAdsTask();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkReferralTask();
+        checkAdsTask();
       }
     }
     
@@ -1882,6 +1918,7 @@ html_content = """
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
+            const oldAdsWatched = userData.ads_watched;
             
             userData = data.user;
             
@@ -1894,6 +1931,7 @@ html_content = """
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
+            userData.ads_watched = oldAdsWatched;
           }
           // После сохранения обновляем топ
           await updateTopData();
@@ -1988,6 +2026,7 @@ html_content = """
       if (pageKey === 'tasks') {
         checkWalletTask();
         checkReferralTask();
+        checkAdsTask();
       }
     }
 
@@ -2263,6 +2302,32 @@ html_content = """
       }
     }
     
+    // Проверка задания с рекламой
+    function checkAdsTask() {
+      // Убедимся, что ads_watched существует
+      if (typeof userData.ads_watched === 'undefined') {
+        userData.ads_watched = 0;
+      }
+      
+      // Обновляем счетчик просмотренной рекламы
+      document.getElementById('ads-count-value').textContent = userData.ads_watched;
+      
+      // Задание без отката, всегда доступно
+      if (userData.ads_watched >= 10) {
+        // Задание доступно для получения награды
+        document.getElementById('ads-task-button').textContent = 'Получить награду';
+        document.getElementById('ads-task-button').disabled = false;
+        document.getElementById('ads-task-button').style.display = 'block';
+        document.getElementById('ads-task-status').style.display = 'none';
+      } else {
+        // Задание не выполнено
+        document.getElementById('ads-task-button').textContent = 'НАЧАТЬ';
+        document.getElementById('ads-task-button').disabled = false;
+        document.getElementById('ads-task-button').style.display = 'block';
+        document.getElementById('ads-task-status').style.display = 'none';
+      }
+    }
+    
     // Обновление таймера реферального задания
     function updateReferralTimer() {
       const lastCompletion = userData.lastReferralTaskCompletion ? 
@@ -2343,6 +2408,46 @@ html_content = """
       
       // Показываем уведомление
       showNotification('Вы получили 5000 монеток!');
+    }
+    
+    // Получение награды за задание с рекламой
+    async function claimAdsTaskReward() {
+      if (userData.ads_watched < 10) return;
+      
+      // Добавляем награду
+      userData.score += 5000;
+      
+      // Сбрасываем счетчик (задание можно выполнять снова)
+      userData.ads_watched = 0;
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      checkAdsTask();
+      
+      // Показываем уведомление
+      showNotification('Вы получили 5000 монеток!');
+    }
+    
+    // Просмотр рекламы
+    async function watchAds() {
+      // Имитация просмотра рекламы
+      // В реальном приложении здесь будет интеграция с рекламным SDK
+      
+      // Увеличиваем счетчик просмотренной рекламы
+      userData.ads_watched = (userData.ads_watched || 0) + 1;
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      checkAdsTask();
+      
+      // Показываем уведомление
+      showNotification('Реклама просмотрена!');
     }
     
     // Копирование реферальной ссылки
@@ -2678,6 +2783,15 @@ html_content = """
       document.getElementById('referral-modal-button').addEventListener('click', copyReferralLink);
       document.getElementById('referral-share-button').addEventListener('click', shareReferralLink);
       
+      // Обработчики для задания с рекламой
+      document.getElementById('ads-task-button').addEventListener('click', function() {
+        if (userData.ads_watched >= 10) {
+          claimAdsTaskReward();
+        } else {
+          watchAds();
+        }
+      });
+      
       // Обработчик для кнопки TonConnect в профиле
       document.getElementById('ton-connect-button').addEventListener('click', function() {
         if (userData.walletAddress) {
@@ -2879,7 +2993,8 @@ async def get_user_data(user_id: str):
                 "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
-                "upgrades": user_data["upgrades"]
+                "upgrades": user_data["upgrades"],
+                "ads_watched": user_data["ads_watched"]
             }
             
             logger.info(f"Returning user data for {user_data['first_name']}")
@@ -2923,7 +3038,8 @@ async def save_user_data(request: Request):
                     "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"]
+                    "upgrades": user_data["upgrades"],
+                    "ads_watched": user_data["ads_watched"]
                 }
                 
                 logger.info(f"User saved successfully: {user_data['first_name']}")
@@ -3021,7 +3137,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
- 
