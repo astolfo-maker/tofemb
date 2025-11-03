@@ -1727,7 +1727,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com',
+        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
           twaReturnUrl: 'https://t.me/Fnmby_bot'
@@ -3224,3 +3224,6 @@ if __name__ == "__main__":
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
+
+
+manifestUrl
