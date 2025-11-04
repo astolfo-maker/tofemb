@@ -367,6 +367,7 @@ async def adsgram_reward(request: Request):
             user_data['ads_watched'] = 0
         
         user_data['ads_watched'] += 1
+        logger.info(f"Updated ads_watched for user {user_id}: {user_data['ads_watched']}")
         
         # Сохраняем обновленные данные
         success = save_user(user_data)
@@ -3223,3 +3224,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
+
+@app.get("/adsgram-reward")
