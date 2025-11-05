@@ -1776,7 +1776,7 @@ html_content = """
     // Функция для инициализации Adsgram
     function initAdsgram() {
       // Используем ваш UnitID: int-16829
-      adsgramAd = window.Adsgram.init({ 
+      adsgramAd = window.Adsgram({ 
         blockId: '15793',
         debug: true,
         onReward: () => {
@@ -3325,3 +3325,4 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
+init
