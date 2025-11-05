@@ -340,6 +340,7 @@ except Exception as e:
 async def favicon():
     return Response(status_code=204)  # Возвращаем пустой ответ без содержимого
 
+# Эндпоинт для обработки уведомлений от Adsgram
 @app.get("/adsgram-reward")
 async def adsgram_reward(request: Request):
     """Обработка уведомлений о просмотре рекламы от Adsgram"""
@@ -369,50 +370,14 @@ async def adsgram_reward(request: Request):
         old_count = user_data['ads_watched']
         user_data['ads_watched'] += 1
         
-        # Проверяем, достигнуто ли 10 просмотров
-        reward_claimed = False
-        if user_data['ads_watched'] >= 10:
-            # Начисляем награду
-            user_data['score'] += 5000
-            # Сбрасываем счетчик
-            user_data['ads_watched'] = 0
-            reward_claimed = True
-            logger.info(f"User {user_id} claimed ads reward: 5000 coins")
-        
         logger.info(f"Updated ads_watched for user {user_id}: {old_count} -> {user_data['ads_watched']}")
         
         # Сохраняем обновленные данные
         success = save_user(user_data)
         
         if success:
-            # Загружаем обновленные данные пользователя, чтобы вернуть актуальные
-            updated_user_data = load_user(user_id)
-            if updated_user_data:
-                # Преобразуем данные для фронтенда
-                response_data = {
-                    "id": updated_user_data["user_id"],
-                    "first_name": updated_user_data["first_name"],
-                    "last_name": updated_user_data["last_name"],
-                    "username": updated_user_data["username"],
-                    "photo_url": updated_user_data["photo_url"],
-                    "score": updated_user_data["score"],
-                    "total_clicks": updated_user_data["total_clicks"],
-                    "level": updated_user_data["level"],
-                    "walletAddress": updated_user_data["wallet_address"],
-                    "walletTaskCompleted": updated_user_data["wallet_task_completed"],
-                    "referrals": updated_user_data["referrals"],
-                    "lastReferralTaskCompletion": updated_user_data["last_referral_task_completion"],
-                    "energy": updated_user_data["energy"],
-                    "lastEnergyUpdate": updated_user_data["last_energy_update"],
-                    "upgrades": updated_user_data["upgrades"],
-                    "ads_watched": updated_user_data["ads_watched"]
-                }
-                
-                logger.info(f"Successfully updated ads_watched for user {user_id}: {updated_user_data['ads_watched']}")
-                return JSONResponse(content={"status": "success", "user": response_data, "reward_claimed": reward_claimed})
-            else:
-                logger.error(f"Failed to load updated user data for {user_id}")
-                return JSONResponse(content={"status": "error", "message": "Failed to load updated user data"}, status_code=500)
+            logger.info(f"Successfully updated ads_watched for user {user_id}: {user_data['ads_watched']}")
+            return JSONResponse(content={"status": "success", "ads_watched": user_data['ads_watched']})
         else:
             logger.error(f"Failed to save user data for {user_id}")
             return JSONResponse(content={"status": "error", "message": "Failed to save user data"}, status_code=500)
@@ -1808,57 +1773,43 @@ html_content = """
       });
     }
     
-   // Функция для инициализации Adsgram
-function initAdsgram() {
-  // Используем PlatformID: 15793
-  adsgramAd = window.Adsgram.init({ 
-    blockId: '15793', // Заменено на правильный PlatformID
-    debug: true,
-    onReward: () => {
-      // Реклама успешно просмотрена
-      console.log('Ad watched successfully');
-      
-      // Делаем запрос на сервер для обработки рекламы
-      fetch(`/adsgram-reward?userid=${user.id}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            // Обновляем данные пользователя из ответа
-            userData = data.user;
-            
-            // Обновляем интерфейс
-            updateScoreDisplay();
-            updateLevel();
-            checkAdsTask();
-            
-            // Если была начислена награда, показываем уведомление
-            if (data.reward_claimed) {
-              showNotification('Вы получили 5000 монеток за просмотр рекламы!');
-            } else {
-              showNotification('Реклама просмотрена!');
-            }
-          } else {
-            console.error('Error processing ad reward:', data.message);
-            showNotification('Ошибка при обработке рекламы');
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching ad reward:', error);
-          showNotification('Ошибка при обработке рекламы');
-        });
-    },
-    onError: (error) => {
-      // Ошибка при показе рекламы
-      console.error('Ad error:', error);
-      showNotification('Ошибка при показе рекламы');
-    },
-    onSkip: () => {
-      // Реклама пропущена
-      console.log('Ad skipped');
-      showNotification('Реклама пропущена');
+    // Функция для инициализации Adsgram
+    function initAdsgram() {
+      // Используем ваш UnitID: int-16829
+      adsgramAd = window.Adsgram.init({ 
+        blockId: 'int-16829',
+        debug: true,
+        onReward: () => {
+          // Реклама успешно просмотрена
+          console.log('Ad watched successfully');
+          
+          // Увеличиваем счетчик просмотренной рекламы
+          userData.ads_watched = (userData.ads_watched || 0) + 1;
+          console.log('Updated ads_watched locally:', userData.ads_watched);
+          
+          // Обновляем интерфейс
+          checkAdsTask();
+          
+          // Показываем уведомление
+          showNotification('Реклама просмотрена!');
+          
+          // Сохраняем данные
+          saveUserData().catch(error => {
+            console.error('Error saving user data after ad watch:', error);
+          });
+        },
+        onError: (error) => {
+          // Ошибка при показе рекламы
+          console.error('Ad error:', error);
+          showNotification('Ошибка при показе рекламы');
+        },
+        onSkip: () => {
+          // Реклама пропущена
+          console.log('Ad skipped');
+          showNotification('Реклама пропущена');
+        }
+      });
     }
-  });
-}
     
     // Форматирование адреса кошелька
     function formatWalletAddress(address) {
@@ -3372,4 +3323,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
