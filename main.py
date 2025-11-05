@@ -1775,9 +1775,8 @@ html_content = """
     
     // Функция для инициализации Adsgram
     function initAdsgram() {
-      // Используем ваш UnitID: int-16829
       adsgramAd = window.Adsgram.init({ 
-        blockId: 'int-16829',
+        blockId: 'int-17027',
         debug: true,
         onReward: () => {
           // Реклама успешно просмотрена
