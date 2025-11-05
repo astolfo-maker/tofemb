@@ -1411,6 +1411,22 @@ html_content = """
       cursor: not-allowed;
       transform: none;
     }
+    
+    /* Стили для счетчика рекламы */
+    .ads-counter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .ads-counter-value {
+      background: rgba(255, 102, 204, 0.3);
+      border-radius: 8px;
+      padding: 5px 10px;
+      margin: 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -1538,6 +1554,10 @@ html_content = """
           </div>
           <div class="task-progress">Просмотрено: <span id="ads-count-value">0</span>/10</div>
           <div id="ads-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div class="ads-counter">
+            <span>Счетчик:</span>
+            <span class="ads-counter-value" id="ads-counter-value">0</span>
+          </div>
         </div>
       </div>
     </section>
@@ -1817,17 +1837,23 @@ html_content = """
     // Функция для обновления счетчика рекламы в интерфейсе
     function updateAdsCount() {
       const adsCountElement = document.getElementById('ads-count-value');
+      const adsCounterElement = document.getElementById('ads-counter-value');
+      
       if (adsCountElement) {
         adsCountElement.textContent = userData.ads_watched;
         console.log('Updated ads count display to:', userData.ads_watched);
-        
-        // Проверяем, можно ли получить награду
-        if (userData.ads_watched >= 10) {
-          const adsTaskButton = document.getElementById('ads-task-button');
-          if (adsTaskButton) {
-            adsTaskButton.textContent = 'Получить награду';
-            adsTaskButton.disabled = false;
-          }
+      }
+      
+      if (adsCounterElement) {
+        adsCounterElement.textContent = userData.ads_watched;
+      }
+      
+      // Проверяем, можно ли получить награду
+      if (userData.ads_watched >= 10) {
+        const adsTaskButton = document.getElementById('ads-task-button');
+        if (adsTaskButton) {
+          adsTaskButton.textContent = 'Получить награду';
+          adsTaskButton.disabled = false;
         }
       }
     }
@@ -2957,7 +2983,43 @@ html_content = """
         if (userData.ads_watched >= 10) {
           claimAdsTaskReward();
         } else {
-          watchAds();
+          // Запускаем отсчет 3 секунд
+          let secondsLeft = 3;
+          const button = this;
+          const originalText = button.textContent;
+          
+          // Блокируем кнопку и показываем обратный отсчет
+          button.disabled = true;
+          button.textContent = `${secondsLeft}`;
+          
+          const countdownInterval = setInterval(() => {
+            secondsLeft--;
+            if (secondsLeft > 0) {
+              button.textContent = `${secondsLeft}`;
+            } else {
+              // Останавливаем интервал
+              clearInterval(countdownInterval);
+              
+              // Увеличиваем счетчик рекламы
+              userData.ads_watched = (userData.ads_watched || 0) + 1;
+              localStorage.setItem('ads_watched', userData.ads_watched);
+              
+              // Обновляем интерфейс
+              updateAdsCount();
+              
+              // Показываем уведомление
+              showNotification('Реклама просмотрена!');
+              
+              // Сохраняем данные на сервере
+              saveUserData().catch(error => {
+                console.error('Error saving user data after ad watch:', error);
+              });
+              
+              // Возвращаем кнопку в исходное состояние
+              button.disabled = false;
+              button.textContent = originalText;
+            }
+          }, 1000);
         }
       });
       
