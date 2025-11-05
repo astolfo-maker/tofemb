@@ -1777,7 +1777,7 @@ html_content = """
     function initAdsgram() {
       // Используем ваш UnitID: int-16829
       adsgramAd = window.Adsgram.init({ 
-        blockId: 'int-16829',
+        blockId: 'int-15793',
         debug: true,
         onReward: () => {
           // Реклама успешно просмотрена
@@ -3324,4 +3324,4 @@ if __name__ == "__main__":
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-
+init
