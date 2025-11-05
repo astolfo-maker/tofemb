@@ -1411,22 +1411,6 @@ html_content = """
       cursor: not-allowed;
       transform: none;
     }
-    
-    /* Стили для счетчика рекламы */
-    .ads-counter {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 10px;
-      font-size: 16px;
-      font-weight: bold;
-    }
-    .ads-counter-value {
-      background: rgba(255, 102, 204, 0.3);
-      border-radius: 8px;
-      padding: 5px 10px;
-      margin: 0 5px;
-    }
   </style>
 </head>
 <body>
@@ -1554,10 +1538,6 @@ html_content = """
           </div>
           <div class="task-progress">Просмотрено: <span id="ads-count-value">0</span>/10</div>
           <div id="ads-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
-          <div class="ads-counter">
-            <span>Счетчик:</span>
-            <span class="ads-counter-value" id="ads-counter-value">0</span>
-          </div>
         </div>
       </div>
     </section>
@@ -1800,23 +1780,20 @@ html_content = """
         blockId: 'int-16829',
         debug: true,
         onReward: () => {
-          // Реклама успешно просмотрена - немедленно обновляем счетчик на клиенте
+          // Реклама успешно просмотрена
           console.log('Ad watched successfully');
           
           // Увеличиваем счетчик просмотренной рекламы
           userData.ads_watched = (userData.ads_watched || 0) + 1;
           console.log('Updated ads_watched locally:', userData.ads_watched);
           
-          // Сохраняем в localStorage для сохранения между сессиями
-          localStorage.setItem('ads_watched', userData.ads_watched);
-          
-          // Немедленно обновляем интерфейс
-          updateAdsCount();
+          // Обновляем интерфейс
+          checkAdsTask();
           
           // Показываем уведомление
           showNotification('Реклама просмотрена!');
           
-          // Сохраняем данные на сервере в фоновом режиме, но не ждем завершения
+          // Сохраняем данные
           saveUserData().catch(error => {
             console.error('Error saving user data after ad watch:', error);
           });
@@ -1832,30 +1809,6 @@ html_content = """
           showNotification('Реклама пропущена');
         }
       });
-    }
-    
-    // Функция для обновления счетчика рекламы в интерфейсе
-    function updateAdsCount() {
-      const adsCountElement = document.getElementById('ads-count-value');
-      const adsCounterElement = document.getElementById('ads-counter-value');
-      
-      if (adsCountElement) {
-        adsCountElement.textContent = userData.ads_watched;
-        console.log('Updated ads count display to:', userData.ads_watched);
-      }
-      
-      if (adsCounterElement) {
-        adsCounterElement.textContent = userData.ads_watched;
-      }
-      
-      // Проверяем, можно ли получить награду
-      if (userData.ads_watched >= 10) {
-        const adsTaskButton = document.getElementById('ads-task-button');
-        if (adsTaskButton) {
-          adsTaskButton.textContent = 'Получить награду';
-          adsTaskButton.disabled = false;
-        }
-      }
     }
     
     // Форматирование адреса кошелька
@@ -1937,14 +1890,6 @@ html_content = """
           const data = await response.json();
           if (data.user) {
             userData = data.user;
-            
-            // Восстанавливаем счетчик рекламы из localStorage, если он там есть
-            const localAdsWatched = localStorage.getItem('ads_watched');
-            if (localAdsWatched && !isNaN(parseInt(localAdsWatched))) {
-              userData.ads_watched = parseInt(localAdsWatched);
-              console.log('Restored ads_watched from localStorage:', userData.ads_watched);
-            }
-            
             // Убедимся, что referrals - это массив
             if (!userData.referrals) {
               userData.referrals = [];
@@ -1970,8 +1915,8 @@ html_content = """
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
-            // Убедимся, что ads_watched существует
-            if (typeof userData.ads_watched === 'undefined') {
+            // Проверяем поле счетчика рекламы
+            if (!userData.ads_watched) {
               userData.ads_watched = 0;
             }
             
@@ -2469,7 +2414,11 @@ html_content = """
       }
       
       // Обновляем счетчик просмотренной рекламы
-      updateAdsCount();
+      const adsCountElement = document.getElementById('ads-count-value');
+      if (adsCountElement) {
+        adsCountElement.textContent = userData.ads_watched;
+        console.log('Updated ads count display:', userData.ads_watched);
+      }
       
       // Задание без отката, всегда доступно
       if (userData.ads_watched >= 10) {
@@ -2596,21 +2545,16 @@ html_content = """
       // Сбрасываем счетчик (задание можно выполнять снова)
       userData.ads_watched = 0;
       
-      // Обновляем localStorage
-      localStorage.setItem('ads_watched', userData.ads_watched);
+      // Сохраняем данные
+      await saveUserData();
       
-      // Немедленно обновляем интерфейс
+      // Обновляем интерфейс
       updateScoreDisplay();
       updateLevel();
-      updateAdsCount();
+      checkAdsTask();
       
       // Показываем уведомление
       showNotification('Вы получили 5000 монеток!');
-      
-      // Сохраняем данные на сервере
-      saveUserData().catch(error => {
-        console.error('Error saving user data after claiming reward:', error);
-      });
     }
     
     // Просмотр рекламы через Adsgram
@@ -2903,14 +2847,6 @@ html_content = """
         }, 300);
       }
     }
-    
-    // Функция для тестирования - можно вызвать из консоли браузера
-    function testAdsIncrement() {
-      userData.ads_watched = (userData.ads_watched || 0) + 1;
-      localStorage.setItem('ads_watched', userData.ads_watched);
-      updateAdsCount();
-      console.log('Test: incremented ads_watched to', userData.ads_watched);
-    }
 
     // Вешаем обработчики на кнопки
     document.addEventListener('DOMContentLoaded', async function() {
@@ -2983,43 +2919,7 @@ html_content = """
         if (userData.ads_watched >= 10) {
           claimAdsTaskReward();
         } else {
-          // Запускаем отсчет 3 секунд
-          let secondsLeft = 3;
-          const button = this;
-          const originalText = button.textContent;
-          
-          // Блокируем кнопку и показываем обратный отсчет
-          button.disabled = true;
-          button.textContent = `${secondsLeft}`;
-          
-          const countdownInterval = setInterval(() => {
-            secondsLeft--;
-            if (secondsLeft > 0) {
-              button.textContent = `${secondsLeft}`;
-            } else {
-              // Останавливаем интервал
-              clearInterval(countdownInterval);
-              
-              // Увеличиваем счетчик рекламы
-              userData.ads_watched = (userData.ads_watched || 0) + 1;
-              localStorage.setItem('ads_watched', userData.ads_watched);
-              
-              // Обновляем интерфейс
-              updateAdsCount();
-              
-              // Показываем уведомление
-              showNotification('Реклама просмотрена!');
-              
-              // Сохраняем данные на сервере
-              saveUserData().catch(error => {
-                console.error('Error saving user data after ad watch:', error);
-              });
-              
-              // Возвращаем кнопку в исходное состояние
-              button.disabled = false;
-              button.textContent = originalText;
-            }
-          }, 1000);
+          watchAds();
         }
       });
       
@@ -3077,9 +2977,6 @@ html_content = """
       
       // Обновляем уровень при загрузке
       updateLevel();
-      
-      // Делаем функцию тестирования доступной в консоли
-      window.testAdsIncrement = testAdsIncrement;
     });
 
     // --- Код для клика ---
