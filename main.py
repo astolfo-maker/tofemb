@@ -1774,43 +1774,70 @@ html_content = """
     }
     
     // Функция для инициализации Adsgram
-    function initAdsgram() {
-      // Используем ваш UnitID: int-16829
-      adsgramAd = window.Adsgram({ 
-        blockId: '15793',
-        debug: true,
-        onReward: () => {
-          // Реклама успешно просмотрена
-          console.log('Ad watched successfully');
-          
-          // Увеличиваем счетчик просмотренной рекламы
-          userData.ads_watched = (userData.ads_watched || 0) + 1;
-          console.log('Updated ads_watched locally:', userData.ads_watched);
-          
-          // Обновляем интерфейс
-          checkAdsTask();
-          
-          // Показываем уведомление
-          showNotification('Реклама просмотрена!');
-          
-          // Сохраняем данные
-          saveUserData().catch(error => {
-            console.error('Error saving user data after ad watch:', error);
-          });
-        },
-        onError: (error) => {
-          // Ошибка при показе рекламы
-          console.error('Ad error:', error);
-          showNotification('Ошибка при показе рекламы');
-        },
-        onSkip: () => {
-          // Реклама пропущена
-          console.log('Ad skipped');
-          showNotification('Реклама пропущена');
-        }
-      });
+function initAdsgram() {
+  // Проверяем наличие Adsgram API
+  if (typeof window.Adsgram === 'undefined') {
+    console.error('Adsgram API not loaded');
+    return;
+  }
+
+  // Используем правильный UnitID (int-16829)
+  adsgramAd = window.Adsgram({ 
+    blockId: 'int-16829', // Исправлен на правильный ID из комментария
+    debug: false, // Отключен debug для продакшена
+    onReward: () => {
+      // Реклама успешно просмотрена
+      console.log('Ad watched successfully');
+      
+      // Безопасное обновление счетчика
+      userData.ads_watched = (userData.ads_watched || 0) + 1;
+      console.log('Updated ads_watched:', userData.ads_watched);
+      
+      // Обновляем интерфейс
+      if (typeof checkAdsTask === 'function') checkAdsTask();
+      
+      // Показываем уведомление
+      if (typeof showNotification === 'function') {
+        showNotification('Реклама просмотрена! +1 очко');
+      }
+      
+      // Сохраняем данные с обработкой ошибок
+      saveUserData()
+        .catch(error => {
+          console.error('Save error:', error);
+          if (typeof showNotification === 'function') {
+            showNotification('Ошибка сохранения данных');
+          }
+        });
+    },
+    onError: (error) => {
+      // Детальная обработка ошибок
+      console.error('Ad error:', error);
+      const errorMessage = error.message || 'Ошибка рекламы';
+      
+      if (typeof showNotification === 'function') {
+        showNotification(errorMessage);
+      }
+      
+      // Дополнительная логика обработки ошибок
+      if (error.code === 'NO_FILL') {
+        console.warn('No ads available');
+      }
+    },
+    onSkip: () => {
+      // Реклама пропущена
+      console.log('Ad skipped');
+      if (typeof showNotification === 'function') {
+        showNotification('Реклама пропущена');
+      }
     }
-    
+  });
+
+  // Проверка успешной инициализации
+  if (!adsgramAd) {
+    console.error('Adsgram initialization failed');
+  }
+}
     // Форматирование адреса кошелька
     function formatWalletAddress(address) {
       if (!address) return 'Не подключен';
@@ -3325,4 +3352,4 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
-
+15793
