@@ -72,7 +72,12 @@ UPGRADES = [
     {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
     {"id": "upgrade10", "description": "+25 за клик", "cost": 250000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
     {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 500000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"},
+    # Новые улучшения
+    {"id": "boost_2x", "description": "x2 очки на 10 минут", "cost": 5000, "effect": {"type": "temporary_boost", "multiplier": 2, "duration": 600}, "image": "/static/boost_2x.png"},
+    {"id": "energy_max", "description": "+50 к макс. энергии", "cost": 10000, "effect": {"type": "max_energy", "value": 50}, "image": "/static/energy_max.png"},
+    {"id": "skin_gold", "description": "Золотой скин", "cost": 20000, "effect": {"type": "visual", "skin": "gold"}, "image": "/static/skin_gold.png"},
+    {"id": "auto_clicker", "description": "Автокликер (1 клик/сек)", "cost": 50000, "effect": {"type": "auto_clicker", "value": 1}, "image": "/static/auto_clicker.png"}
 ]
 
 # Определение заданий
@@ -103,8 +108,69 @@ DAILY_TASKS = [
         "title": "Просмотр рекламы",
         "reward": 5000,
         "type": "daily",
-        "no_reset": True  # Флаг, что задание не сбрасывается
+        "no_reset": True
     }
+]
+
+# Определение достижений
+ACHIEVEMENTS = [
+    {
+        "id": "first_click",
+        "name": "Первый клик",
+        "description": "Сделайте свой первый клик",
+        "reward": 100,
+        "condition": {"type": "clicks", "value": 1}
+    },
+    {
+        "id": "click_master",
+        "name": "Мастер кликов",
+        "description": "Сделайте 1000 кликов",
+        "reward": 5000,
+        "condition": {"type": "clicks", "value": 1000}
+    },
+    {
+        "id": "score_1000",
+        "name": "Тысячник",
+        "description": "Наберите 1000 очков",
+        "reward": 1000,
+        "condition": {"type": "score", "value": 1000}
+    },
+    {
+        "id": "first_friend",
+        "name": "Первый друг",
+        "description": "Пригласите первого друга",
+        "reward": 2000,
+        "condition": {"type": "referrals", "value": 1}
+    },
+    {
+        "id": "daily_login",
+        "name": "Ежедневный вход",
+        "description": "Входите в игру 7 дней подряд",
+        "reward": 3000,
+        "condition": {"type": "daily_streak", "value": 7}
+    }
+]
+
+# Определение мини-игр
+MINIGAMES = [
+    {
+        "id": "catch_coins",
+        "name": "Поймай монетки",
+        "description": "Ловите падающие монетки!",
+        "reward": 100,
+        "duration": 30
+    }
+]
+
+# Определение ежедневных бонусов
+DAILY_BONUSES = [
+    {"day": 1, "reward": 100},
+    {"day": 2, "reward": 200},
+    {"day": 3, "reward": 300},
+    {"day": 4, "reward": 400},
+    {"day": 5, "reward": 500},
+    {"day": 6, "reward": 600},
+    {"day": 7, "reward": 1000}
 ]
 
 # Функция для определения уровня по очкам
@@ -179,6 +245,49 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'channel_task_completed' not in user_data:
                 user_data['channel_task_completed'] = False
                 logger.info("Added default channel_task_completed value to user data")
+            
+            # Добавляем поля для достижений
+            if 'achievements' not in user_data:
+                user_data['achievements'] = []
+                logger.info("Added default achievements value to user data")
+            
+            # Добавляем поля для друзей
+            if 'friends' not in user_data:
+                user_data['friends'] = []
+                logger.info("Added default friends value to user data")
+            
+            # Добавляем поля для ежедневных бонусов
+            if 'daily_bonus' not in user_data:
+                user_data['daily_bonus'] = {
+                    'last_claim': None,
+                    'streak': 0,
+                    'claimed_days': []
+                }
+                logger.info("Added default daily_bonus value to user data")
+            
+            # Добавляем поля для активных бустов
+            if 'active_boosts' not in user_data:
+                user_data['active_boosts'] = []
+                logger.info("Added default active_boosts value to user data")
+            
+            # Добавляем поля для скинов
+            if 'skins' not in user_data:
+                user_data['skins'] = []
+                logger.info("Added default skins value to user data")
+            
+            if 'active_skin' not in user_data:
+                user_data['active_skin'] = 'default'
+                logger.info("Added default active_skin value to user data")
+            
+            # Добавляем поля для автокликеров
+            if 'auto_clickers' not in user_data:
+                user_data['auto_clickers'] = 0
+                logger.info("Added default auto_clickers value to user data")
+            
+            # Добавляем поле для языка
+            if 'language' not in user_data:
+                user_data['language'] = 'ru'
+                logger.info("Added default language value to user data")
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -257,7 +366,19 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "energy": int(user_data.get('energy', MAX_ENERGY)),
             "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', []),
-            "ads_watched": int(user_data.get('ads_watched', 0))
+            "ads_watched": int(user_data.get('ads_watched', 0)),
+            "achievements": user_data.get('achievements', []),
+            "friends": user_data.get('friends', []),
+            "daily_bonus": user_data.get('daily_bonus', {
+                'last_claim': None,
+                'streak': 0,
+                'claimed_days': []
+            }),
+            "active_boosts": user_data.get('active_boosts', []),
+            "skins": user_data.get('skins', []),
+            "active_skin": user_data.get('active_skin', 'default'),
+            "auto_clickers": int(user_data.get('auto_clickers', 0)),
+            "language": user_data.get('language', 'ru')
         }
         
         def query():
@@ -338,6 +459,304 @@ def add_referral(referrer_id: str, referred_id: str) -> bool:
         return update_response.data is not None
     except Exception as e:
         logger.error(f"Error adding referral: {e}")
+        return False
+
+# Функция для получения достижений
+def get_achievements(user_id: str) -> List[Dict[str, Any]]:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return []
+        
+    try:
+        logger.info(f"Getting achievements for user: {user_id}")
+        
+        def query():
+            return supabase.table("users").select("achievements").eq("user_id", user_id).execute()
+        
+        response = execute_supabase_query(query)
+        
+        if response.data and len(response.data) > 0:
+            return response.data[0].get("achievements", [])
+        else:
+            return []
+    except Exception as e:
+        logger.error(f"Error getting achievements: {e}")
+        return []
+
+# Функция для добавления достижения
+def add_achievement(user_id: str, achievement_id: str) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
+    try:
+        logger.info(f"Adding achievement {achievement_id} to user: {user_id}")
+        
+        # Получаем текущие достижения пользователя
+        def query():
+            return supabase.table("users").select("achievements").eq("user_id", user_id).execute()
+        
+        response = execute_supabase_query(query)
+        
+        if not response.data or len(response.data) == 0:
+            logger.info(f"User not found: {user_id}")
+            return False
+        
+        achievements = response.data[0].get("achievements", [])
+        
+        # Если достижение уже добавлено, ничего не делаем
+        if achievement_id in achievements:
+            logger.info("Achievement already exists")
+            return True
+        
+        # Добавляем новое достижение
+        achievements.append(achievement_id)
+        
+        # Обновляем данные пользователя
+        def update_query():
+            return supabase.table("users").update({"achievements": achievements}).eq("user_id", user_id).execute()
+        
+        update_response = execute_supabase_query(update_query)
+        
+        logger.info("Achievement added successfully")
+        return update_response.data is not None
+    except Exception as e:
+        logger.error(f"Error adding achievement: {e}")
+        return False
+
+# Функция для получения друзей
+def get_friends(user_id: str) -> List[Dict[str, Any]]:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return []
+        
+    try:
+        logger.info(f"Getting friends for user: {user_id}")
+        
+        def query():
+            return supabase.table("users").select("friends").eq("user_id", user_id).execute()
+        
+        response = execute_supabase_query(query)
+        
+        if response.data and len(response.data) > 0:
+            return response.data[0].get("friends", [])
+        else:
+            return []
+    except Exception as e:
+        logger.error(f"Error getting friends: {e}")
+        return []
+
+# Функция для добавления друга
+def add_friend(user_id: str, friend_id: str) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
+    try:
+        logger.info(f"Adding friend {friend_id} to user: {user_id}")
+        
+        # Получаем текущих друзей пользователя
+        def query():
+            return supabase.table("users").select("friends").eq("user_id", user_id).execute()
+        
+        response = execute_supabase_query(query)
+        
+        if not response.data or len(response.data) == 0:
+            logger.info(f"User not found: {user_id}")
+            return False
+        
+        friends = response.data[0].get("friends", [])
+        
+        # Если друг уже добавлен, ничего не делаем
+        if friend_id in friends:
+            logger.info("Friend already exists")
+            return True
+        
+        # Добавляем нового друга
+        friends.append(friend_id)
+        
+        # Обновляем данные пользователя
+        def update_query():
+            return supabase.table("users").update({"friends": friends}).eq("user_id", user_id).execute()
+        
+        update_response = execute_supabase_query(update_query)
+        
+        logger.info("Friend added successfully")
+        return update_response.data is not None
+    except Exception as e:
+        logger.error(f"Error adding friend: {e}")
+        return False
+
+# Функция для отправки подарка
+def send_gift(sender_id: str, receiver_id: str, gift_type: str, gift_value: int) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
+    try:
+        logger.info(f"Sending gift from {sender_id} to {receiver_id}: {gift_type} ({gift_value})")
+        
+        # Получаем данные отправителя
+        def sender_query():
+            return supabase.table("users").select("score").eq("user_id", sender_id).execute()
+        
+        sender_response = execute_supabase_query(sender_query)
+        
+        if not sender_response.data or len(sender_response.data) == 0:
+            logger.info(f"Sender not found: {sender_id}")
+            return False
+        
+        sender_score = sender_response.data[0].get("score", 0)
+        
+        # Проверяем, достаточно ли очков у отправителя
+        if sender_score < gift_value:
+            logger.info("Sender doesn't have enough score")
+            return False
+        
+        # Получаем данные получателя
+        def receiver_query():
+            return supabase.table("users").select("score").eq("user_id", receiver_id).execute()
+        
+        receiver_response = execute_supabase_query(receiver_query)
+        
+        if not receiver_response.data or len(receiver_response.data) == 0:
+            logger.info(f"Receiver not found: {receiver_id}")
+            return False
+        
+        receiver_score = receiver_response.data[0].get("score", 0)
+        
+        # Списываем очки у отправителя
+        def update_sender_query():
+            return supabase.table("users").update({"score": sender_score - gift_value}).eq("user_id", sender_id).execute()
+        
+        update_sender_response = execute_supabase_query(update_sender_query)
+        
+        if not update_sender_response.data:
+            logger.info("Failed to update sender score")
+            return False
+        
+        # Добавляем очки получателю
+        def update_receiver_query():
+            return supabase.table("users").update({"score": receiver_score + gift_value}).eq("user_id", receiver_id).execute()
+        
+        update_receiver_response = execute_supabase_query(update_receiver_query)
+        
+        if not update_receiver_response.data:
+            logger.info("Failed to update receiver score")
+            return False
+        
+        logger.info("Gift sent successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error sending gift: {e}")
+        return False
+
+# Функция для получения ежедневного бонуса
+def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return {"status": "error", "message": "Supabase client is not initialized"}
+        
+    try:
+        logger.info(f"Claiming daily bonus for user: {user_id}")
+        
+        # Получаем данные пользователя
+        def query():
+            return supabase.table("users").select("*").eq("user_id", user_id).execute()
+        
+        response = execute_supabase_query(query)
+        
+        if not response.data or len(response.data) == 0:
+            logger.info(f"User not found: {user_id}")
+            return {"status": "error", "message": "User not found"}
+        
+        user_data = response.data[0]
+        daily_bonus = user_data.get("daily_bonus", {
+            'last_claim': None,
+            'streak': 0,
+            'claimed_days': []
+        })
+        
+        current_time = datetime.now(timezone.utc)
+        today = current_time.date().isoformat()
+        
+        # Проверяем, был ли уже получен бонус сегодня
+        if daily_bonus.get('last_claim') and daily_bonus['last_claim'].date() == current_time.date():
+            logger.info("Daily bonus already claimed today")
+            return {"status": "error", "message": "Daily bonus already claimed today"}
+        
+        # Определяем день бонуса
+        if daily_bonus['streak'] == 0 or (daily_bonus.get('last_claim') and 
+                                         (current_time.date() - daily_bonus['last_claim'].date()).days > 1):
+            # Если серия прервана, начинаем заново
+            daily_bonus['streak'] = 1
+        else:
+            # Увеличиваем серию
+            daily_bonus['streak'] += 1
+        
+        # Ограничиваем серию максимальным количеством дней
+        if daily_bonus['streak'] > len(DAILY_BONUSES):
+            daily_bonus['streak'] = len(DAILY_BONUSES)
+        
+        # Определяем награду
+        bonus_day = min(daily_bonus['streak'], len(DAILY_BONUSES))
+        bonus_reward = DAILY_BONUSES[bonus_day - 1]['reward']
+        
+        # Обновляем данные пользователя
+        daily_bonus['last_claim'] = current_time
+        if today not in daily_bonus['claimed_days']:
+            daily_bonus['claimed_days'].append(today)
+        
+        # Добавляем очки пользователю
+        new_score = user_data.get('score', 0) + bonus_reward
+        
+        def update_query():
+            return supabase.table("users").update({
+                "score": new_score,
+                "daily_bonus": daily_bonus
+            }).eq("user_id", user_id).execute()
+        
+        update_response = execute_supabase_query(update_query)
+        
+        if not update_response.data:
+            logger.info("Failed to update user data")
+            return {"status": "error", "message": "Failed to update user data"}
+        
+        logger.info(f"Daily bonus claimed successfully: {bonus_reward}")
+        return {
+            "status": "success", 
+            "reward": bonus_reward,
+            "streak": daily_bonus['streak']
+        }
+    except Exception as e:
+        logger.error(f"Error claiming daily bonus: {e}")
+        return {"status": "error", "message": str(e)}
+
+# Функция для сохранения аналитики
+def save_analytics(user_id: str, event: str, data: Dict[str, Any]) -> bool:
+    if supabase is None:
+        logger.error("Supabase client is not initialized")
+        return False
+        
+    try:
+        logger.info(f"Saving analytics for user {user_id}: {event}")
+        
+        analytics_data = {
+            "user_id": user_id,
+            "event": event,
+            "data": data,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+        def query():
+            return supabase.table("analytics").insert(analytics_data).execute()
+        
+        response = execute_supabase_query(query)
+        
+        logger.info(f"Analytics saved successfully")
+        return response.data is not None
+    except Exception as e:
+        logger.error(f"Error saving analytics: {e}")
         return False
 
 # Монтируем статические файлы
@@ -530,7 +949,7 @@ html_content = """
       outline-offset: 2px;
     }
 
-    #profile, #tasks, #top {
+    #profile, #tasks, #top, #achievements, #friends, #minigames, #daily {
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
@@ -1440,6 +1859,417 @@ html_content = """
       cursor: not-allowed;
       transform: none;
     }
+    
+    /* Стили для достижений */
+    #achievements-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .achievement-item {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 15px;
+      padding: 15px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .achievement-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    .achievement-item.unlocked {
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid #4ade80;
+    }
+    .achievement-icon {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+    .achievement-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .achievement-description {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+    .achievement-reward {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .achievement-reward img {
+      width: 16px;
+      height: 16px;
+    }
+    .achievement-progress {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    
+    /* Стили для друзей */
+    #friends-list {
+      margin-top: 20px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .friend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 10px;
+      transition: transform 0.2s ease;
+    }
+    .friend-item:hover {
+      transform: translateX(5px);
+    }
+    .friend-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+      object-fit: cover;
+    }
+    .friend-info {
+      flex-grow: 1;
+      text-align: left;
+    }
+    .friend-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .friend-score {
+      font-size: 14px;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .friend-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .friend-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 8px;
+      padding: 5px 10px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+    .friend-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(255, 102, 204, 0.4);
+    }
+    #add-friend-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 15px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+      width: 100%;
+    }
+    #add-friend-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    
+    /* Стили для мини-игр */
+    .minigames-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .minigame-item {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 15px;
+      padding: 15px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .minigame-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    .minigame-icon {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+    .minigame-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .minigame-description {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+    .minigame-reward {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .minigame-reward img {
+      width: 16px;
+      height: 16px;
+    }
+    .start-minigame-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    .start-minigame-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(255, 102, 204, 0.4);
+    }
+    
+    /* Стили для мини-игры "Поймай монетки" */
+    #minigame-catch-coins {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #minigame-catch-coins.active {
+      display: flex;
+    }
+    .minigame-header {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    .minigame-score {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .minigame-timer {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .minigame-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .minigame-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .minigame-area {
+      position: relative;
+      width: 90%;
+      height: 70%;
+      max-width: 400px;
+      border: 2px solid #ff66cc;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+    .coin {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: url('/static/FemboyCoinsPink.png') no-repeat center center;
+      background-size: contain;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .minigame-result {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      z-index: 100;
+      display: none;
+    }
+    .minigame-result.active {
+      display: block;
+    }
+    .minigame-result-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .minigame-result-score {
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    .minigame-result-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    .minigame-result-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    
+    /* Стили для ежедневных бонусов */
+    #daily-bonus-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .bonus-day {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 15px 10px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .bonus-day:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    .bonus-day.current {
+      background: rgba(255, 102, 204, 0.3);
+      border: 1px solid #ff66cc;
+    }
+    .bonus-day.claimed {
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid #4ade80;
+    }
+    .bonus-day-number {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .bonus-day-reward {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .bonus-day-reward img {
+      width: 16px;
+      height: 16px;
+    }
+    #claim-daily-bonus-button {
+      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 20px;
+    }
+    #claim-daily-bonus-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
+    }
+    #claim-daily-bonus-button:disabled {
+      background: rgba(255, 255, 255, 0.2);
+      cursor: not-allowed;
+      transform: none;
+    }
+    .daily-bonus-streak {
+      font-size: 18px;
+      margin: 15px 0;
+      font-weight: bold;
+    }
+    
+    /* Стили для переключателя языка */
+    #language-switcher {
+      position: fixed;
+      top: 70px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 10px;
+      padding: 5px;
+      z-index: 95;
+    }
+    #language-switcher button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+    #language-switcher button.active {
+      background: rgba(255, 102, 204, 0.5);
+    }
+    #language-switcher button:hover {
+      background: rgba(255, 102, 204, 0.3);
+    }
+    
+    /* Стили для аналитики (скрыто от пользователей) */
+    .analytics-indicator {
+      position: fixed;
+      bottom: 70px;
+      right: 10px;
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      z-index: 95;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
@@ -1502,6 +2332,8 @@ html_content = """
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
         <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
+        <p>Друзей: <span id="friendsCount">0</span></p>
+        <p>Достижений: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
       </div>
       
       <!-- Секция кошелька -->
@@ -1584,6 +2416,44 @@ html_content = """
       </div>
     </section>
     
+    <!-- Окно достижений -->
+    <section id="achievements" class="page" aria-label="Достижения">
+      <h2>Достижения</h2>
+      <div id="achievements-list"></div>
+    </section>
+    
+    <!-- Окно друзей -->
+    <section id="friends" class="page" aria-label="Друзья">
+      <h2>Друзья</h2>
+      <div id="friends-list"></div>
+      <button id="add-friend-button">Добавить друга</button>
+    </section>
+    
+    <!-- Окно мини-игр -->
+    <section id="minigames" class="page" aria-label="Мини-игры">
+      <h2>Мини-игры</h2>
+      <div class="minigames-container">
+        <div class="minigame-item" data-minigame="catch_coins">
+          <div class="minigame-icon">🪙</div>
+          <div class="minigame-name">Поймай монетки</div>
+          <div class="minigame-description">Ловите падающие монетки!</div>
+          <div class="minigame-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>100 монеток</span>
+          </div>
+          <button class="start-minigame-button">Играть</button>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Окно ежедневных бонусов -->
+    <section id="daily" class="page" aria-label="Ежедневные бонусы">
+      <h2>Ежедневные бонусы</h2>
+      <div class="daily-bonus-streak">Текущая серия: <span id="current-streak">0</span> дней</div>
+      <div id="daily-bonus-calendar"></div>
+      <button id="claim-daily-bonus-button">Получить бонус</button>
+    </section>
+    
     <!-- Окно топа -->
     <section id="top" class="page" aria-label="Топ пользователей">
       <div id="topHeader">
@@ -1600,6 +2470,15 @@ html_content = """
     <span id="passive-income-icon">⏱</span>
     <span id="passive-income-value">0</span>/5 сек
   </div>
+
+  <!-- Переключатель языка -->
+  <div id="language-switcher">
+    <button id="lang-ru" class="active">RU</button>
+    <button id="lang-en">EN</button>
+  </div>
+
+  <!-- Индикатор аналитики -->
+  <div class="analytics-indicator"></div>
 
   <!-- Модальное окно повышения уровня -->
   <div id="levelUpModal">
@@ -1678,6 +2557,21 @@ html_content = """
     </div>
   </div>
 
+  <!-- Мини-игра "Поймай монетки" -->
+  <div id="minigame-catch-coins">
+    <div class="minigame-header">
+      <div class="minigame-score">Счет: <span id="minigame-score">0</span></div>
+      <div class="minigame-timer">Время: <span id="minigame-timer">30</span></div>
+      <button class="minigame-close" id="minigame-close">×</button>
+    </div>
+    <div class="minigame-area" id="minigame-area"></div>
+    <div class="minigame-result" id="minigame-result">
+      <div class="minigame-result-title">Игра окончена!</div>
+      <div class="minigame-result-score">Вы поймали <span id="minigame-result-score">0</span> монеток</div>
+      <button class="minigame-result-button" id="minigame-result-button">Забрать награду</button>
+    </div>
+  </div>
+
   <!-- Уведомления -->
   <div id="notification" class="notification"></div>
   
@@ -1688,6 +2582,10 @@ html_content = """
     <button id="btn-profile" data-page="profile">Профиль</button>
     <button id="btn-clicker" data-page="clicker" class="active">Кликер</button>
     <button id="btn-tasks" data-page="tasks">Задания</button>
+    <button id="btn-achievements" data-page="achievements">Достижения</button>
+    <button id="btn-friends" data-page="friends">Друзья</button>
+    <button id="btn-minigames" data-page="minigames">Мини-игры</button>
+    <button id="btn-daily" data-page="daily">Бонусы</button>
   </nav>
 
   <script>
@@ -1720,7 +2618,12 @@ html_content = """
       {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
       {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
       {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"},
+      // Новые улучшения
+      {id: "boost_2x", description: "x2 очки на 10 минут", cost: 5000, effect: {type: "temporary_boost", multiplier: 2, duration: 600}, image: "/static/boost_2x.png"},
+      {id: "energy_max", description: "+50 к макс. энергии", cost: 10000, effect: {type: "max_energy", value: 50}, image: "/static/energy_max.png"},
+      {id: "skin_gold", description: "Золотой скин", cost: 20000, effect: {type: "visual", skin: "gold"}, image: "/static/skin_gold.png"},
+      {id: "auto_clicker", description: "Автокликер (1 клик/сек)", cost: 50000, effect: {type: "auto_clicker", value: 1}, image: "/static/auto_clicker.png"}
     ];
     
     // Задания игры
@@ -1733,6 +2636,90 @@ html_content = """
       {id: "referral_task", title: "Пригласить 3-х друзей", reward: 5000, type: "daily"},
       {id: "ads_task", title: "Просмотр рекламы", reward: 5000, type: "daily", no_reset: true}
     ];
+    
+    // Достижения игры
+    const ACHIEVEMENTS = [
+      {id: "first_click", name: "Первый клик", description: "Сделайте свой первый клик", reward: 100, condition: {type: "clicks", value: 1}},
+      {id: "click_master", name: "Мастер кликов", description: "Сделайте 1000 кликов", reward: 5000, condition: {type: "clicks", value: 1000}},
+      {id: "score_1000", name: "Тысячник", description: "Наберите 1000 очков", reward: 1000, condition: {type: "score", value: 1000}},
+      {id: "first_friend", name: "Первый друг", description: "Пригласите первого друга", reward: 2000, condition: {type: "referrals", value: 1}},
+      {id: "daily_login", name: "Ежедневный вход", description: "Входите в игру 7 дней подряд", reward: 3000, condition: {type: "daily_streak", value: 7}}
+    ];
+    
+    // Мини-игры
+    const MINIGAMES = [
+      {id: "catch_coins", name: "Поймай монетки", description: "Ловите падающие монетки!", reward: 100, duration: 30}
+    ];
+    
+    // Ежедневные бонусы
+    const DAILY_BONUSES = [
+      {day: 1, reward: 100},
+      {day: 2, reward: 200},
+      {day: 3, reward: 300},
+      {day: 4, reward: 400},
+      {day: 5, reward: 500},
+      {day: 6, reward: 600},
+      {day: 7, reward: 1000}
+    ];
+    
+    // Переводы для мультиязычности
+    const translations = {
+      ru: {
+        "score": "Счет",
+        "level": "Уровень",
+        "energy": "Энергия",
+        "profile": "Профиль",
+        "clicker": "Кликер",
+        "tasks": "Задания",
+        "achievements": "Достижения",
+        "friends": "Друзья",
+        "minigames": "Мини-игры",
+        "daily": "Бонусы",
+        "top": "Топ",
+        "upgrades": "УЛУЧШЕНИЯ",
+        "wallet": "TON Кошелек",
+        "connect_wallet": "Подключить кошелек",
+        "disconnect_wallet": "Отключить кошелек",
+        "wallet_connected": "TON кошелек успешно подключен!",
+        "wallet_disconnected": "TON кошелек отключен",
+        "no_energy": "Недостаточно энергии!",
+        "level_up": "🎉 Новый уровень! 🎉",
+        "achievement_unlocked": "Достижение разблокировано!",
+        "friend_added": "Друг добавлен!",
+        "gift_sent": "Подарок отправлен!",
+        "daily_bonus_claimed": "Ежедневный бонус получен!",
+        "minigame_reward": "Награда за мини-игру получена!",
+        "copy_link": "Ссылка скопирована в буфер обмена!",
+        "share_link": "Выберите чат для отправки ссылки",
+        "ad_watched": "Реклама просмотрена!",
+        "ad_error": "Ошибка при показе рекламы",
+        "not_enough_coins": "Недостаточно монет!",
+        "upgrade_purchased": "Улучшение куплено!",
+        "upgrade_already_purchased": "Улучшение уже куплено!"
+      },
+      en: {
+        "score": "Score",
+        "level": "Level",
+        "energy": "Energy",
+        "profile": "Profile",
+        "clicker": "Clicker",
+        "tasks": "Tasks",
+        "achievements": "Achievements",
+        "friends": "Friends",
+        "minigames": "Minigames",
+        "daily": "Bonuses",
+        "top": "Top",
+        "upgrades": "UPGRADES",
+        "wallet": "TON Wallet",
+        "connect_wallet": "Connect Wallet",
+        "disconnect_wallet": "Disconnect Wallet",
+        "wallet_connected": "TON wallet connected successfully!",
+        "wallet_disconnected": "TON wallet disconnected",
+                "not_enough_coins": "Not enough coins!",
+        "upgrade_purchased": "Upgrade purchased!",
+        "upgrade_already_purchased": "Upgrade already purchased!"
+      }
+    };
     
     // Функция для определения уровня по очкам
     function getLevelByScore(score) {
@@ -1776,11 +2763,26 @@ html_content = """
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
       upgrades: [],
-      ads_watched: 0
+      ads_watched: 0,
+      achievements: [],
+      friends: [],
+      daily_bonus: {
+        last_claim: null,
+        streak: 0,
+        claimed_days: []
+      },
+      active_boosts: [],
+      skins: [],
+      active_skin: 'default',
+      auto_clickers: 0,
+      language: 'ru'
     };
     
     // Максимальное количество энергии
     const MAX_ENERGY = 250;
+    
+    // Текущий язык
+    let currentLanguage = 'ru';
     
     // Инициализация TonConnect
     let tonConnectUI;
@@ -1811,24 +2813,24 @@ html_content = """
           
           // Обновляем интерфейс
           document.getElementById('wallet-address').textContent = formattedAddress;
-          document.getElementById('ton-connect-button').textContent = 'Отключить кошелек';
+          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
           
           // Проверяем задание
           checkWalletTask();
           
           // Показываем уведомление
-          showNotification('TON кошелек успешно подключен!');
+          showNotification(translations[currentLanguage].wallet_connected);
         } else {
           // Кошелек отключен
           userData.walletAddress = "";
           saveUserData();
           
           // Обновляем интерфейс
-          document.getElementById('wallet-address').textContent = 'Не подключен';
-          document.getElementById('ton-connect-button').textContent = 'Подключить кошелек';
+          document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
           
           // Показываем уведомление
-          showNotification('TON кошелек отключен');
+          showNotification(translations[currentLanguage].wallet_disconnected);
         }
       });
     }
@@ -1856,7 +2858,7 @@ html_content = """
     
     // Форматирование адреса кошелька
     function formatWalletAddress(address) {
-      if (!address) return 'Не подключен';
+      if (!address) return translations[currentLanguage].connect_wallet;
       return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
     }
     
@@ -1920,7 +2922,7 @@ html_content = """
       
       const energyPercent = (userData.energy / MAX_ENERGY) * 100;
       energyProgress.style.width = `${energyPercent}%`;
-      energyText.innerHTML = `<span id="energyIcon">⚡</span><span>Энергия: ${userData.energy}/${MAX_ENERGY}</span>`;
+      energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}</span>`;
     }
     
     // Функция для загрузки данных пользователя с сервера
@@ -1965,6 +2967,45 @@ html_content = """
             if (!userData.ads_watched) {
               userData.ads_watched = 0;
             }
+            // Проверяем поля достижений
+            if (!userData.achievements) {
+              userData.achievements = [];
+            }
+            // Проверяем поля друзей
+            if (!userData.friends) {
+              userData.friends = [];
+            }
+            // Проверяем поля ежедневных бонусов
+            if (!userData.daily_bonus) {
+              userData.daily_bonus = {
+                last_claim: null,
+                streak: 0,
+                claimed_days: []
+              };
+            }
+            // Проверяем поля активных бустов
+            if (!userData.active_boosts) {
+              userData.active_boosts = [];
+            }
+            // Проверяем поля скинов
+            if (!userData.skins) {
+              userData.skins = [];
+            }
+            if (!userData.active_skin) {
+              userData.active_skin = 'default';
+            }
+            // Проверяем поля автокликеров
+            if (!userData.auto_clickers) {
+              userData.auto_clickers = 0;
+            }
+            // Проверяем поле языка
+            if (!userData.language) {
+              userData.language = 'ru';
+            }
+            
+            // Устанавливаем текущий язык
+            currentLanguage = userData.language;
+            updateLanguageUI();
             
             // Обновляем энергию при загрузке
             updateEnergy();
@@ -1972,13 +3013,16 @@ html_content = """
             // Обновляем бонусы
             updateBonuses();
             
+            // Обновляем скин персонажа
+            updateCharacterSkin();
+            
             updateScoreDisplay();
             updateLevel();
             
             // Обновляем данные кошелька
             if (userData.walletAddress) {
               document.getElementById('wallet-address').textContent = formatWalletAddress(userData.walletAddress);
-              document.getElementById('ton-connect-button').textContent = 'Отключить кошелек';
+              document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
             }
             
             // Проверяем задания
@@ -1986,6 +3030,21 @@ html_content = """
             checkChannelTask();
             checkReferralTask();
             checkAdsTask();
+            
+            // Обновляем достижения
+            updateAchievements();
+            
+            // Обновляем друзей
+            updateFriends();
+            
+            // Обновляем ежедневные бонусы
+            updateDailyBonus();
+            
+            // Проверяем активные бусты
+            checkActiveBoosts();
+            
+            // Запускаем автокликеры
+            startAutoClickers();
             
             return;
           }
@@ -2009,7 +3068,19 @@ html_content = """
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
           upgrades: [],
-          ads_watched: 0
+          ads_watched: 0,
+          achievements: [],
+          friends: [],
+          daily_bonus: {
+            last_claim: null,
+            streak: 0,
+            claimed_days: []
+          },
+          active_boosts: [],
+          skins: [],
+          active_skin: 'default',
+          auto_clickers: 0,
+          language: 'ru'
         };
         
         // Сохраняем нового пользователя на сервере
@@ -2019,6 +3090,9 @@ html_content = """
         checkChannelTask();
         checkReferralTask();
         checkAdsTask();
+        updateAchievements();
+        updateFriends();
+        updateDailyBonus();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
@@ -2026,6 +3100,9 @@ html_content = """
         checkChannelTask();
         checkReferralTask();
         checkAdsTask();
+        updateAchievements();
+        updateFriends();
+        updateDailyBonus();
       }
     }
     
@@ -2065,6 +3142,14 @@ html_content = """
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
             const oldUpgrades = userData.upgrades;
             const oldAdsWatched = userData.ads_watched; // Сохраняем текущее значение ads_watched
+            const oldAchievements = userData.achievements;
+            const oldFriends = userData.friends;
+            const oldDailyBonus = userData.daily_bonus;
+            const oldActiveBoosts = userData.active_boosts;
+            const oldSkins = userData.skins;
+            const oldActiveSkin = userData.active_skin;
+            const oldAutoClickers = userData.auto_clickers;
+            const oldLanguage = userData.language;
             
             userData = data.user;
             
@@ -2079,6 +3164,14 @@ html_content = """
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
             userData.ads_watched = oldAdsWatched; // Восстанавливаем текущее значение ads_watched
+            userData.achievements = oldAchievements;
+            userData.friends = oldFriends;
+            userData.daily_bonus = oldDailyBonus;
+            userData.active_boosts = oldActiveBoosts;
+            userData.skins = oldSkins;
+            userData.active_skin = oldActiveSkin;
+            userData.auto_clickers = oldAutoClickers;
+            userData.language = oldLanguage;
             
             console.log('User data saved successfully');
             return true;
@@ -2101,7 +3194,7 @@ html_content = """
     function updateScoreDisplay() {
       const scoreDisplay = document.getElementById('score');
       if(scoreDisplay.firstChild) {
-        scoreDisplay.firstChild.textContent = 'Счет: ' + userData.score;
+        scoreDisplay.firstChild.textContent = `${translations[currentLanguage].score}: ` + userData.score;
       }
     }
     
@@ -2132,7 +3225,11 @@ html_content = """
       profile: document.getElementById('profile'),
       clicker: document.getElementById('clicker'),
       tasks: document.getElementById('tasks'),
-      top: document.getElementById('top')
+      top: document.getElementById('top'),
+      achievements: document.getElementById('achievements'),
+      friends: document.getElementById('friends'),
+      minigames: document.getElementById('minigames'),
+      daily: document.getElementById('daily')
     };
 
     function showPage(pageKey) {
@@ -2183,6 +3280,26 @@ html_content = """
         checkReferralTask();
         checkAdsTask();
       }
+      
+      // При открытии достижений обновляем данные
+      if (pageKey === 'achievements') {
+        updateAchievements();
+      }
+      
+      // При открытии друзей обновляем данные
+      if (pageKey === 'friends') {
+        updateFriends();
+      }
+      
+      // При открытии мини-игр обновляем данные
+      if (pageKey === 'minigames') {
+        // Мини-игры не требуют обновления данных
+      }
+      
+      // При открытии ежедневных бонусов обновляем данные
+      if (pageKey === 'daily') {
+        updateDailyBonus();
+      }
     }
 
     // Обновление данных профиля
@@ -2210,6 +3327,13 @@ html_content = """
         
         document.getElementById('clickBonus').textContent = clickBonus;
         document.getElementById('passiveIncomeStat').textContent = passiveIncome;
+        
+        // Обновляем количество друзей
+        document.getElementById('friendsCount').textContent = userData.friends.length;
+        
+        // Обновляем количество достижений
+        document.getElementById('achievementsCount').textContent = userData.achievements.length;
+        document.getElementById('totalAchievements').textContent = ACHIEVEMENTS.length;
         
         // Обновляем данные пользователя из Telegram
         if (user) {
@@ -2241,11 +3365,11 @@ html_content = """
         
         // Обновляем адрес кошелька
         document.getElementById('wallet-address').textContent = 
-          userData.walletAddress ? formatWalletAddress(userData.walletAddress) : 'Не подключен';
+          userData.walletAddress ? formatWalletAddress(userData.walletAddress) : translations[currentLanguage].connect_wallet;
         
         // Обновляем текст кнопки TonConnect
         document.getElementById('ton-connect-button').textContent = 
-          userData.walletAddress ? 'Отключить кошелек' : 'Подключить кошелек';
+          userData.walletAddress ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
@@ -2329,11 +3453,11 @@ html_content = """
         const progress = ((score - currentLevelScore) / (nextLevelScore - currentLevelScore)) * 100;
         
         document.getElementById('levelProgressBar').style.width = `${progress}%`;
-        document.getElementById('levelProgressText').textContent = `Уровень: ${currentLevel.name} (${score - currentLevelScore}/${nextLevelScore - currentLevelScore})`;
+        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name} (${score - currentLevelScore}/${nextLevelScore - currentLevelScore})`;
       } else {
         // Если достигнут максимальный уровень
         document.getElementById('levelProgressBar').style.width = '100%';
-        document.getElementById('levelProgressText').textContent = `Уровень: ${currentLevel.name}`;
+        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name}`;
       }
       
       // Обновляем уровень в профиле
@@ -2722,7 +3846,7 @@ html_content = """
           if (tg.HapticFeedback) {
             tg.HapticFeedback.notificationOccurred('success');
           }
-          showNotification('Ссылка скопирована в буфер обмена!');
+          showNotification(translations[currentLanguage].copy_link);
         } else {
           showNotification('Не удалось скопировать ссылку');
         }
@@ -2754,7 +3878,7 @@ html_content = """
         tg.HapticFeedback.notificationOccurred('success');
       }
       
-      showNotification('Выберите чат для отправки ссылки');
+      showNotification(translations[currentLanguage].share_link);
     }
     
     // Открытие модального окна задания с кошельком
@@ -2908,13 +4032,13 @@ html_content = """
       
       // Проверяем, не куплено ли уже это улучшение
       if (userData.upgrades.includes(upgradeId)) {
-        showNotification('Улучшение уже куплено!');
+        showNotification(translations[currentLanguage].upgrade_already_purchased);
         return;
       }
       
       // Проверяем, достаточно ли монет
       if (userData.score < upgrade.cost) {
-        showNotification('Недостаточно монет!');
+        showNotification(translations[currentLanguage].not_enough_coins);
         return;
       }
       
@@ -2923,6 +4047,9 @@ html_content = """
       
       // Добавляем улучшение в список купленных
       userData.upgrades.push(upgradeId);
+      
+      // Применяем эффект улучшения
+      applyUpgradeEffect(upgrade.effect);
       
       // Сохраняем данные
       await saveUserData();
@@ -2933,7 +4060,100 @@ html_content = """
       renderUpgrades();
       
       // Показываем уведомление
-      showNotification(`Вы купили улучшение!`);
+      showNotification(translations[currentLanguage].upgrade_purchased);
+    }
+    
+    // Применение эффекта улучшения
+    function applyUpgradeEffect(effect) {
+      if (effect.type === 'temporary_boost') {
+        // Временный буст
+        const boost = {
+          type: 'score_multiplier',
+          multiplier: effect.multiplier,
+          endTime: new Date().getTime() + (effect.duration * 1000)
+        };
+        userData.active_boosts.push(boost);
+        checkActiveBoosts();
+      } else if (effect.type === 'max_energy') {
+        // Увеличение максимальной энергии
+        MAX_ENERGY += effect.value;
+        userData.energy = Math.min(userData.energy, MAX_ENERGY);
+        updateEnergyDisplay();
+      } else if (effect.type === 'visual') {
+        // Визуальное улучшение (скин)
+        if (!userData.skins.includes(effect.skin)) {
+          userData.skins.push(effect.skin);
+        }
+        userData.active_skin = effect.skin;
+        updateCharacterSkin();
+      } else if (effect.type === 'auto_clicker') {
+        // Автокликер
+        userData.auto_clickers += effect.value;
+        startAutoClickers();
+      }
+    }
+    
+    // Проверка активных бустов
+    function checkActiveBoosts() {
+      const now = new Date().getTime();
+      
+      // Фильтруем активные бусты, удаляя истекшие
+      userData.active_boosts = userData.active_boosts.filter(boost => boost.endTime > now);
+      
+      // Если есть активные бусты, устанавливаем таймер для их проверки
+      if (userData.active_boosts.length > 0) {
+        // Находим ближайший истекающий буст
+        const nextEndTime = Math.min(...userData.active_boosts.map(boost => boost.endTime));
+        const timeToNext = nextEndTime - now;
+        
+        if (timeToNext > 0) {
+          setTimeout(checkActiveBoosts, timeToNext);
+        }
+      }
+    }
+    
+    // Обновление скина персонажа
+    function updateCharacterSkin() {
+      const femboyImg = document.getElementById('femboyImg');
+      
+      if (userData.active_skin === 'gold') {
+        femboyImg.src = '/static/Photo_femb_gold.jpg';
+      } else {
+        femboyImg.src = '/static/Photo_femb_static.jpg';
+      }
+    }
+    
+    // Запуск автокликеров
+    function startAutoClickers() {
+      // Если уже есть запущенные автокликеры, не запускаем новые
+      if (window.autoClickerInterval) {
+        clearInterval(window.autoClickerInterval);
+      }
+      
+      if (userData.auto_clickers > 0) {
+        window.autoClickerInterval = setInterval(() => {
+          // Проверяем, достаточно ли энергии
+          if (userData.energy > 0) {
+            // Тратим энергию
+            userData.energy--;
+            
+            // Рассчитываем бонус за клик
+            const clickBonus = calculateClickBonus();
+            
+            // Увеличиваем счет с учетом бонуса
+            userData.score += (1 + clickBonus);
+            userData.total_clicks++;
+            
+            // Обновляем отображение
+            updateScoreDisplay();
+            updateEnergyDisplay();
+            updateLevel();
+            
+            // Сохраняем данные
+            saveUserData();
+          }
+        }, 1000 / userData.auto_clickers);
+      }
     }
     
     // Расчет бонуса за клик
@@ -2996,6 +4216,542 @@ html_content = """
         }, 300);
       }
     }
+    
+    // Обновление достижений
+    function updateAchievements() {
+      const achievementsList = document.getElementById('achievements-list');
+      achievementsList.innerHTML = '';
+      
+      ACHIEVEMENTS.forEach(achievement => {
+        const isUnlocked = userData.achievements.includes(achievement.id);
+        
+        const achievementElement = document.createElement('div');
+        achievementElement.className = `achievement-item ${isUnlocked ? 'unlocked' : ''}`;
+        
+        // Определяем прогресс для достижения
+        let progress = '';
+        let progressValue = 0;
+        
+        if (achievement.condition.type === 'clicks') {
+          progressValue = userData.total_clicks;
+          progress = `${progressValue}/${achievement.condition.value}`;
+        } else if (achievement.condition.type === 'score') {
+          progressValue = userData.score;
+          progress = `${progressValue}/${achievement.condition.value}`;
+        } else if (achievement.condition.type === 'referrals') {
+          progressValue = userData.referrals.length;
+          progress = `${progressValue}/${achievement.condition.value}`;
+        } else if (achievement.condition.type === 'daily_streak') {
+          progressValue = userData.daily_bonus.streak;
+          progress = `${progressValue}/${achievement.condition.value}`;
+        }
+        
+        achievementElement.innerHTML = `
+          <div class="achievement-icon">${isUnlocked ? '🏆' : '🔒'}</div>
+          <div class="achievement-name">${achievement.name}</div>
+          <div class="achievement-description">${achievement.description}</div>
+          <div class="achievement-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>${achievement.reward}</span>
+          </div>
+          ${!isUnlocked ? `<div class="achievement-progress">${progress}</div>` : ''}
+        `;
+        
+        achievementsList.appendChild(achievementElement);
+      });
+      
+      // Проверяем, не разблокированы ли новые достижения
+      checkNewAchievements();
+    }
+    
+    // Проверка новых достижений
+    function checkNewAchievements() {
+      ACHIEVEMENTS.forEach(achievement => {
+        // Если достижение уже разблокировано, пропускаем
+        if (userData.achievements.includes(achievement.id)) return;
+        
+        let isUnlocked = false;
+        
+        if (achievement.condition.type === 'clicks') {
+          isUnlocked = userData.total_clicks >= achievement.condition.value;
+        } else if (achievement.condition.type === 'score') {
+          isUnlocked = userData.score >= achievement.condition.value;
+        } else if (achievement.condition.type === 'referrals') {
+          isUnlocked = userData.referrals.length >= achievement.condition.value;
+        } else if (achievement.condition.type === 'daily_streak') {
+          isUnlocked = userData.daily_bonus.streak >= achievement.condition.value;
+        }
+        
+        if (isUnlocked) {
+          // Разблокируем достижение
+          userData.achievements.push(achievement.id);
+          
+          // Добавляем награду
+          userData.score += achievement.reward;
+          
+          // Сохраняем данные
+          saveUserData();
+          
+          // Обновляем интерфейс
+          updateScoreDisplay();
+          updateLevel();
+          updateAchievements();
+          
+          // Показываем уведомление
+          showNotification(`${translations[currentLanguage].achievement_unlocked}: ${achievement.name}`);
+        }
+      });
+    }
+    
+    // Обновление друзей
+    function updateFriends() {
+      const friendsList = document.getElementById('friends-list');
+      friendsList.innerHTML = '';
+      
+      if (userData.friends.length === 0) {
+        friendsList.innerHTML = '<p>У вас пока нет друзей</p>';
+        return;
+      }
+      
+      // Загружаем данные друзей
+      userData.friends.forEach(friendId => {
+        // Создаем элемент друга
+        const friendElement = document.createElement('div');
+        friendElement.className = 'friend-item';
+        
+        // Временно показываем заглушку, пока данные не загружены
+        friendElement.innerHTML = `
+          <div class="friend-avatar" src="/static/default-avatar.png"></div>
+          <div class="friend-info">
+            <div class="friend-name">Загрузка...</div>
+            <div class="friend-score">-</div>
+          </div>
+          <div class="friend-actions">
+            <button class="friend-button send-gift" data-friend-id="${friendId}">Подарок</button>
+          </div>
+        `;
+        
+        friendsList.appendChild(friendElement);
+        
+        // Загружаем данные друга
+        fetch(`/user/${friendId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.user) {
+              const friend = data.user;
+              friendElement.innerHTML = `
+                <img class="friend-avatar" src="${friend.photo_url || `https://t.me/i/userpic/320/${friend.id}.jpg`}" alt="${friend.first_name}">
+                <div class="friend-info">
+                  <div class="friend-name">${friend.first_name} ${friend.last_name || ''}</div>
+                  <div class="friend-score">${friend.score} <img src="/static/FemboyCoinsPink.png" alt="монетки" style="width: 16px; height: 16px;"></div>
+                </div>
+                <div class="friend-actions">
+                  <button class="friend-button send-gift" data-friend-id="${friendId}">Подарок</button>
+                </div>
+              `;
+            }
+          })
+          .catch(error => {
+            console.error('Error loading friend data:', error);
+          });
+      });
+      
+      // Добавляем обработчики для кнопок подарков
+      document.querySelectorAll('.send-gift').forEach(button => {
+        button.addEventListener('click', function() {
+          const friendId = this.getAttribute('data-friend-id');
+          openGiftModal(friendId);
+        });
+      });
+    }
+    
+    // Открытие модального окна подарка
+    function openGiftModal(friendId) {
+      // Создаем модальное окно для подарка
+      const modalOverlay = document.createElement('div');
+      modalOverlay.className = 'task-modal-overlay active';
+      
+      const modal = document.createElement('div');
+      modal.className = 'task-modal active';
+      modal.style.width = '90%';
+      modal.style.maxWidth = '400px';
+      
+      modal.innerHTML = `
+        <div class="task-modal-header">
+          <div class="task-modal-title">Отправить подарок</div>
+          <button class="task-modal-close">×</button>
+        </div>
+        <div class="task-modal-content">
+          <div class="task-modal-description">
+            Выберите количество монеток для подарка:
+          </div>
+          <div style="margin: 20px 0;">
+            <input type="range" id="gift-amount" min="100" max="1000" value="100" step="100" style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+              <span>100</span>
+              <span id="gift-amount-display">100</span>
+              <span>1000</span>
+            </div>
+          </div>
+        </div>
+        <button class="task-modal-button" id="send-gift-button">Отправить подарок</button>
+      `;
+      
+      document.body.appendChild(modalOverlay);
+      document.body.appendChild(modal);
+      
+      // Обработчик для закрытия модального окна
+      modal.querySelector('.task-modal-close').addEventListener('click', function() {
+        modalOverlay.remove();
+        modal.remove();
+      });
+      
+      // Обработчик для изменения суммы подарка
+      const giftAmountInput = document.getElementById('gift-amount');
+      const giftAmountDisplay = document.getElementById('gift-amount-display');
+      
+      giftAmountInput.addEventListener('input', function() {
+        giftAmountDisplay.textContent = this.value;
+      });
+      
+      // Обработчик для отправки подарка
+      document.getElementById('send-gift-button').addEventListener('click', function() {
+        const amount = parseInt(giftAmountInput.value);
+        
+        // Проверяем, достаточно ли монет
+        if (userData.score < amount) {
+          showNotification(translations[currentLanguage].not_enough_coins);
+          return;
+        }
+        
+        // Отправляем подарок
+        sendGift(user.id, friendId, 'coins', amount);
+        
+        // Закрываем модальное окно
+        modalOverlay.remove();
+        modal.remove();
+      });
+    }
+    
+    // Отправка подарка
+    async function sendGift(senderId, receiverId, giftType, giftValue) {
+      try {
+        const response = await fetch('/gift', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender_id: senderId,
+            receiver_id: receiverId,
+            gift_type: giftType,
+            gift_value: giftValue
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            // Обновляем данные пользователя
+            userData.score -= giftValue;
+            updateScoreDisplay();
+            saveUserData();
+            
+            // Показываем уведомление
+            showNotification(translations[currentLanguage].gift_sent);
+          } else {
+            showNotification('Ошибка при отправке подарка');
+          }
+        } else {
+          showNotification('Ошибка при отправке подарка');
+        }
+      } catch (error) {
+        console.error('Error sending gift:', error);
+        showNotification('Ошибка при отправке подарка');
+      }
+    }
+    
+    // Обновление ежедневных бонусов
+    function updateDailyBonus() {
+      const calendar = document.getElementById('daily-bonus-calendar');
+      calendar.innerHTML = '';
+      
+      const today = new Date().getDate();
+      const currentStreak = userData.daily_bonus.streak;
+      
+      // Отображаем календарь бонусов
+      DAILY_BONUSES.forEach((bonus, index) => {
+        const dayNumber = index + 1;
+        const isCurrentDay = dayNumber === currentStreak + 1;
+        const isClaimed = dayNumber <= currentStreak;
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
+        
+        dayElement.innerHTML = `
+          <div class="bonus-day-number">День ${dayNumber}</div>
+          <div class="bonus-day-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>${bonus.reward}</span>
+          </div>
+        `;
+        
+        calendar.appendChild(dayElement);
+      });
+      
+      // Обновляем текущую серию
+      document.getElementById('current-streak').textContent = currentStreak;
+      
+      // Проверяем, можно ли получить бонус сегодня
+      checkDailyBonusAvailability();
+    }
+    
+    // Проверка доступности ежедневного бонуса
+    function checkDailyBonusAvailability() {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      const lastClaim = userData.daily_bonus.last_claim;
+      const lastClaimDate = lastClaim ? new Date(lastClaim).toISOString().split('T')[0] : null;
+      
+      const claimButton = document.getElementById('claim-daily-bonus-button');
+      
+      if (lastClaimDate === today) {
+        // Бонус уже получен сегодня
+        claimButton.disabled = true;
+        claimButton.textContent = 'Бонус получен';
+      } else {
+        // Бонус доступен для получения
+        claimButton.disabled = false;
+        claimButton.textContent = 'Получить бонус';
+      }
+    }
+    
+    // Получение ежедневного бонуса
+    async function claimDailyBonus() {
+      try {
+        const response = await fetch('/daily-bonus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: user.id
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            // Обновляем данные пользователя
+            userData.score += data.reward;
+            userData.daily_bonus = data.daily_bonus;
+            
+            // Обновляем интерфейс
+            updateScoreDisplay();
+            updateLevel();
+            updateDailyBonus();
+            
+            // Показываем уведомление
+            showNotification(`${translations[currentLanguage].daily_bonus_claimed}: ${data.reward} монеток`);
+          } else {
+            showNotification(data.message || 'Ошибка при получении бонуса');
+          }
+        } else {
+          showNotification('Ошибка при получении бонуса');
+        }
+      } catch (error) {
+        console.error('Error claiming daily bonus:', error);
+        showNotification('Ошибка при получении бонуса');
+      }
+    }
+    
+    // Обновление языка интерфейса
+    function updateLanguageUI() {
+      // Обновляем тексты элементов интерфейса
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[currentLanguage][key]) {
+          element.textContent = translations[currentLanguage][key];
+        }
+      });
+      
+      // Обновляем тексты кнопок
+      document.getElementById('btn-profile').textContent = translations[currentLanguage].profile;
+      document.getElementById('btn-clicker').textContent = translations[currentLanguage].clicker;
+      document.getElementById('btn-tasks').textContent = translations[currentLanguage].tasks;
+      document.getElementById('btn-achievements').textContent = translations[currentLanguage].achievements;
+      document.getElementById('btn-friends').textContent = translations[currentLanguage].friends;
+      document.getElementById('btn-minigames').textContent = translations[currentLanguage].minigames;
+      document.getElementById('btn-daily').textContent = translations[currentLanguage].daily;
+      document.getElementById('upgrades-button').textContent = translations[currentLanguage].upgrades;
+      
+      // Обновляем другие тексты
+      updateScoreDisplay();
+      updateEnergyDisplay();
+      updateLevel();
+    }
+    
+    // Функции для мини-игры "Поймай монетки"
+    function startMinigame(minigameId) {
+      if (minigameId === 'catch_coins') {
+        startCatchCoinsMinigame();
+      }
+    }
+    
+    function startCatchCoinsMinigame() {
+      const minigameContainer = document.getElementById('minigame-catch-coins');
+      const minigameArea = document.getElementById('minigame-area');
+      const scoreElement = document.getElementById('minigame-score');
+      const timerElement = document.getElementById('minigame-timer');
+      const resultElement = document.getElementById('minigame-result');
+      const resultScoreElement = document.getElementById('minigame-result-score');
+      
+      // Сбрасываем состояние игры
+      minigameArea.innerHTML = '';
+      scoreElement.textContent = '0';
+      timerElement.textContent = '30';
+      resultElement.classList.remove('active');
+      
+      let score = 0;
+      let timeLeft = 30;
+      let gameActive = true;
+      
+      // Показываем мини-игру
+      minigameContainer.classList.add('active');
+      
+      // Функция создания монетки
+      function createCoin() {
+        if (!gameActive) return;
+        
+        const coin = document.createElement('div');
+        coin.className = 'coin';
+        
+        // Случайная позиция по горизонтали
+        const maxX = minigameArea.offsetWidth - 30;
+        const randomX = Math.floor(Math.random() * maxX);
+        
+        coin.style.left = `${randomX}px`;
+        coin.style.top = '0px';
+        
+        // Добавляем монетку в игровую область
+        minigameArea.appendChild(coin);
+        
+        // Анимация падения монетки
+        let position = 0;
+        const speed = 2 + Math.random() * 3; // Случайная скорость
+        
+        const fallInterval = setInterval(() => {
+          if (!gameActive) {
+            clearInterval(fallInterval);
+            return;
+          }
+          
+          position += speed;
+          coin.style.top = `${position}px`;
+          
+          // Если монетка вышла за пределы игровой области
+          if (position > minigameArea.offsetHeight) {
+            clearInterval(fallInterval);
+            coin.remove();
+          }
+        }, 16); // ~60 FPS
+        
+        // Обработчик клика по монетке
+        coin.addEventListener('click', function() {
+          if (!gameActive) return;
+          
+          // Увеличиваем счет
+          score++;
+          scoreElement.textContent = score;
+          
+          // Удаляем монетку
+          clearInterval(fallInterval);
+          coin.remove();
+          
+          // Визуальный эффект
+          coin.style.transform = 'scale(1.5)';
+          coin.style.opacity = '0';
+        });
+      }
+      
+      // Создаем монетки с интервалом
+      const coinInterval = setInterval(() => {
+        if (!gameActive) {
+          clearInterval(coinInterval);
+          return;
+        }
+        createCoin();
+      }, 800); // Новая монетка каждые 800ms
+      
+      // Таймер игры
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+          // Игра окончена
+          gameActive = false;
+          clearInterval(coinInterval);
+          clearInterval(timerInterval);
+          
+          // Показываем результат
+          resultScoreElement.textContent = score;
+          resultElement.classList.add('active');
+        }
+      }, 1000);
+      
+      // Обработчик закрытия мини-игры
+      document.getElementById('minigame-close').addEventListener('click', function() {
+        gameActive = false;
+        clearInterval(coinInterval);
+        clearInterval(timerInterval);
+        minigameContainer.classList.remove('active');
+      });
+      
+      // Обработчик кнопки результата
+      document.getElementById('minigame-result-button').addEventListener('click', function() {
+        // Закрываем мини-игру
+        minigameContainer.classList.remove('active');
+        
+        // Начисляем награду
+        const minigame = MINIGAMES.find(m => m.id === 'catch_coins');
+        const reward = Math.min(score, minigame.reward);
+        
+        userData.score += reward;
+        updateScoreDisplay();
+        saveUserData();
+        
+        // Показываем уведомление
+        showNotification(`${translations[currentLanguage].minigame_reward}: ${reward} монеток`);
+      });
+    }
+    
+    // Сохранение аналитики
+    function saveAnalytics(event, data = {}) {
+      if (!user) return;
+      
+      try {
+        fetch('/analytics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            event: event,
+            data: data,
+            timestamp: new Date().toISOString()
+          })
+        }).catch(error => {
+          console.error('Error saving analytics:', error);
+        });
+      } catch (error) {
+        console.error('Error saving analytics:', error);
+      }
+    }
 
     // Вешаем обработчики на кнопки
     document.addEventListener('DOMContentLoaded', async function() {
@@ -3010,6 +4766,9 @@ html_content = """
         await loadUserData();
         // Обрабатываем реферальный параметр
         await processReferralParam();
+        
+        // Сохраняем аналитику запуска приложения
+        saveAnalytics('app_start');
       }
       
       // Обработчик для кнопок меню
@@ -3017,6 +4776,9 @@ html_content = """
         button.addEventListener('click', function() {
           const pageKey = this.getAttribute('data-page');
           showPage(pageKey);
+          
+          // Сохраняем аналитику перехода на страницу
+          saveAnalytics('page_view', { page: pageKey });
         });
       });
       
@@ -3124,6 +4886,42 @@ html_content = """
         });
       });
       
+      // Обработчики для мини-игр
+      document.querySelectorAll('.start-minigame-button').forEach(button => {
+        button.addEventListener('click', function() {
+          const minigameItem = this.closest('.minigame-item');
+          const minigameId = minigameItem.getAttribute('data-minigame');
+          startMinigame(minigameId);
+          
+          // Сохраняем аналитику запуска мини-игры
+          saveAnalytics('minigame_start', { minigame_id: minigameId });
+        });
+      });
+      
+      // Обработчик для кнопки получения ежедневного бонуса
+      document.getElementById('claim-daily-bonus-button').addEventListener('click', claimDailyBonus);
+      
+      // Обработчики для переключения языка
+      document.getElementById('lang-ru').addEventListener('click', function() {
+        currentLanguage = 'ru';
+        userData.language = 'ru';
+        updateLanguageUI();
+        saveUserData();
+        
+        // Сохраняем аналитику смены языка
+        saveAnalytics('language_change', { language: 'ru' });
+      });
+      
+      document.getElementById('lang-en').addEventListener('click', function() {
+        currentLanguage = 'en';
+        userData.language = 'en';
+        updateLanguageUI();
+        saveUserData();
+        
+        // Сохраняем аналитику смены языка
+        saveAnalytics('language_change', { language: 'en' });
+      });
+      
       // Устанавливаем начальную страницу
       showPage('clicker');
       
@@ -3165,8 +4963,17 @@ html_content = """
       // Рассчитываем бонус за клик
       const clickBonus = calculateClickBonus();
       
-      // Увеличиваем счет с учетом бонуса
-      userData.score += (1 + clickBonus);
+      // Проверяем активные бусты
+      let scoreMultiplier = 1;
+      userData.active_boosts.forEach(boost => {
+        if (boost.type === 'score_multiplier') {
+          scoreMultiplier *= boost.multiplier;
+        }
+      });
+      
+      // Увеличиваем счет с учетом бонуса и бустов
+      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
+      userData.score += scoreIncrease;
       userData.total_clicks++;
       
       // Создаем эффект молнии
@@ -3179,6 +4986,12 @@ html_content = """
       
       // Сохраняем данные на сервере после каждого клика
       saveUserData();
+      
+      // Сохраняем аналитику клика
+      saveAnalytics('click', { score_increase: scoreIncrease });
+      
+      // Проверяем достижения
+      checkNewAchievements();
     }
 
     function pressVisualOn() {
@@ -3285,7 +5098,7 @@ async def terms():
             <li>Все игровые монеты являются виртуальной валютой и не имеют реальной ценности.</li>
             <li>Администрация оставляет за собой право изменять правила игры в любое время.</li>
             <li>Запрещено использование ботов, читов и других методов нечестной игры.</li>
-            <li>Администрация не несет ответственности за утерю игровых монет из-за технических сбоев.</li>
+                       <li>Администрация не несет ответственности за утерю игровых монет из-за технических сбоев.</li>
         </ul>
         <p>Если у вас есть вопросы, свяжитесь с поддержкой через Telegram.</p>
     </body>
@@ -3345,7 +5158,15 @@ async def get_user_data(user_id: str):
                 "energy": user_data["energy"],
                 "lastEnergyUpdate": user_data["last_energy_update"],
                 "upgrades": user_data["upgrades"],
-                "ads_watched": user_data["ads_watched"]
+                "ads_watched": user_data["ads_watched"],
+                "achievements": user_data["achievements"],
+                "friends": user_data["friends"],
+                "daily_bonus": user_data["daily_bonus"],
+                "active_boosts": user_data["active_boosts"],
+                "skins": user_data["skins"],
+                "active_skin": user_data["active_skin"],
+                "auto_clickers": user_data["auto_clickers"],
+                "language": user_data["language"]
             }
             
             logger.info(f"Returning user data for {user_data['first_name']}")
@@ -3391,7 +5212,15 @@ async def save_user_data(request: Request):
                     "energy": user_data["energy"],
                     "lastEnergyUpdate": user_data["last_energy_update"],
                     "upgrades": user_data["upgrades"],
-                    "ads_watched": user_data["ads_watched"]
+                    "ads_watched": user_data["ads_watched"],
+                    "achievements": user_data["achievements"],
+                    "friends": user_data["friends"],
+                    "daily_bonus": user_data["daily_bonus"],
+                    "active_boosts": user_data["active_boosts"],
+                    "skins": user_data["skins"],
+                    "active_skin": user_data["active_skin"],
+                    "auto_clickers": user_data["auto_clickers"],
+                    "language": user_data["language"]
                 }
                 
                 logger.info(f"User saved successfully: {user_data['first_name']}")
@@ -3457,6 +5286,78 @@ async def get_top_users_endpoint():
         logger.error(f"Error in GET /top: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+@app.post("/daily-bonus")
+async def claim_daily_bonus_endpoint(request: Request):
+    """Получение ежедневного бонуса"""
+    try:
+        logger.info(f"POST /daily-bonus endpoint called")
+        data = await request.json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return JSONResponse(content={"status": "error", "message": "Missing user_id"}, status_code=400)
+        
+        result = claim_daily_bonus(user_id)
+        
+        if result["status"] == "success":
+            logger.info(f"Daily bonus claimed successfully for user {user_id}")
+            return JSONResponse(content=result)
+        else:
+            logger.info(f"Failed to claim daily bonus for user {user_id}: {result['message']}")
+            return JSONResponse(content=result, status_code=400)
+    except Exception as e:
+        logger.error(f"Error in POST /daily-bonus: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/gift")
+async def send_gift_endpoint(request: Request):
+    """Отправка подарка другу"""
+    try:
+        logger.info(f"POST /gift endpoint called")
+        data = await request.json()
+        sender_id = data.get('sender_id')
+        receiver_id = data.get('receiver_id')
+        gift_type = data.get('gift_type')
+        gift_value = data.get('gift_value')
+        
+        if not all([sender_id, receiver_id, gift_type, gift_value]):
+            return JSONResponse(content={"status": "error", "message": "Missing required fields"}, status_code=400)
+        
+        success = send_gift(sender_id, receiver_id, gift_type, gift_value)
+        
+        if success:
+            logger.info(f"Gift sent successfully from {sender_id} to {receiver_id}")
+            return JSONResponse(content={"status": "success"})
+        else:
+            logger.info(f"Failed to send gift from {sender_id} to {receiver_id}")
+            return JSONResponse(content={"status": "error", "message": "Failed to send gift"})
+    except Exception as e:
+        logger.error(f"Error in POST /gift: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/analytics")
+async def save_analytics_endpoint(request: Request):
+    """Сохранение аналитики"""
+    try:
+        logger.info(f"POST /analytics endpoint called")
+        data = await request.json()
+        
+        success = save_analytics(
+            data.get('user_id'),
+            data.get('event'),
+            data.get('data', {})
+        )
+        
+        if success:
+            logger.info(f"Analytics saved successfully for event: {data.get('event')}")
+            return JSONResponse(content={"status": "success"})
+        else:
+            logger.info(f"Failed to save analytics for event: {data.get('event')}")
+            return JSONResponse(content={"status": "error", "message": "Failed to save analytics"})
+    except Exception as e:
+        logger.error(f"Error in POST /analytics: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
 @app.get("/debug/users")
 async def debug_users():
     """Эндпоинт для отладки - просмотр всех пользователей"""
@@ -3478,6 +5379,27 @@ async def debug_users():
         logger.error(f"Error in GET /debug/users: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
+@app.get("/debug/analytics")
+async def debug_analytics():
+    """Эндпоинт для отладки - просмотр аналитики"""
+    try:
+        logger.info(f"GET /debug/analytics endpoint called")
+        
+        if supabase is None:
+            return JSONResponse(content={"status": "error", "message": "Supabase client is not initialized"})
+        
+        response = supabase.table("analytics").select("*").order("timestamp", desc=True).limit(100).execute()
+        
+        if response.data:
+            logger.info(f"Found {len(response.data)} analytics records")
+            return JSONResponse(content={"analytics": response.data})
+        else:
+            logger.info(f"No analytics records found")
+            return JSONResponse(content={"analytics": []})
+    except Exception as e:
+        logger.error(f"Error in GET /debug/analytics: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
 @app.get("/debug/levels")
 async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
@@ -3489,6 +5411,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
