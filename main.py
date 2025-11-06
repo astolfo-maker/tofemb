@@ -82,6 +82,12 @@ NORMAL_TASKS = [
         "title": "Подключить TON кошелек",
         "reward": 1000,
         "type": "normal"
+    },
+    {
+        "id": "channel_subscription",
+        "title": "Подписка на канал",
+        "reward": 2000,
+        "type": "normal"
     }
 ]
 
@@ -169,6 +175,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
+            # Добавляем поле для задания подписки на канал, если его нет
+            if 'channel_task_completed' not in user_data:
+                user_data['channel_task_completed'] = False
+                logger.info("Added default channel_task_completed value to user data")
+            
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
@@ -240,6 +251,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "level": get_level_by_score(int(user_data.get('score', 0))),
             "wallet_address": user_data.get('walletAddress', ''),
             "wallet_task_completed": bool(user_data.get('walletTaskCompleted', False)),
+            "channel_task_completed": bool(user_data.get('channelTaskCompleted', False)),
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
@@ -1507,6 +1519,19 @@ html_content = """
           </div>
           <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
         </div>
+        
+        <!-- Задание: Подписка на канал -->
+        <div class="task-item">
+          <div class="task-header">
+            <div class="task-title">Подписка на канал</div>
+            <button id="channel-task-button" class="task-button">НАЧАТЬ</button>
+          </div>
+          <div class="task-reward">
+            <img src="/static/FemboyCoinsPink.png" alt="монетки">
+            <span>2000 монеток</span>
+          </div>
+          <div id="channel-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+        </div>
       </div>
       
       <!-- Содержимое вкладки "Повседневные" -->
@@ -1584,6 +1609,22 @@ html_content = """
       </div>
     </div>
     <button id="wallet-modal-button" class="task-modal-button">Подключить кошелек</button>
+  </div>
+
+  <!-- Модальное окно задания с подпиской на канал -->
+  <div id="channel-task-modal" class="task-modal">
+    <div class="task-modal-header">
+      <div class="task-modal-title">Подписка на канал</div>
+      <button class="task-modal-close" id="channel-modal-close">×</button>
+    </div>
+    <div class="task-modal-content">
+      <div class="task-modal-description">
+        Подпишитесь на наш канал в Telegram, чтобы получить 2000 монеток. 
+        После подписки вернитесь в приложение и нажмите "Проверить подписку".
+      </div>
+    </div>
+    <button id="channel-modal-button" class="task-modal-button">Перейти к каналу</button>
+    <button id="channel-verify-button" class="task-modal-button-secondary">Проверить подписку</button>
   </div>
 
   <!-- Модальное окно задания с рефералами -->
@@ -1667,7 +1708,8 @@ html_content = """
     
     // Задания игры
     const NORMAL_TASKS = [
-      {id: "wallet_task", title: "Подключить TON кошелек", reward: 1000, type: "normal"}
+      {id: "wallet_task", title: "Подключить TON кошелек", reward: 1000, type: "normal"},
+      {id: "channel_subscription", title: "Подписка на канал", reward: 2000, type: "normal"}
     ];
     
     const DAILY_TASKS = [
@@ -1713,6 +1755,7 @@ html_content = """
       referrals: [],
       lastReferralTaskCompletion: null,
       walletTaskCompleted: false,
+      channelTaskCompleted: false,
       energy: 250,
       lastEnergyUpdate: new Date().toISOString(),
       upgrades: [],
@@ -1901,6 +1944,9 @@ html_content = """
             if (userData.walletTaskCompleted === undefined) {
               userData.walletTaskCompleted = false;
             }
+            if (userData.channelTaskCompleted === undefined) {
+              userData.channelTaskCompleted = false;
+            }
             if (!userData.lastReferralTaskCompletion) {
               userData.lastReferralTaskCompletion = null;
             }
@@ -1937,6 +1983,7 @@ html_content = """
             
             // Проверяем задания
             checkWalletTask();
+            checkChannelTask();
             checkReferralTask();
             checkAdsTask();
             
@@ -1958,6 +2005,7 @@ html_content = """
           referrals: [],
           lastReferralTaskCompletion: null,
           walletTaskCompleted: false,
+          channelTaskCompleted: false,
           energy: MAX_ENERGY,
           lastEnergyUpdate: new Date().toISOString(),
           upgrades: [],
@@ -1968,12 +2016,14 @@ html_content = """
         await saveUserData();
         // После сохранения обновляем состояние заданий
         checkWalletTask();
+        checkChannelTask();
         checkReferralTask();
         checkAdsTask();
       } catch (error) {
         console.error('Error loading user data:', error);
         // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
+        checkChannelTask();
         checkReferralTask();
         checkAdsTask();
       }
@@ -2009,6 +2059,7 @@ html_content = """
             const oldTotalClicks = userData.total_clicks;
             const oldReferrals = userData.referrals;
             const oldWalletTaskCompleted = userData.walletTaskCompleted;
+            const oldChannelTaskCompleted = userData.channelTaskCompleted;
             const oldLastReferralTaskCompletion = userData.lastReferralTaskCompletion;
             const oldEnergy = userData.energy;
             const oldLastEnergyUpdate = userData.lastEnergyUpdate;
@@ -2022,6 +2073,7 @@ html_content = """
             userData.total_clicks = oldTotalClicks;
             userData.referrals = oldReferrals;
             userData.walletTaskCompleted = oldWalletTaskCompleted;
+            userData.channelTaskCompleted = oldChannelTaskCompleted;
             userData.lastReferralTaskCompletion = oldLastReferralTaskCompletion;
             userData.energy = oldEnergy;
             userData.lastEnergyUpdate = oldLastEnergyUpdate;
@@ -2127,6 +2179,7 @@ html_content = """
       // При открытии заданий обновляем статус
       if (pageKey === 'tasks') {
         checkWalletTask();
+        checkChannelTask();
         checkReferralTask();
         checkAdsTask();
       }
@@ -2363,6 +2416,21 @@ html_content = """
       }
     }
     
+    // Проверка задания с подпиской на канал
+    function checkChannelTask() {
+      if (userData.channelTaskCompleted) {
+        // Награда уже получена
+        document.getElementById('channel-task-button').style.display = 'none';
+        document.getElementById('channel-task-status').style.display = 'block';
+      } else {
+        // Задание не выполнено
+        document.getElementById('channel-task-button').textContent = 'НАЧАТЬ';
+        document.getElementById('channel-task-button').disabled = false;
+        document.getElementById('channel-task-button').style.display = 'block';
+        document.getElementById('channel-task-status').style.display = 'none';
+      }
+    }
+    
     // Проверка задания с рефералами
     function checkReferralTask() {
       // Убедимся, что referrals - это массив
@@ -2498,6 +2566,26 @@ html_content = """
       
       // Показываем уведомление
       showNotification('Вы получили 1000 монеток!');
+    }
+    
+    // Получение награды за задание с подпиской на канал
+    async function claimChannelTaskReward() {
+      if (userData.channelTaskCompleted) return;
+      
+      // Добавляем награду
+      userData.score += 2000;
+      userData.channelTaskCompleted = true;
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      checkChannelTask();
+      
+      // Показываем уведомление
+      showNotification('Вы получили 2000 монеток!');
     }
     
     // Получение награды за задание с рефералами
@@ -2646,6 +2734,34 @@ html_content = """
     function closeWalletTaskModal() {
       document.getElementById('task-modal-overlay').classList.remove('active');
       document.getElementById('wallet-task-modal').classList.remove('active');
+    }
+    
+    // Открытие модального окна задания с подпиской на канал
+    function openChannelTaskModal() {
+      document.getElementById('task-modal-overlay').classList.add('active');
+      document.getElementById('channel-task-modal').classList.add('active');
+    }
+    
+    // Закрытие модального окна задания с подпиской на канал
+    function closeChannelTaskModal() {
+      document.getElementById('task-modal-overlay').classList.remove('active');
+      document.getElementById('channel-task-modal').classList.remove('active');
+    }
+    
+    // Переход к каналу Telegram
+    function goToChannel() {
+      // Замените на ваш канал
+      const channelLink = 'https://t.me/your_channel';
+      
+      // Открываем канал
+      if (tg.openTelegramLink) {
+        tg.openTelegramLink(channelLink);
+      } else {
+        window.open(channelLink, '_blank');
+      }
+      
+      // Закрываем модальное окно
+      closeChannelTaskModal();
     }
     
     // Открытие модального окна задания с рефералами
@@ -2901,6 +3017,20 @@ html_content = """
         tonConnectUI.connectWallet();
       });
       
+      // Обработчики для задания с подпиской на канал
+      document.getElementById('channel-task-button').addEventListener('click', function() {
+        if (!userData.channelTaskCompleted) {
+          openChannelTaskModal();
+        }
+      });
+      
+      document.getElementById('channel-modal-close').addEventListener('click', closeChannelTaskModal);
+      document.getElementById('channel-modal-button').addEventListener('click', goToChannel);
+      document.getElementById('channel-verify-button').addEventListener('click', function() {
+        claimChannelTaskReward();
+        closeChannelTaskModal();
+      });
+      
       // Обработчики для задания с рефералами
       document.getElementById('referral-task-button').addEventListener('click', function() {
         if (userData.referrals.length >= 3) {
@@ -2935,6 +3065,7 @@ html_content = """
       // Обработчик для затемнения фона
       document.getElementById('task-modal-overlay').addEventListener('click', function() {
         closeWalletTaskModal();
+        closeChannelTaskModal();
         closeReferralTaskModal();
       });
       
@@ -3175,6 +3306,7 @@ async def get_user_data(user_id: str):
                 "level": user_data["level"],
                 "walletAddress": user_data["wallet_address"],
                 "walletTaskCompleted": user_data["wallet_task_completed"],
+                "channelTaskCompleted": user_data["channel_task_completed"],
                 "referrals": user_data["referrals"],
                 "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
@@ -3220,6 +3352,7 @@ async def save_user_data(request: Request):
                     "level": user_data["level"],
                     "walletAddress": user_data["wallet_address"],
                     "walletTaskCompleted": user_data["wallet_task_completed"],
+                    "channelTaskCompleted": user_data["channel_task_completed"],
                     "referrals": user_data["referrals"],
                     "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
@@ -3323,6 +3456,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
- 
