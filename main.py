@@ -2751,7 +2751,7 @@ html_content = """
     // Переход к каналу Telegram
     function goToChannel() {
       // Замените на ваш канал
-      const channelLink = 'https://t.me/your_channel';
+      const channelLink = 'https://t.me/femboygamingofficial';
       
       // Открываем канал
       if (tg.openTelegramLink) {
