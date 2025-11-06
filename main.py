@@ -1411,26 +1411,6 @@ html_content = """
       cursor: not-allowed;
       transform: none;
     }
-    
-    /* Стили для отладочных кнопок */
-    #debug-button, #debug-ads-button {
-      position: fixed;
-      right: 10px;
-      z-index: 1000;
-      background: red;
-      color: white;
-      padding: 5px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #debug-button {
-      top: 70px;
-    }
-    #debug-ads-button {
-      top: 100px;
-      background: blue;
-    }
   </style>
 </head>
 <body>
@@ -1550,7 +1530,7 @@ html_content = """
         <div class="task-item">
           <div class="task-header">
             <div class="task-title">Просмотр рекламы</div>
-            <button id="ads-task-button" class="task-button">Смотреть рекламу</button>
+            <button id="ads-task-button" class="task-button">НАЧАТЬ</button>
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
@@ -1645,10 +1625,6 @@ html_content = """
   
   <!-- Уведомление о недостатке энергии -->
   <div id="noEnergyNotification" class="no-energy">Недостаточно энергии!</div>
-
-  <!-- Отладочные кнопки -->
-  <button id="debug-button">Debug</button>
-  <button id="debug-ads-button">Test Ad</button>
 
   <nav id="bottom-menu" role="navigation" aria-label="Нижнее меню">
     <button id="btn-profile" data-page="profile">Профиль</button>
@@ -1797,85 +1773,42 @@ html_content = """
       });
     }
     
-    // Функция для проверки поддержки Interstitial
-    function checkInterstitialSupport() {
-      if (window.Adsgram && window.Adsgram.AdType) {
-        console.log('Available ad types:', window.Adsgram.AdType);
-        if (window.Adsgram.AdType.INTERSTITIAL) {
-          console.log('✅ Interstitial ads are supported');
-          return true;
-        }
-      }
-      console.log('❌ Interstitial ads are not supported');
-      return false;
-    }
-    
     // Функция для инициализации Adsgram
     function initAdsgram() {
-      console.log('Initializing Adsgram Interstitial...');
-      
-      if (!checkInterstitialSupport()) {
-        showNotification('Реклама не поддерживается');
-        return;
-      }
-      
+      // Используем ваш UnitID: int-16829
       adsgramAd = window.Adsgram.init({ 
-        blockId: 'int-16829', // Убедитесь, что это правильный ID для Interstitial
+        blockId: 'int-16829',
         debug: true,
-        onAdShown: () => {
-          console.log('✅ Interstitial ad shown');
-        },
-        onAdClosed: () => {
-          console.log('✅ Interstitial ad closed');
-          handleAdCompletion();
+        onReward: () => {
+          // Реклама успешно просмотрена
+          console.log('Ad watched successfully');
+          
+          // Увеличиваем счетчик просмотренной рекламы
+          userData.ads_watched = (userData.ads_watched || 0) + 1;
+          console.log('Updated ads_watched locally:', userData.ads_watched);
+          
+          // Обновляем интерфейс
+          checkAdsTask();
+          
+          // Показываем уведомление
+          showNotification('Реклама просмотрена!');
+          
+          // Сохраняем данные
+          saveUserData().catch(error => {
+            console.error('Error saving user data after ad watch:', error);
+          });
         },
         onError: (error) => {
-          console.error('❌ Ad error:', error);
+          // Ошибка при показе рекламы
+          console.error('Ad error:', error);
           showNotification('Ошибка при показе рекламы');
+        },
+        onSkip: () => {
+          // Реклама пропущена
+          console.log('Ad skipped');
+          showNotification('Реклама пропущена');
         }
       });
-      console.log('Adsgram initialized:', adsgramAd);
-    }
-    
-    // Функция для обработки завершения рекламы
-    function handleAdCompletion() {
-      console.log('🎯 Handling ad completion');
-      
-      // Увеличиваем счетчик просмотренной рекламы
-      userData.ads_watched = (userData.ads_watched || 0) + 1;
-      console.log('📊 Updated ads_watched:', userData.ads_watched);
-      
-      // Сохраняем данные на сервере
-      saveUserData().then(() => {
-        console.log('💾 User data saved successfully');
-        // Обновляем интерфейс
-        checkAdsTask();
-        showNotification('Реклама просмотрена!');
-      }).catch(error => {
-        console.error('❌ Error saving user data:', error);
-        showNotification('Ошибка сохранения данных');
-      });
-    }
-    
-    // Функция для показа рекламы
-    function watchAds() {
-      console.log('🚀 Attempting to show interstitial ad...');
-      
-      if (!adsgramAd) {
-        console.error('❌ Adsgram ad not initialized');
-        showNotification('Реклама не загружена');
-        return;
-      }
-      
-      // Показываем рекламу
-      adsgramAd.show()
-        .then(() => {
-          console.log('✅ Interstitial ad show promise resolved');
-        })
-        .catch((error) => {
-          console.error('❌ Error showing interstitial ad:', error);
-          showNotification('Ошибка при показе рекламы');
-        });
     }
     
     // Форматирование адреса кошелька
@@ -2473,7 +2406,7 @@ html_content = """
     
     // Проверка задания с рекламой
     function checkAdsTask() {
-      console.log('🔍 Checking ads task, current ads_watched:', userData.ads_watched);
+      console.log('Checking ads task, current ads_watched:', userData.ads_watched);
       
       // Убедимся, что ads_watched существует
       if (typeof userData.ads_watched === 'undefined') {
@@ -2484,12 +2417,11 @@ html_content = """
       const adsCountElement = document.getElementById('ads-count-value');
       if (adsCountElement) {
         adsCountElement.textContent = userData.ads_watched;
-        console.log('📊 Updated ads count display:', userData.ads_watched);
+        console.log('Updated ads count display:', userData.ads_watched);
       }
       
       // Задание без отката, всегда доступно
       if (userData.ads_watched >= 10) {
-        console.log('🎯 Ads task completed!');
         // Задание доступно для получения награды
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
@@ -2505,7 +2437,7 @@ html_content = """
         // Задание не выполнено
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
-          adsTaskButton.textContent = 'Смотреть рекламу';
+          adsTaskButton.textContent = 'НАЧАТЬ';
           adsTaskButton.disabled = false;
           adsTaskButton.style.display = 'block';
         }
@@ -2623,6 +2555,27 @@ html_content = """
       
       // Показываем уведомление
       showNotification('Вы получили 5000 монеток!');
+    }
+    
+    // Просмотр рекламы через Adsgram
+    function watchAds() {
+      console.log('Watching ads');
+      
+      if (!adsgramAd) {
+        console.error('Adsgram ad not initialized');
+        showNotification('Реклама не загружена');
+        return;
+      }
+      
+      // Показываем рекламу
+      adsgramAd.show().then(() => {
+        // Реклама успешно показана
+        console.log('Ad shown successfully');
+      }).catch((error) => {
+        // Ошибка при показе рекламы
+        console.error('Error showing ad:', error);
+        showNotification('Ошибка при показе рекламы');
+      });
     }
     
     // Копирование реферальной ссылки
@@ -2900,11 +2853,8 @@ html_content = """
       // Инициализируем TonConnect
       initTonConnect();
       
-      // Инициализируем Adsgram с задержкой
-      setTimeout(() => {
-        console.log('🚀 Initializing Adsgram Interstitial after timeout...');
-        initAdsgram();
-      }, 1000);
+      // Инициализируем Adsgram с вашим UnitID
+      initAdsgram();
       
       // Загружаем данные пользователя при запуске
       if (user) {
@@ -3008,27 +2958,6 @@ html_content = """
           });
           document.getElementById(`${tabType}-tasks`).classList.add('active');
         });
-      });
-      
-      // Обработчики для отладочных кнопок
-      document.getElementById('debug-button').addEventListener('click', async function() {
-        console.log('🔍 Debug info:');
-        console.log('User data:', userData);
-        console.log('Adsgram initialized:', !!adsgramAd);
-        
-        // Проверим данные на сервере
-        try {
-          const response = await fetch(`/debug/user/${user.id}`);
-          const data = await response.json();
-          console.log('Server data:', data);
-        } catch (error) {
-          console.error('Error fetching debug data:', error);
-        }
-      });
-      
-      document.getElementById('debug-ads-button').addEventListener('click', function() {
-        console.log('🔍 Testing ad display...');
-        watchAds();
       });
       
       // Устанавливаем начальную страницу
@@ -3383,22 +3312,6 @@ async def debug_users():
         logger.error(f"Error in GET /debug/users: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
-@app.get("/debug/user/{user_id}")
-async def debug_user(user_id: str):
-    """Эндпоинт для отладки - просмотр данных пользователя"""
-    try:
-        user_data = load_user(user_id)
-        if user_data:
-            return JSONResponse(content={
-                "user_id": user_data["user_id"],
-                "score": user_data["score"],
-                "ads_watched": user_data.get("ads_watched", 0)
-            })
-        else:
-            return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
-    except Exception as e:
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
 @app.get("/debug/levels")
 async def debug_levels():
     """Эндпоинт для отладки - просмотр уровней"""
@@ -3410,3 +3323,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+в этом коде исправь функцию с рекламой , не добавляется награда после просмотра,так же поменяй айди  PlatformID: 15793
