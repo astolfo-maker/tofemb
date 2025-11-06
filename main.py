@@ -1061,6 +1061,23 @@ html_content = """
       margin-top: 5px;
     }
     
+    /* Стили для индикатора загрузки рекламы */
+    .ads-loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
     /* Стили для кошелька */
     #wallet-section {
       background: rgba(0, 0, 0, 0.2);
@@ -1825,31 +1842,14 @@ html_content = """
         onReward: () => {
           // Реклама успешно просмотрена
           console.log('Ad watched successfully');
-          
-          // Увеличиваем счетчик просмотренной рекламы
-          userData.ads_watched = (userData.ads_watched || 0) + 1;
-          console.log('Updated ads_watched locally:', userData.ads_watched);
-          
-          // Обновляем интерфейс
-          checkAdsTask();
-          
-          // Показываем уведомление
-          showNotification('Реклама просмотрена!');
-          
-          // Сохраняем данные
-          saveUserData().catch(error => {
-            console.error('Error saving user data after ad watch:', error);
-          });
         },
         onError: (error) => {
           // Ошибка при показе рекламы
           console.error('Ad error:', error);
-          showNotification('Ошибка при показе рекламы');
         },
         onSkip: () => {
           // Реклама пропущена
           console.log('Ad skipped');
-          showNotification('Реклама пропущена');
         }
       });
     }
@@ -2645,7 +2645,7 @@ html_content = """
       showNotification('Вы получили 5000 монеток!');
     }
     
-    // Просмотр рекламы через Adsgram
+    // Функция для просмотра рекламы через Adsgram
     function watchAds() {
       console.log('Watching ads');
       
@@ -2655,7 +2655,36 @@ html_content = """
         return;
       }
       
-      // Показываем рекламу
+      // Блокируем кнопку просмотра рекламы на время показа
+      const adsTaskButton = document.getElementById('ads-task-button');
+      adsTaskButton.disabled = true;
+      adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
+      
+      // Показываем уведомление о начале загрузки рекламы
+      showNotification('Реклама загружается...');
+      
+      // Запускаем таймер на 3 секунды
+      setTimeout(() => {
+        // Увеличиваем счетчик просмотренной рекламы
+        userData.ads_watched = (userData.ads_watched || 0) + 1;
+        console.log('Updated ads_watched locally:', userData.ads_watched);
+        
+        // Обновляем интерфейс
+        checkAdsTask();
+        
+        // Показываем уведомление
+        showNotification('Реклама просмотрена!');
+        
+        // Сохраняем данные
+        saveUserData().catch(error => {
+          console.error('Error saving user data after ad watch:', error);
+        });
+        
+        // Разблокируем кнопку
+        adsTaskButton.disabled = false;
+      }, 3000);
+      
+      // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
       adsgramAd.show().then(() => {
         // Реклама успешно показана
         console.log('Ad shown successfully');
@@ -2663,6 +2692,10 @@ html_content = """
         // Ошибка при показе рекламы
         console.error('Error showing ad:', error);
         showNotification('Ошибка при показе рекламы');
+        
+        // Разблокируем кнопку в случае ошибки
+        adsTaskButton.disabled = false;
+        adsTaskButton.textContent = userData.ads_watched >= 10 ? 'Получить награду' : 'НАЧАТЬ';
       });
     }
     
@@ -3456,3 +3489,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
