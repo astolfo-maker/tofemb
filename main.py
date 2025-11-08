@@ -5516,6 +5516,3 @@ if __name__ == "__main__":
 
 
 
-def save_user
-claim_daily_bonus
-save_analytics
