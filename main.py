@@ -925,6 +925,12 @@ html_content = """
       align-items: center;
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       z-index: 100;
+      overflow-x: auto;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none;  /* IE and Edge */
+    }
+    #bottom-menu::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
     }
     #bottom-menu button {
       background: transparent;
@@ -938,6 +944,8 @@ html_content = """
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     #bottom-menu button.active {
       background-color: #ff66cc;
@@ -1820,6 +1828,11 @@ html_content = """
       margin: 0 auto 10px;
       border-radius: 50%;
       object-fit: cover;
+      background-color: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
     }
     .upgrade-description {
       font-size: 12px;
@@ -2715,7 +2728,18 @@ html_content = """
         "disconnect_wallet": "Disconnect Wallet",
         "wallet_connected": "TON wallet connected successfully!",
         "wallet_disconnected": "TON wallet disconnected",
-                "not_enough_coins": "Not enough coins!",
+        "no_energy": "Not enough energy!",
+        "level_up": "🎉 New level! 🎉",
+        "achievement_unlocked": "Achievement unlocked!",
+        "friend_added": "Friend added!",
+        "gift_sent": "Gift sent!",
+        "daily_bonus_claimed": "Daily bonus claimed!",
+        "minigame_reward": "Minigame reward received!",
+        "copy_link": "Link copied to clipboard!",
+        "share_link": "Select chat to send link",
+        "ad_watched": "Ad watched!",
+        "ad_error": "Error showing ad",
+        "not_enough_coins": "Not enough coins!",
         "upgrade_purchased": "Upgrade purchased!",
         "upgrade_already_purchased": "Upgrade already purchased!"
       }
@@ -3095,7 +3119,7 @@ html_content = """
         updateDailyBonus();
       } catch (error) {
         console.error('Error loading user data:', error);
-        // Даже при ошибке, обновляем состояние заданий на основе локальных данных
+                // Даже при ошибке, обновляем состояние заданий на основе локальных данных
         checkWalletTask();
         checkChannelTask();
         checkReferralTask();
@@ -3999,8 +4023,25 @@ html_content = """
         const upgradeElement = document.createElement('div');
         upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
         
-        upgradeElement.innerHTML = `
-          <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
+        // Создаем контейнер для изображения или иконки
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'upgrade-image';
+        
+        // Проверяем, существует ли изображение
+        const img = new Image();
+        img.src = upgrade.image;
+        img.onerror = function() {
+          // Если изображение не загружается, используем иконку
+          imageContainer.innerHTML = getUpgradeIcon(upgrade.id);
+        };
+        img.onload = function() {
+          // Если изображение загружается успешно, используем его
+          imageContainer.innerHTML = `<img src="${upgrade.image}" alt="Улучшение">`;
+        };
+        
+        upgradeElement.appendChild(imageContainer);
+        
+        upgradeElement.innerHTML += `
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
@@ -4021,6 +4062,30 @@ html_content = """
           buyUpgrade(upgradeId);
         });
       });
+    }
+    
+    // Функция для получения иконки улучшения
+    function getUpgradeIcon(upgradeId) {
+      const icons = {
+        'upgrade1': '👆',
+        'upgrade2': '👆',
+        'upgrade3': '👆',
+        'upgrade4': '⏱',
+        'upgrade5': '⏱',
+        'upgrade6': '⏱',
+        'upgrade7': '👆',
+        'upgrade8': '👆',
+        'upgrade9': '⏱',
+        'upgrade10': '👆',
+        'upgrade11': '⏱',
+        'upgrade12': '👆',
+        'boost_2x': '✨',
+        'energy_max': '⚡',
+        'skin_gold': '👑',
+        'auto_clicker': '🤖'
+      };
+      
+      return icons[upgradeId] || '🔧';
     }
     
     // Покупка улучшения
@@ -4753,194 +4818,6 @@ html_content = """
       }
     }
 
-    // Вешаем обработчики на кнопки
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Инициализируем TonConnect
-      initTonConnect();
-      
-      // Инициализируем Adsgram с вашим UnitID
-      initAdsgram();
-      
-      // Загружаем данные пользователя при запуске
-      if (user) {
-        await loadUserData();
-        // Обрабатываем реферальный параметр
-        await processReferralParam();
-        
-        // Сохраняем аналитику запуска приложения
-        saveAnalytics('app_start');
-      }
-      
-      // Обработчик для кнопок меню
-      document.querySelectorAll('#bottom-menu button').forEach(button => {
-        button.addEventListener('click', function() {
-          const pageKey = this.getAttribute('data-page');
-          showPage(pageKey);
-          
-          // Сохраняем аналитику перехода на страницу
-          saveAnalytics('page_view', { page: pageKey });
-        });
-      });
-      
-      // Обработчик для кнопки топа
-      document.getElementById('topButton').addEventListener('click', function() {
-        showPage('top');
-      });
-      
-      // Обработчик для кнопки назад в топе
-      document.getElementById('backButton').addEventListener('click', function() {
-        showPage('clicker');
-      });
-      
-      // Обработчик для кнопки закрытия модального окна
-      document.getElementById('levelUpButton').addEventListener('click', function() {
-        document.getElementById('levelUpModal').style.display = 'none';
-      });
-      
-      // Обработчики для задания с кошельком
-      document.getElementById('wallet-task-button').addEventListener('click', function() {
-        if (userData.walletAddress && !userData.walletTaskCompleted) {
-          claimWalletTaskReward();
-        } else {
-          openWalletTaskModal();
-        }
-      });
-      
-      document.getElementById('wallet-modal-close').addEventListener('click', closeWalletTaskModal);
-      document.getElementById('wallet-modal-button').addEventListener('click', function() {
-        closeWalletTaskModal();
-        tonConnectUI.connectWallet();
-      });
-      
-      // Обработчики для задания с подпиской на канал
-      document.getElementById('channel-task-button').addEventListener('click', function() {
-        if (!userData.channelTaskCompleted) {
-          openChannelTaskModal();
-        }
-      });
-      
-      document.getElementById('channel-modal-close').addEventListener('click', closeChannelTaskModal);
-      document.getElementById('channel-modal-button').addEventListener('click', goToChannel);
-      document.getElementById('channel-verify-button').addEventListener('click', function() {
-        claimChannelTaskReward();
-        closeChannelTaskModal();
-      });
-      
-      // Обработчики для задания с рефералами
-      document.getElementById('referral-task-button').addEventListener('click', function() {
-        if (userData.referrals.length >= 3) {
-          claimReferralTaskReward();
-        } else {
-          openReferralTaskModal();
-        }
-      });
-      
-      document.getElementById('referral-modal-close').addEventListener('click', closeReferralTaskModal);
-      document.getElementById('referral-modal-button').addEventListener('click', copyReferralLink);
-      document.getElementById('referral-share-button').addEventListener('click', shareReferralLink);
-      
-      // Обработчики для задания с рекламой
-      document.getElementById('ads-task-button').addEventListener('click', function() {
-        if (userData.ads_watched >= 10) {
-          claimAdsTaskReward();
-        } else {
-          watchAds();
-        }
-      });
-      
-      // Обработчик для кнопки TonConnect в профиле
-      document.getElementById('ton-connect-button').addEventListener('click', function() {
-        if (userData.walletAddress) {
-          tonConnectUI.disconnect();
-        } else {
-          tonConnectUI.connectWallet();
-        }
-      });
-      
-      // Обработчик для затемнения фона
-      document.getElementById('task-modal-overlay').addEventListener('click', function() {
-        closeWalletTaskModal();
-        closeChannelTaskModal();
-        closeReferralTaskModal();
-      });
-      
-      // Обработчики для улучшений
-      document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
-      document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
-      document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
-      
-      // Обработчики для вкладок заданий
-      document.querySelectorAll('.task-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-          const tabType = this.getAttribute('data-tab');
-          
-          // Обновляем активную вкладку
-          document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Обновляем активное содержимое
-          document.querySelectorAll('.task-content').forEach(content => {
-            content.classList.remove('active');
-          });
-          document.getElementById(`${tabType}-tasks`).classList.add('active');
-        });
-      });
-      
-      // Обработчики для мини-игр
-      document.querySelectorAll('.start-minigame-button').forEach(button => {
-        button.addEventListener('click', function() {
-          const minigameItem = this.closest('.minigame-item');
-          const minigameId = minigameItem.getAttribute('data-minigame');
-          startMinigame(minigameId);
-          
-          // Сохраняем аналитику запуска мини-игры
-          saveAnalytics('minigame_start', { minigame_id: minigameId });
-        });
-      });
-      
-      // Обработчик для кнопки получения ежедневного бонуса
-      document.getElementById('claim-daily-bonus-button').addEventListener('click', claimDailyBonus);
-      
-      // Обработчики для переключения языка
-      document.getElementById('lang-ru').addEventListener('click', function() {
-        currentLanguage = 'ru';
-        userData.language = 'ru';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        saveAnalytics('language_change', { language: 'ru' });
-      });
-      
-      document.getElementById('lang-en').addEventListener('click', function() {
-        currentLanguage = 'en';
-        userData.language = 'en';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        saveAnalytics('language_change', { language: 'en' });
-      });
-      
-      // Устанавливаем начальную страницу
-      showPage('clicker');
-      
-      // Загружаем превью топа
-      await updateTopData();
-      
-      // Устанавливаем периодическое обновление топа каждые 3 секунды
-      setInterval(updateTopData, 3000);
-      
-      // Устанавливаем интервал для обновления энергии каждую секунду
-      setInterval(updateEnergy, 1000);
-      
-      // Устанавливаем интервал для пассивного дохода каждые 5 секунд
-      setInterval(applyPassiveIncome, 5000);
-      
-      // Обновляем уровень при загрузке
-      updateLevel();
-    });
-
     // --- Код для клика ---
 
     const circle = document.getElementById('circle');
@@ -5098,7 +4975,7 @@ async def terms():
             <li>Все игровые монеты являются виртуальной валютой и не имеют реальной ценности.</li>
             <li>Администрация оставляет за собой право изменять правила игры в любое время.</li>
             <li>Запрещено использование ботов, читов и других методов нечестной игры.</li>
-                       <li>Администрация не несет ответственности за утерю игровых монет из-за технических сбоев.</li>
+            <li>Администрация не несет ответственности за утерю игровых монет из-за технических сбоев.</li>
         </ul>
         <p>Если у вас есть вопросы, свяжитесь с поддержкой через Telegram.</p>
     </body>
