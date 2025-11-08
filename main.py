@@ -14,21 +14,6 @@ from dotenv import load_dotenv
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-# Добавьте для обработки datetime
-import json
-from datetime import datetime, timezone
-from json import JSONEncoder
-
-class DateTimeEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-# Кастомный JSON encoder для сериализации datetime
-def json_dumps(obj):
-    return json.dumps(obj, cls=DateTimeEncoder)
-
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -364,25 +349,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
         # Подготовка данных для вставки/обновления
-        # Преобразуем datetime в строку для JSON сериализации
-        last_energy_update = user_data.get('lastEnergyUpdate')
-        if isinstance(last_energy_update, datetime):
-            last_energy_update = last_energy_update.isoformat()
-        
-        last_referral_task_completion = user_data.get('lastReferralTaskCompletion')
-        if isinstance(last_referral_task_completion, datetime):
-            last_referral_task_completion = last_referral_task_completion.isoformat()
-        
-        # Обрабатываем daily_bonus
-        daily_bonus = user_data.get('daily_bonus', {
-            'last_claim': None,
-            'streak': 0,
-            'claimed_days': []
-        })
-        
-        if isinstance(daily_bonus.get('last_claim'), datetime):
-            daily_bonus['last_claim'] = daily_bonus['last_claim'].isoformat()
-        
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -396,14 +362,18 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "wallet_task_completed": bool(user_data.get('walletTaskCompleted', False)),
             "channel_task_completed": bool(user_data.get('channelTaskCompleted', False)),
             "referrals": user_data.get('referrals', []),
-            "last_referral_task_completion": last_referral_task_completion,
+            "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": last_energy_update,
+            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
             "friends": user_data.get('friends', []),
-            "daily_bonus": daily_bonus,
+            "daily_bonus": user_data.get('daily_bonus', {
+                'last_claim': None,
+                'streak': 0,
+                'claimed_days': []
+            }),
             "active_boosts": user_data.get('active_boosts', []),
             "skins": user_data.get('skins', []),
             "active_skin": user_data.get('active_skin', 'default'),
@@ -711,26 +681,13 @@ def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
         today = current_time.date().isoformat()
         
         # Проверяем, был ли уже получен бонус сегодня
-        last_claim = daily_bonus.get('last_claim')
-        if last_claim:
-            # Преобразуем строку в datetime, если необходимо
-            if isinstance(last_claim, str):
-                if last_claim.endswith('Z'):
-                    last_claim = datetime.fromisoformat(last_claim.replace('Z', '+00:00'))
-                else:
-                    last_claim = datetime.fromisoformat(last_claim)
-            
-            # Убедимся, что last_claim имеет timezone
-            if last_claim.tzinfo is None:
-                last_claim = last_claim.replace(tzinfo=timezone.utc)
-            
-            if last_claim.date() == current_time.date():
-                logger.info("Daily bonus already claimed today")
-                return {"status": "error", "message": "Daily bonus already claimed today"}
+        if daily_bonus.get('last_claim') and daily_bonus['last_claim'].date() == current_time.date():
+            logger.info("Daily bonus already claimed today")
+            return {"status": "error", "message": "Daily bonus already claimed today"}
         
         # Определяем день бонуса
-        if daily_bonus['streak'] == 0 or (last_claim and 
-                                         (current_time.date() - last_claim.date()).days > 1):
+        if daily_bonus['streak'] == 0 or (daily_bonus.get('last_claim') and 
+                                         (current_time.date() - daily_bonus['last_claim'].date()).days > 1):
             # Если серия прервана, начинаем заново
             daily_bonus['streak'] = 1
         else:
@@ -775,32 +732,11 @@ def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
         logger.error(f"Error claiming daily bonus: {e}")
         return {"status": "error", "message": str(e)}
 
+# Функция для сохранения аналитики (упрощенная версия без использования таблицы analytics)
 def save_analytics(user_id: str, event: str, data: Dict[str, Any]) -> bool:
-    if supabase is None:
-        logger.error("Supabase client is not initialized")
-        return False
-        
-    try:
-        logger.info(f"Saving analytics for user {user_id}: {event}")
-        
-        analytics_data = {
-            "user_id": user_id,
-            "event": event,
-            "data": data,
-            "timestamp": datetime.now(timezone.utc)
-        }
-        
-        def query():
-            # Используем кастомный JSON encoder
-            return supabase.table("analytics").insert(analytics_data).execute()
-        
-        response = execute_supabase_query(query)
-        
-        logger.info(f"Analytics saved successfully")
-        return response.data is not None
-    except Exception as e:
-        logger.error(f"Error saving analytics: {e}")
-        return False
+    # Убираем сохранение аналитики, так как таблицы нет в базе данных
+    logger.info(f"Analytics event: {event} for user {user_id}")
+    return True
 
 # Монтируем статические файлы
 try:
@@ -969,12 +905,12 @@ html_content = """
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       z-index: 100;
       overflow-x: auto;
-      white-space: nowrap;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none;  /* IE and Edge */
     }
     #bottom-menu::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Edge */
+      display: none; /* Chrome, Safari, Opera */
     }
     #bottom-menu button {
       background: transparent;
@@ -988,6 +924,7 @@ html_content = """
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
+      white-space: nowrap;
       flex-shrink: 0;
     }
     #bottom-menu button.active {
@@ -1871,11 +1808,6 @@ html_content = """
       margin: 0 auto 10px;
       border-radius: 50%;
       object-fit: cover;
-      background-color: rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
     }
     .upgrade-description {
       font-size: 12px;
@@ -2738,17 +2670,6 @@ html_content = """
         "disconnect_wallet": "Отключить кошелек",
         "wallet_connected": "TON кошелек успешно подключен!",
         "wallet_disconnected": "TON кошелек отключен",
-        "no_energy": "Недостаточно энергии!",
-        "level_up": "🎉 Новый уровень! 🎉",
-        "achievement_unlocked": "Достижение разблокировано!",
-        "friend_added": "Друг добавлен!",
-        "gift_sent": "Подарок отправлен!",
-        "daily_bonus_claimed": "Ежедневный бонус получен!",
-        "minigame_reward": "Награда за мини-игру получена!",
-        "copy_link": "Ссылка скопирована в буфер обмена!",
-        "share_link": "Выберите чат для отправки ссылки",
-        "ad_watched": "Реклама просмотрена!",
-        "ad_error": "Ошибка при показе рекламы",
         "not_enough_coins": "Недостаточно монет!",
         "upgrade_purchased": "Улучшение куплено!",
         "upgrade_already_purchased": "Улучшение уже куплено!"
@@ -2771,17 +2692,6 @@ html_content = """
         "disconnect_wallet": "Disconnect Wallet",
         "wallet_connected": "TON wallet connected successfully!",
         "wallet_disconnected": "TON wallet disconnected",
-        "no_energy": "Not enough energy!",
-        "level_up": "🎉 New level! 🎉",
-        "achievement_unlocked": "Achievement unlocked!",
-        "friend_added": "Friend added!",
-        "gift_sent": "Gift sent!",
-        "daily_bonus_claimed": "Daily bonus claimed!",
-        "minigame_reward": "Minigame reward received!",
-        "copy_link": "Link copied to clipboard!",
-        "share_link": "Select chat to send link",
-        "ad_watched": "Ad watched!",
-        "ad_error": "Error showing ad",
         "not_enough_coins": "Not enough coins!",
         "upgrade_purchased": "Upgrade purchased!",
         "upgrade_already_purchased": "Upgrade already purchased!"
@@ -3989,7 +3899,7 @@ html_content = """
     }
     
     // Открытие модального окна задания с рефералами
-    function openReferalTaskModal() {
+    function openReferralTaskModal() {
       // Обновляем ссылку в модальном окне
       if (user) {
         const botUsername = 'Fnmby_bot';
@@ -4027,11 +3937,10 @@ html_content = """
             })
           });
           
-          if (response.ok) {
-            const data = await response.json();
-            if (data.status === 'success') {
-              showNotification('Вы были приглашены по реферальной ссылке!');
-            }
+          if (response.ok)
+                    const data = await response.json();
+          if (data.status === 'success') {
+            showNotification('Вы были приглашены по реферальной ссылке!');
           }
         } catch (error) {
           console.error('Error processing referral:', error);
@@ -4066,42 +3975,8 @@ html_content = """
         const upgradeElement = document.createElement('div');
         upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
         
-        // Создаем элемент для изображения или иконки
-        const imageElement = document.createElement('div');
-        imageElement.className = 'upgrade-image';
-        
-        // Проверяем, существует ли изображение
-        const img = new Image();
-        img.onload = function() {
-          imageElement.innerHTML = `<img src="${upgrade.image}" alt="Улучшение">`;
-        };
-        img.onerror = function() {
-          // Если изображение не загрузилось, используем иконку
-          const iconMap = {
-            'upgrade1': '👆',
-            'upgrade2': '👆',
-            'upgrade3': '👆',
-            'upgrade4': '⏱️',
-            'upgrade5': '⏱️',
-            'upgrade6': '⏱️',
-            'upgrade7': '👆',
-            'upgrade8': '👆',
-            'upgrade9': '⏱️',
-            'upgrade10': '👆',
-            'upgrade11': '⏱️',
-            'upgrade12': '👆',
-            'boost_2x': '⚡',
-            'energy_max': '🔋',
-            'skin_gold': '👑',
-            'auto_clicker': '🤖'
-          };
-          imageElement.textContent = iconMap[upgrade.id] || '📦';
-        };
-        img.src = upgrade.image;
-        
-        upgradeElement.appendChild(imageElement);
-        
-        upgradeElement.innerHTML += `
+        upgradeElement.innerHTML = `
+          <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
@@ -5512,7 +5387,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
