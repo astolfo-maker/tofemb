@@ -211,7 +211,7 @@ def execute_supabase_query(func):
         logger.warning(f"Supabase query failed: {str(e)}, retrying...")
         raise
 
-# Функция для загрузки данных пользователя
+# Исправим функцию load_user для корректной обработки дат
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -339,7 +339,7 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error loading user: {e}")
         return None
 
-# Функция для сохранения данных пользователя
+# Исправим функцию save_user для корректной обработки дат
 def save_user(user_data: Dict[str, Any]) -> bool:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -364,7 +364,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "referrals": user_data.get('referrals', []),
             "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
@@ -380,6 +379,30 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru')
         }
+        
+        # Корректно обрабатываем даты
+        last_energy_update = user_data.get('lastEnergyUpdate')
+        if last_energy_update:
+            if isinstance(last_energy_update, str):
+                try:
+                    # Парсим дату с учетом возможного часового пояса
+                    if last_energy_update.endswith('Z'):
+                        parsed_date = datetime.fromisoformat(last_energy_update.replace('Z', '+00:00'))
+                    else:
+                        parsed_date = datetime.fromisoformat(last_energy_update)
+                    
+                    # Убедимся, что дата имеет timezone
+                    if parsed_date.tzinfo is None:
+                        parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                    
+                    db_data["last_energy_update"] = parsed_date.isoformat()
+                except Exception as e:
+                    logger.error(f"Error parsing last_energy_update: {e}")
+                    db_data["last_energy_update"] = datetime.now(timezone.utc).isoformat()
+            elif isinstance(last_energy_update, datetime):
+                db_data["last_energy_update"] = last_energy_update.isoformat()
+        else:
+            db_data["last_energy_update"] = datetime.now(timezone.utc).isoformat()
         
         def query():
             # Используем upsert для атомарной вставки или обновления
@@ -2902,186 +2925,195 @@ html_content = """
       energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}</span>`;
     }
     
-    // Функция для загрузки данных пользователя с сервера
-    async function loadUserData() {
-      if (!user) return;
+    // Исправим функцию loadUserData для лучшей обработки ошибок
+async function loadUserData() {
+  if (!user) return;
+  
+  try {
+    console.log('Loading user data for ID:', user.id);
+    const response = await fetch(`/user/${user.id}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('User data response:', data);
       
-      try {
-        const response = await fetch(`/user/${user.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.user) {
-            userData = data.user;
-            // Убедимся, что referrals - это массив
-            if (!userData.referrals) {
-              userData.referrals = [];
-            }
-            // Убедимся, что все поля присутствуют
-            if (!userData.walletAddress) {
-              userData.walletAddress = "";
-            }
-            if (userData.walletTaskCompleted === undefined) {
-              userData.walletTaskCompleted = false;
-            }
-            if (userData.channelTaskCompleted === undefined) {
-              userData.channelTaskCompleted = false;
-            }
-            if (!userData.lastReferralTaskCompletion) {
-              userData.lastReferralTaskCompletion = null;
-            }
-            // Проверяем поля энергии
-            if (!userData.energy) {
-              userData.energy = MAX_ENERGY;
-            }
-            if (!userData.lastEnergyUpdate) {
-              userData.lastEnergyUpdate = new Date().toISOString();
-            }
-            // Проверяем поля улучшений
-            if (!userData.upgrades) {
-              userData.upgrades = [];
-            }
-            // Проверяем поле счетчика рекламы
-            if (!userData.ads_watched) {
-              userData.ads_watched = 0;
-            }
-            // Проверяем поля достижений
-            if (!userData.achievements) {
-              userData.achievements = [];
-            }
-            // Проверяем поля друзей
-            if (!userData.friends) {
-              userData.friends = [];
-            }
-            // Проверяем поля ежедневных бонусов
-            if (!userData.daily_bonus) {
-              userData.daily_bonus = {
-                last_claim: null,
-                streak: 0,
-                claimed_days: []
-              };
-            }
-            // Проверяем поля активных бустов
-            if (!userData.active_boosts) {
-              userData.active_boosts = [];
-            }
-            // Проверяем поля скинов
-            if (!userData.skins) {
-              userData.skins = [];
-            }
-            if (!userData.active_skin) {
-              userData.active_skin = 'default';
-            }
-            // Проверяем поля автокликеров
-            if (!userData.auto_clickers) {
-              userData.auto_clickers = 0;
-            }
-            // Проверяем поле языка
-            if (!userData.language) {
-              userData.language = 'ru';
-            }
-            
-            // Устанавливаем текущий язык
-            currentLanguage = userData.language;
-            updateLanguageUI();
-            
-            // Обновляем энергию при загрузке
-            updateEnergy();
-            
-            // Обновляем бонусы
-            updateBonuses();
-            
-            // Обновляем скин персонажа
-            updateCharacterSkin();
-            
-            updateScoreDisplay();
-            updateLevel();
-            
-            // Обновляем данные кошелька
-            if (userData.walletAddress) {
-              document.getElementById('wallet-address').textContent = formatWalletAddress(userData.walletAddress);
-              document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-            }
-            
-            // Проверяем задания
-            checkWalletTask();
-            checkChannelTask();
-            checkReferralTask();
-            checkAdsTask();
-            
-            // Обновляем достижения
-            updateAchievements();
-            
-            // Обновляем друзей
-            updateFriends();
-            
-            // Обновляем ежедневные бонусы
-            updateDailyBonus();
-            
-            // Проверяем активные бусты
-            checkActiveBoosts();
-            
-            // Запускаем автокликеры
-            startAutoClickers();
-            
-            return;
-          }
+      if (data.user) {
+        userData = data.user;
+        // Убедимся, что referrals - это массив
+        if (!userData.referrals) {
+          userData.referrals = [];
         }
-        
-        // Если данных нет, создаем нового пользователя
-        userData = {
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name || '',
-          username: user.username || '',
-          photo_url: user.photo_url || '',
-          score: 0,
-          total_clicks: 0,
-          level: "Новичок",
-          walletAddress: "",
-          referrals: [],
-          lastReferralTaskCompletion: null,
-          walletTaskCompleted: false,
-          channelTaskCompleted: false,
-          energy: MAX_ENERGY,
-          lastEnergyUpdate: new Date().toISOString(),
-          upgrades: [],
-          ads_watched: 0,
-          achievements: [],
-          friends: [],
-          daily_bonus: {
+        // Убедимся, что все поля присутствуют
+        if (!userData.walletAddress) {
+          userData.walletAddress = "";
+        }
+        if (userData.walletTaskCompleted === undefined) {
+          userData.walletTaskCompleted = false;
+        }
+        if (userData.channelTaskCompleted === undefined) {
+          userData.channelTaskCompleted = false;
+        }
+        if (!userData.lastReferralTaskCompletion) {
+          userData.lastReferralTaskCompletion = null;
+        }
+        // Проверяем поля энергии
+        if (!userData.energy) {
+          userData.energy = MAX_ENERGY;
+        }
+        if (!userData.lastEnergyUpdate) {
+          userData.lastEnergyUpdate = new Date().toISOString();
+        }
+        // Проверяем поля улучшений
+        if (!userData.upgrades) {
+          userData.upgrades = [];
+        }
+        // Проверяем поле счетчика рекламы
+        if (!userData.ads_watched) {
+          userData.ads_watched = 0;
+        }
+        // Проверяем поля достижений
+        if (!userData.achievements) {
+          userData.achievements = [];
+        }
+        // Проверяем поля друзей
+        if (!userData.friends) {
+          userData.friends = [];
+        }
+        // Проверяем поля ежедневных бонусов
+        if (!userData.daily_bonus) {
+          userData.daily_bonus = {
             last_claim: null,
             streak: 0,
             claimed_days: []
-          },
-          active_boosts: [],
-          skins: [],
-          active_skin: 'default',
-          auto_clickers: 0,
-          language: 'ru'
-        };
+          };
+        }
+        // Проверяем поля активных бустов
+        if (!userData.active_boosts) {
+          userData.active_boosts = [];
+        }
+        // Проверяем поля скинов
+        if (!userData.skins) {
+          userData.skins = [];
+        }
+        if (!userData.active_skin) {
+          userData.active_skin = 'default';
+        }
+        // Проверяем поля автокликеров
+        if (!userData.auto_clickers) {
+          userData.auto_clickers = 0;
+        }
+        // Проверяем поле языка
+        if (!userData.language) {
+          userData.language = 'ru';
+        }
         
-        // Сохраняем нового пользователя на сервере
-        await saveUserData();
-        // После сохранения обновляем состояние заданий
+        // Устанавливаем текущий язык
+        currentLanguage = userData.language;
+        updateLanguageUI();
+        
+        // Обновляем энергию при загрузке
+        updateEnergy();
+        
+        // Обновляем бонусы
+        updateBonuses();
+        
+        // Обновляем скин персонажа
+        updateCharacterSkin();
+        
+        updateScoreDisplay();
+        updateLevel();
+        
+        // Обновляем данные кошелька
+        if (userData.walletAddress) {
+          document.getElementById('wallet-address').textContent = formatWalletAddress(userData.walletAddress);
+          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+        }
+        
+        // Проверяем задания
         checkWalletTask();
         checkChannelTask();
         checkReferralTask();
         checkAdsTask();
+        
+        // Обновляем достижения
         updateAchievements();
+        
+        // Обновляем друзей
         updateFriends();
+        
+        // Обновляем ежедневные бонусы
         updateDailyBonus();
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        // Даже при ошибке, обновляем состояние заданий на основе локальных данных
-        checkWalletTask();
-        checkChannelTask();
-        checkReferralTask();
-        checkAdsTask();
-        updateAchievements();
-        updateFriends();
-        updateDailyBonus();
+        
+        // Проверяем активные бусты
+        checkActiveBoosts();
+        
+        // Запускаем автокликеры
+        startAutoClickers();
+        
+        console.log('User data loaded successfully');
+        return;
       }
     }
+    
+    console.log('No user data found, creating new user');
+    
+    // Если данных нет, создаем нового пользователя
+    userData = {
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name || '',
+      username: user.username || '',
+      photo_url: user.photo_url || '',
+      score: 0,
+      total_clicks: 0,
+      level: "Новичок",
+      walletAddress: "",
+      referrals: [],
+      lastReferralTaskCompletion: null,
+      walletTaskCompleted: false,
+      channelTaskCompleted: false,
+      energy: MAX_ENERGY,
+      lastEnergyUpdate: new Date().toISOString(),
+      upgrades: [],
+      ads_watched: 0,
+      achievements: [],
+      friends: [],
+      daily_bonus: {
+        last_claim: null,
+        streak: 0,
+        claimed_days: []
+      },
+      active_boosts: [],
+      skins: [],
+      active_skin: 'default',
+      auto_clickers: 0,
+      language: 'ru'
+    };
+    
+    // Сохраняем нового пользователя на сервере
+    await saveUserData();
+    // После сохранения обновляем состояние заданий
+    checkWalletTask();
+    checkChannelTask();
+    checkReferralTask();
+    checkAdsTask();
+    updateAchievements();
+    updateFriends();
+    updateDailyBonus();
+    
+    console.log('New user created and saved');
+  } catch (error) {
+    console.error('Error loading user data:', error);
+    // Даже при ошибке, обновляем состояние заданий на основе локальных данных
+    checkWalletTask();
+    checkChannelTask();
+    checkReferralTask();
+    checkAdsTask();
+    updateAchievements();
+    updateFriends();
+    updateDailyBonus();
+  }
+}
     
     // Функция для сохранения данных пользователя на сервере
     async function saveUserData() {
@@ -3964,40 +3996,43 @@ html_content = """
       document.getElementById('upgrades-modal').classList.remove('active');
     }
     
-    // Отрисовка улучшений
-    function renderUpgrades() {
-      const container = document.getElementById('upgrades-container');
-      container.innerHTML = '';
-      
-      UPGRADES.forEach(upgrade => {
-        const isPurchased = userData.upgrades.includes(upgrade.id);
-        
-        const upgradeElement = document.createElement('div');
-        upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
-        
-        upgradeElement.innerHTML = `
-          <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
-          <div class="upgrade-description">${upgrade.description}</div>
-          <div class="upgrade-cost">
-            <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>${upgrade.cost}</span>
-          </div>
-          <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
-            ${isPurchased ? 'КУПЛЕНО' : 'КУПИТЬ'}
-          </button>
-        `;
-        
-        container.appendChild(upgradeElement);
-      });
-      
-      // Добавляем обработчики для кнопок покупки
-      document.querySelectorAll('.upgrade-buy-button').forEach(button => {
-        button.addEventListener('click', function() {
-          const upgradeId = this.getAttribute('data-upgrade-id');
-          buyUpgrade(upgradeId);
-        });
-      });
-    }
+    // Исправим функцию renderUpgrades для отображения только 12 улучшений
+function renderUpgrades() {
+  const container = document.getElementById('upgrades-container');
+  container.innerHTML = '';
+  
+  // Берем только первые 12 улучшений
+  const limitedUpgrades = UPGRADES.slice(0, 12);
+  
+  limitedUpgrades.forEach(upgrade => {
+    const isPurchased = userData.upgrades.includes(upgrade.id);
+    
+    const upgradeElement = document.createElement('div');
+    upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
+    
+    upgradeElement.innerHTML = `
+      <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
+      <div class="upgrade-description">${upgrade.description}</div>
+      <div class="upgrade-cost">
+        <img src="/static/FemboyCoinsPink.png" alt="монетки">
+        <span>${upgrade.cost}</span>
+      </div>
+      <button class="upgrade-buy-button" data-upgrade-id="${upgrade.id}" ${isPurchased ? 'disabled' : ''}>
+        ${isPurchased ? 'КУПЛЕНО' : 'КУПИТЬ'}
+      </button>
+    `;
+    
+    container.appendChild(upgradeElement);
+  });
+  
+  // Добавляем обработчики для кнопок покупки
+  document.querySelectorAll('.upgrade-buy-button').forEach(button => {
+    button.addEventListener('click', function() {
+      const upgradeId = this.getAttribute('data-upgrade-id');
+      buyUpgrade(upgradeId);
+    });
+  });
+}
     
     // Покупка улучшения
     async function buyUpgrade(upgradeId) {
@@ -5387,3 +5422,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+try
+save_user
+loadUserData
+renderUpgrades
