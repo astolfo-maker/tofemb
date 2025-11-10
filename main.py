@@ -353,13 +353,13 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "score": int(user_data.get('score', 0)),
             "total_clicks": int(user_data.get('total_clicks', 0)),
             "level": get_level_by_score(int(user_data.get('score', 0))),
-            "wallet_address": user_data.get('walletAddress', ''),
-            "wallet_task_completed": bool(user_data.get('walletTaskCompleted', False)),
-            "channel_task_completed": bool(user_data.get('channelTaskCompleted', False)),
+            "wallet_address": user_data.get('wallet_address', ''),
+            "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
+            "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
             "referrals": user_data.get('referrals', []),
-            "last_referral_task_completion": user_data.get('lastReferralTaskCompletion'),
+            "last_referral_task_completion": user_data.get('last_referral_task_completion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
-            "last_energy_update": user_data.get('lastEnergyUpdate', datetime.now(timezone.utc).isoformat()),
+            "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
@@ -894,7 +894,6 @@ html_content = """
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       z-index: 100;
       overflow-x: auto;
-      white-space: nowrap;
       -webkit-overflow-scrolling: touch;
     }
     #bottom-menu button {
@@ -909,7 +908,7 @@ html_content = """
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
-      flex-shrink: 0;
+      white-space: nowrap;
     }
     #bottom-menu button.active {
       background-color: #ff66cc;
@@ -1792,6 +1791,7 @@ html_content = """
       margin: 0 auto 10px;
       border-radius: 50%;
       object-fit: cover;
+      background-color: #ff66cc;
     }
     .upgrade-description {
       font-size: 12px;
@@ -2633,17 +2633,6 @@ html_content = """
         "disconnect_wallet": "Отключить кошелек",
         "wallet_connected": "TON кошелек успешно подключен!",
         "wallet_disconnected": "TON кошелек отключен",
-        "no_energy": "Недостаточно энергии!",
-        "level_up": "🎉 Новый уровень! 🎉",
-        "achievement_unlocked": "Достижение разблокировано!",
-        "friend_added": "Друг добавлен!",
-        "gift_sent": "Подарок отправлен!",
-        "daily_bonus_claimed": "Ежедневный бонус получен!",
-        "minigame_reward": "Награда за мини-игру получена!",
-        "copy_link": "Ссылка скопирована в буфер обмена!",
-        "share_link": "Выберите чат для отправки ссылки",
-        "ad_watched": "Реклама просмотрена!",
-        "ad_error": "Ошибка при показе рекламы",
         "not_enough_coins": "Недостаточно монет!",
         "upgrade_purchased": "Улучшение куплено!",
         "upgrade_already_purchased": "Улучшение уже куплено!"
@@ -2666,17 +2655,6 @@ html_content = """
         "disconnect_wallet": "Disconnect Wallet",
         "wallet_connected": "TON wallet connected successfully!",
         "wallet_disconnected": "TON wallet disconnected",
-        "no_energy": "Not enough energy!",
-        "level_up": "🎉 New level! 🎉",
-        "achievement_unlocked": "Achievement unlocked!",
-        "friend_added": "Friend added!",
-        "gift_sent": "Gift sent!",
-        "daily_bonus_claimed": "Daily bonus claimed!",
-        "minigame_reward": "Minigame reward received!",
-        "copy_link": "Link copied to clipboard!",
-        "share_link": "Select a chat to send the link",
-        "ad_watched": "Ad watched!",
-        "ad_error": "Error showing ad",
         "not_enough_coins": "Not enough coins!",
         "upgrade_purchased": "Upgrade purchased!",
         "upgrade_already_purchased": "Upgrade already purchased!"
@@ -2717,13 +2695,13 @@ html_content = """
       score: 0,
       total_clicks: 0,
       level: "Новичок",
-      walletAddress: "",
+      wallet_address: "",
+      wallet_task_completed: false,
+      channel_task_completed: false,
       referrals: [],
-      lastReferralTaskCompletion: null,
-      walletTaskCompleted: false,
-      channelTaskCompleted: false,
+      last_referral_task_completion: null,
       energy: 250,
-      lastEnergyUpdate: new Date().toISOString(),
+      last_energy_update: new Date().toISOString(),
       upgrades: [],
       ads_watched: 0,
       achievements: [],
@@ -2770,7 +2748,8 @@ html_content = """
           const formattedAddress = formatWalletAddress(address);
           
           // Сохраняем адрес кошелька
-          userData.walletAddress = address;
+          userData.wallet_address = address;
+          userData.wallet_task_completed = true;
           saveUserData();
           
           // Обновляем интерфейс
@@ -2784,7 +2763,7 @@ html_content = """
           showNotification(translations[currentLanguage].wallet_connected);
         } else {
           // Кошелек отключен
-          userData.walletAddress = "";
+          userData.wallet_address = "";
           saveUserData();
           
           // Обновляем интерфейс
@@ -2864,13 +2843,13 @@ html_content = """
     // Функция для обновления энергии
     function updateEnergy() {
       const now = new Date();
-      const lastUpdate = new Date(userData.lastEnergyUpdate);
+      const lastUpdate = new Date(userData.last_energy_update);
       const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
       
       // Восстанавливаем энергию (1 единица в секунду)
       if (timeDiff > 0) {
         userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
-        userData.lastEnergyUpdate = now.toISOString();
+        userData.last_energy_update = now.toISOString();
         
         // Обновляем отображение энергии
         updateEnergyDisplay();
@@ -2897,47 +2876,40 @@ html_content = """
           const data = await response.json();
           if (data.user) {
             userData = data.user;
-            // Убедимся, что referrals - это массив
+            // Убедимся, что все поля присутствуют
             if (!userData.referrals) {
               userData.referrals = [];
             }
-            // Убедимся, что все поля присутствуют
-            if (!userData.walletAddress) {
-              userData.walletAddress = "";
+            if (!userData.wallet_address) {
+              userData.wallet_address = "";
             }
-            if (userData.walletTaskCompleted === undefined) {
-              userData.walletTaskCompleted = false;
+            if (userData.wallet_task_completed === undefined) {
+              userData.wallet_task_completed = false;
             }
-            if (userData.channelTaskCompleted === undefined) {
-              userData.channelTaskCompleted = false;
+            if (userData.channel_task_completed === undefined) {
+              userData.channel_task_completed = false;
             }
-            if (!userData.lastReferralTaskCompletion) {
-              userData.lastReferralTaskCompletion = null;
+            if (!userData.last_referral_task_completion) {
+              userData.last_referral_task_completion = null;
             }
-            // Проверяем поля энергии
             if (!userData.energy) {
               userData.energy = MAX_ENERGY;
             }
-            if (!userData.lastEnergyUpdate) {
-              userData.lastEnergyUpdate = new Date().toISOString();
+            if (!userData.last_energy_update) {
+              userData.last_energy_update = new Date().toISOString();
             }
-            // Проверяем поля улучшений
             if (!userData.upgrades) {
               userData.upgrades = [];
             }
-            // Проверяем поле счетчика рекламы
             if (!userData.ads_watched) {
               userData.ads_watched = 0;
             }
-            // Проверяем поля достижений
             if (!userData.achievements) {
               userData.achievements = [];
             }
-            // Проверяем поля друзей
             if (!userData.friends) {
               userData.friends = [];
             }
-            // Проверяем поля ежедневных бонусов
             if (!userData.daily_bonus) {
               userData.daily_bonus = {
                 last_claim: null,
@@ -2945,22 +2917,18 @@ html_content = """
                 claimed_days: []
               };
             }
-            // Проверяем поля активных бустов
             if (!userData.active_boosts) {
               userData.active_boosts = [];
             }
-            // Проверяем поля скинов
             if (!userData.skins) {
               userData.skins = [];
             }
             if (!userData.active_skin) {
               userData.active_skin = 'default';
             }
-            // Проверяем поля автокликеров
             if (!userData.auto_clickers) {
               userData.auto_clickers = 0;
             }
-            // Проверяем поле языка
             if (!userData.language) {
               userData.language = 'ru';
             }
@@ -2982,8 +2950,8 @@ html_content = """
             updateLevel();
             
             // Обновляем данные кошелька
-            if (userData.walletAddress) {
-              document.getElementById('wallet-address').textContent = formatWalletAddress(userData.walletAddress);
+            if (userData.wallet_address) {
+              document.getElementById('wallet-address').textContent = formatWalletAddress(userData.wallet_address);
               document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
             }
             
@@ -3022,13 +2990,13 @@ html_content = """
           score: 0,
           total_clicks: 0,
           level: "Новичок",
-          walletAddress: "",
+          wallet_address: "",
+          wallet_task_completed: false,
+          channel_task_completed: false,
           referrals: [],
-          lastReferralTaskCompletion: null,
-          walletTaskCompleted: false,
-          channelTaskCompleted: false,
+          last_referral_task_completion: null,
           energy: MAX_ENERGY,
-          lastEnergyUpdate: new Date().toISOString(),
+          last_energy_update: new Date().toISOString(),
           upgrades: [],
           ads_watched: 0,
           achievements: [],
@@ -3097,11 +3065,11 @@ html_content = """
             const oldScore = userData.score;
             const oldTotalClicks = userData.total_clicks;
             const oldReferrals = userData.referrals;
-            const oldWalletTaskCompleted = userData.walletTaskCompleted;
-            const oldChannelTaskCompleted = userData.channelTaskCompleted;
-            const oldLastReferralTaskCompletion = userData.lastReferralTaskCompletion;
+            const oldWalletTaskCompleted = userData.wallet_task_completed;
+            const oldChannelTaskCompleted = userData.channel_task_completed;
+            const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
             const oldEnergy = userData.energy;
-            const oldLastEnergyUpdate = userData.lastEnergyUpdate;
+            const oldLastEnergyUpdate = userData.last_energy_update;
             const oldUpgrades = userData.upgrades;
             const oldAdsWatched = userData.ads_watched; // Сохраняем текущее значение ads_watched
             const oldAchievements = userData.achievements;
@@ -3119,11 +3087,11 @@ html_content = """
             userData.score = oldScore;
             userData.total_clicks = oldTotalClicks;
             userData.referrals = oldReferrals;
-            userData.walletTaskCompleted = oldWalletTaskCompleted;
-            userData.channelTaskCompleted = oldChannelTaskCompleted;
-            userData.lastReferralTaskCompletion = oldLastReferralTaskCompletion;
+            userData.wallet_task_completed = oldWalletTaskCompleted;
+            userData.channel_task_completed = oldChannelTaskCompleted;
+            userData.last_referral_task_completion = oldLastReferralTaskCompletion;
             userData.energy = oldEnergy;
-            userData.lastEnergyUpdate = oldLastEnergyUpdate;
+            userData.last_energy_update = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
             userData.ads_watched = oldAdsWatched; // Восстанавливаем текущее значение ads_watched
             userData.achievements = oldAchievements;
@@ -3327,11 +3295,11 @@ html_content = """
         
         // Обновляем адрес кошелька
         document.getElementById('wallet-address').textContent = 
-          userData.walletAddress ? formatWalletAddress(userData.walletAddress) : translations[currentLanguage].connect_wallet;
+          userData.wallet_address ? formatWalletAddress(userData.wallet_address) : translations[currentLanguage].connect_wallet;
         
         // Обновляем текст кнопки TonConnect
         document.getElementById('ton-connect-button').textContent = 
-          userData.walletAddress ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
+          userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
@@ -3487,11 +3455,11 @@ html_content = """
     
     // Проверка задания с кошельком
     function checkWalletTask() {
-      if (userData.walletAddress && !userData.walletTaskCompleted) {
+      if (userData.wallet_address && !userData.wallet_task_completed) {
         // Задание выполнено, но награда не получена
         document.getElementById('wallet-task-button').textContent = 'Получить награду';
         document.getElementById('wallet-task-button').disabled = false;
-      } else if (userData.walletTaskCompleted) {
+      } else if (userData.wallet_task_completed) {
         // Награда уже получена
         document.getElementById('wallet-task-button').style.display = 'none';
         document.getElementById('wallet-task-status').style.display = 'block';
@@ -3504,7 +3472,7 @@ html_content = """
     
     // Проверка задания с подпиской на канал
     function checkChannelTask() {
-      if (userData.channelTaskCompleted) {
+      if (userData.channel_task_completed) {
         // Награда уже получена
         document.getElementById('channel-task-button').style.display = 'none';
         document.getElementById('channel-task-status').style.display = 'block';
@@ -3529,8 +3497,8 @@ html_content = """
       
       // Проверяем, можно ли выполнить задание
       const now = new Date();
-      const lastCompletion = userData.lastReferralTaskCompletion ? 
-        new Date(userData.lastReferralTaskCompletion) : null;
+      const lastCompletion = userData.last_referral_task_completion ? 
+        new Date(userData.last_referral_task_completion) : null;
       
       // Если задание уже выполнено и прошло меньше 24 часов
       if (lastCompletion && (now - lastCompletion) < 24 * 60 * 60 * 1000) {
@@ -3604,8 +3572,8 @@ html_content = """
     
     // Обновление таймера реферального задания
     function updateReferralTimer() {
-      const lastCompletion = userData.lastReferralTaskCompletion ? 
-        new Date(userData.lastReferralTaskCompletion) : null;
+      const lastCompletion = userData.last_referral_task_completion ? 
+        new Date(userData.last_referral_task_completion) : null;
       
       if (!lastCompletion) return;
       
@@ -3636,11 +3604,11 @@ html_content = """
     
     // Получение награды за задание с кошельком
     async function claimWalletTaskReward() {
-      if (!userData.walletAddress || userData.walletTaskCompleted) return;
+      if (!userData.wallet_address || userData.wallet_task_completed) return;
       
       // Добавляем награду
       userData.score += 1000;
-      userData.walletTaskCompleted = true;
+      userData.wallet_task_completed = true;
       
       // Сохраняем данные
       await saveUserData();
@@ -3656,11 +3624,11 @@ html_content = """
     
     // Получение награды за задание с подпиской на канал
     async function claimChannelTaskReward() {
-      if (userData.channelTaskCompleted) return;
+      if (userData.channel_task_completed) return;
       
       // Добавляем награду
       userData.score += 2000;
-      userData.channelTaskCompleted = true;
+      userData.channel_task_completed = true;
       
       // Сохраняем данные
       await saveUserData();
@@ -3679,8 +3647,8 @@ html_content = """
       if (userData.referrals.length < 3) return;
       
       const now = new Date();
-      const lastCompletion = userData.lastReferralTaskCompletion ? 
-        new Date(userData.lastReferralTaskCompletion) : null;
+      const lastCompletion = userData.last_referral_task_completion ? 
+        new Date(userData.last_referral_task_completion) : null;
       
       // Проверяем, прошло ли 24 часа с последнего выполнения
       if (lastCompletion && (now - lastCompletion) < 24 * 60 * 60 * 1000) {
@@ -3690,7 +3658,7 @@ html_content = """
       
       // Добавляем награду
       userData.score += 5000;
-      userData.lastReferralTaskCompletion = now.toISOString();
+      userData.last_referral_task_completion = now.toISOString();
       
       // Сохраняем данные
       await saveUserData();
@@ -3773,7 +3741,7 @@ html_content = """
       // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
       adsgramAd.show().then(() => {
         // Реклама успешно показана
-        console.log('Ad shown successfully');
+                console.log('Ad shown successfully');
       }).catch((error) => {
         // Ошибка при показе рекламы
         console.error('Error showing ad:', error);
@@ -3962,7 +3930,7 @@ html_content = """
         upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
         
         upgradeElement.innerHTML = `
-          <img class="upgrade-image" src="${upgrade.image}" alt="Улучшение">
+          <div class="upgrade-image" style="background-image: url('${upgrade.image}')"></div>
           <div class="upgrade-description">${upgrade.description}</div>
           <div class="upgrade-cost">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
@@ -4028,9 +3996,11 @@ html_content = """
     // Применение эффекта улучшения
     function applyUpgradeEffect(effect) {
       if (effect.clickBonus) {
-        // Бонус за клик - не требует дополнительной обработки, т.к. рассчитывается при клике
+        // Бонус за клик - эффект применяется автоматически при расчете
+        console.log('Applied click bonus upgrade');
       } else if (effect.passiveIncome) {
-        // Пассивный доход - не требует дополнительной обработки, т.к. рассчитывается при применении
+        // Пассивный доход - эффект применяется автоматически при расчете
+        console.log('Applied passive income upgrade');
       }
     }
     
@@ -4042,39 +4012,6 @@ html_content = """
         femboyImg.src = '/static/Photo_femb_gold.jpg';
       } else {
         femboyImg.src = '/static/Photo_femb_static.jpg';
-      }
-    }
-    
-    // Запуск автокликеров
-    function startAutoClickers() {
-      // Если уже есть запущенные автокликеры, не запускаем новые
-      if (window.autoClickerInterval) {
-        clearInterval(window.autoClickerInterval);
-      }
-      
-      if (userData.auto_clickers > 0) {
-        window.autoClickerInterval = setInterval(() => {
-          // Проверяем, достаточно ли энергии
-          if (userData.energy > 0) {
-            // Тратим энергию
-            userData.energy--;
-            
-            // Рассчитываем бонус за клик
-            const clickBonus = calculateClickBonus();
-            
-            // Увеличиваем счет с учетом бонуса
-            userData.score += (1 + clickBonus);
-            userData.total_clicks++;
-            
-            // Обновляем отображение
-            updateScoreDisplay();
-            updateEnergyDisplay();
-            updateLevel();
-            
-            // Сохраняем данные
-            saveUserData();
-          }
-        }, 1000 / userData.auto_clickers);
       }
     }
     
@@ -4395,857 +4332,20 @@ html_content = """
     }
     
     // Обновление ежедневных бонусов
-function updateDailyBonus() {
-  const calendar = document.getElementById('daily-bonus-calendar');
-  calendar.innerHTML = '';
-  
-  const today = new Date().getDate();
-  const currentStreak = userData.daily_bonus.streak;
-  
-  // Отображаем календарь бонусов
-  DAILY_BONUSES.forEach((bonus, index) => {
-    const dayNumber = index + 1;
-    const isCurrentDay = dayNumber === currentStreak + 1;
-    const isClaimed = dayNumber <= currentStreak;
-    
-    // Создаем элемент для дня
-    const dayElement = document.createElement('div');
-    dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
-    
-    dayElement.innerHTML = `
-      <div class="bonus-day-number">День ${dayNumber}</div>
-      <div class="bonus-day-reward">
-        <img src="/static/FemboyCoinsPink.png" alt="монетки">
-        <span>${bonus.reward}</span>
-      </div>
-    `;
-    
-    calendar.appendChild(dayElement);
-  });
-  
-  // Обновляем текущую серию
-  document.getElementById('current-streak').textContent = currentStreak;
-  
-  // Проверяем, можно ли получить бонус сегодня
-  checkDailyBonusAvailability();
-}
+    function updateDailyBonus() {
+      const calendar = document.getElementById('daily-bonus-calendar');
+      calendar.innerHTML = '';
       
-      // Обновляем текущую серию
-      document.getElementById('current-streak').textContent = currentStreak;
+      const today = new Date().getDate();
+      const currentStreak = userData.daily_bonus.streak;
       
-      // Проверяем, можно ли получить бонус сегодня
-      checkDailyBonusAvailability();
-    }
-    
-    // Проверка доступности ежедневного бонуса
-    function checkDailyBonusAvailability() {
-      const now = new Date();
-      const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      const lastClaim = userData.daily_bonus.last_claim;
-      const lastClaimDate = lastClaim ? new Date(lastClaim).toISOString().split('T')[0] : null;
-      
-      const claimButton = document.getElementById('claim-daily-bonus-button');
-      
-      if (lastClaimDate === today) {
-        // Бонус уже получен сегодня
-        claimButton.disabled = true;
-        claimButton.textContent = 'Бонус получен';
-      } else {
-        // Бонус доступен для получения
-        claimButton.disabled = false;
-        claimButton.textContent = 'Получить бонус';
-      }
-    }
-    
-    // Получение ежедневного бонуса
-    async function claimDailyBonus() {
-      try {
-        const response = await fetch('/daily-bonus', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            user_id: user.id
-          })
-        });
+      // Отображаем календарь бонусов
+      DAILY_BONUSES.forEach((bonus, index) => {
+        const dayNumber = index + 1;
+        const isCurrentDay = dayNumber === currentStreak + 1;
+        const isClaimed = dayNumber <= currentStreak;
         
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.status === 'success') {
-            // Обновляем данные пользователя
-            userData.score += data.reward;
-            userData.daily_bonus = data.daily_bonus;
-            
-            // Обновляем интерфейс
-            updateScoreDisplay();
-            updateLevel();
-            updateDailyBonus();
-            
-            // Показываем уведомление
-            showNotification(`${translations[currentLanguage].daily_bonus_claimed}: ${data.reward} монеток`);
-          } else {
-            showNotification(data.message || 'Ошибка при получении бонуса');
-          }
-        } else {
-          showNotification('Ошибка при получении бонуса');
-        }
-      } catch (error) {
-        console.error('Error claiming daily bonus:', error);
-        showNotification('Ошибка при получении бонуса');
-      }
-    }
-    
-    // Обновление языка интерфейса
-    function updateLanguageUI() {
-      // Обновляем тексты элементов интерфейса
-      document.querySelectorAll('[data-i18n]').forEach(element => {
-        const key = element.getAttribute('data-i18n');
-        if (translations[currentLanguage][key]) {
-          element.textContent = translations[currentLanguage][key];
-        }
-      });
-      
-      // Обновляем тексты кнопок
-      document.getElementById('btn-profile').textContent = translations[currentLanguage].profile;
-      document.getElementById('btn-clicker').textContent = translations[currentLanguage].clicker;
-      document.getElementById('btn-tasks').textContent = translations[currentLanguage].tasks;
-      document.getElementById('btn-achievements').textContent = translations[currentLanguage].achievements;
-      document.getElementById('btn-friends').textContent = translations[currentLanguage].friends;
-      document.getElementById('btn-minigames').textContent = translations[currentLanguage].minigames;
-      document.getElementById('btn-daily').textContent = translations[currentLanguage].daily;
-      document.getElementById('upgrades-button').textContent = translations[currentLanguage].upgrades;
-      
-      // Обновляем другие тексты
-      updateScoreDisplay();
-      updateEnergyDisplay();
-      updateLevel();
-    }
-    
-    // Функции для мини-игры "Поймай монетки"
-    function startMinigame(minigameId) {
-      if (minigameId === 'catch_coins') {
-        startCatchCoinsMinigame();
-      }
-    }
-    
-    function startCatchCoinsMinigame() {
-      const minigameContainer = document.getElementById('minigame-catch-coins');
-      const minigameArea = document.getElementById('minigame-area');
-      const scoreElement = document.getElementById('minigame-score');
-      const timerElement = document.getElementById('minigame-timer');
-      const resultElement = document.getElementById('minigame-result');
-      const resultScoreElement = document.getElementById('minigame-result-score');
-      
-      // Сбрасываем состояние игры
-      minigameArea.innerHTML = '';
-      scoreElement.textContent = '0';
-      timerElement.textContent = '30';
-      resultElement.classList.remove('active');
-      
-      let score = 0;
-      let timeLeft = 30;
-      let gameActive = true;
-      
-      // Показываем мини-игру
-      minigameContainer.classList.add('active');
-      
-      // Функция создания монетки
-      function createCoin() {
-        if (!gameActive) return;
-        
-        const coin = document.createElement('div');
-        coin.className = 'coin';
-        
-        // Случайная позиция по горизонтали
-        const maxX = minigameArea.offsetWidth - 30;
-        const randomX = Math.floor(Math.random() * maxX);
-        
-        coin.style.left = `${randomX}px`;
-        coin.style.top = '0px';
-        
-        // Добавляем монетку в игровую область
-        minigameArea.appendChild(coin);
-        
-        // Анимация падения монетки
-        let position = 0;
-        const speed = 2 + Math.random() * 3; // Случайная скорость
-        
-        const fallInterval = setInterval(() => {
-          if (!gameActive) {
-            clearInterval(fallInterval);
-            return;
-          }
-          
-          position += speed;
-          coin.style.top = `${position}px`;
-          
-          // Если монетка вышла за пределы игровой области
-          if (position > minigameArea.offsetHeight) {
-            clearInterval(fallInterval);
-            coin.remove();
-          }
-        }, 16); // ~60 FPS
-        
-        // Обработчик клика по монетке
-        coin.addEventListener('click', function() {
-          if (!gameActive) return;
-          
-          // Увеличиваем счет
-          score++;
-          scoreElement.textContent = score;
-          
-          // Удаляем монетку
-          clearInterval(fallInterval);
-          coin.remove();
-          
-          // Визуальный эффект
-          coin.style.transform = 'scale(1.5)';
-          coin.style.opacity = '0';
-        });
-      }
-      
-      // Создаем монетки с интервалом
-      const coinInterval = setInterval(() => {
-        if (!gameActive) {
-          clearInterval(coinInterval);
-          return;
-        }
-        createCoin();
-      }, 800); // Новая монетка каждые 800ms
-      
-      // Таймер игры
-      const timerInterval = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = timeLeft;
-        
-        if (timeLeft <= 0) {
-          // Игра окончена
-          gameActive = false;
-          clearInterval(coinInterval);
-          clearInterval(timerInterval);
-          
-          // Показываем результат
-          resultScoreElement.textContent = score;
-          resultElement.classList.add('active');
-        }
-      }, 1000);
-      
-      // Обработчик закрытия мини-игры
-      document.getElementById('minigame-close').addEventListener('click', function() {
-        gameActive = false;
-        clearInterval(coinInterval);
-        clearInterval(timerInterval);
-        minigameContainer.classList.remove('active');
-      });
-      
-      // Обработчик кнопки результата
-      document.getElementById('minigame-result-button').addEventListener('click', function() {
-        // Закрываем мини-игру
-        minigameContainer.classList.remove('active');
-        
-        // Начисляем награду
-        const minigame = MINIGAMES.find(m => m.id === 'catch_coins');
-        const reward = Math.min(score, minigame.reward);
-        
-        userData.score += reward;
-        updateScoreDisplay();
-        saveUserData();
-        
-        // Показываем уведомление
-        showNotification(`${translations[currentLanguage].minigame_reward}: ${reward} монеток`);
-      });
-    }
-
-    // Вешаем обработчики на кнопки
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Инициализируем TonConnect
-      initTonConnect();
-      
-      // Инициализируем Adsgram с вашим UnitID
-      initAdsgram();
-      
-      // Загружаем данные пользователя при запуске
-      if (user) {
-        await loadUserData();
-        // Обрабатываем реферальный параметр
-        await processReferralParam();
-        
-        // Сохраняем аналитику запуска приложения
-        // saveAnalytics('app_start'); // Убрали, так как убрали аналитику
-      }
-      
-      // Обработчик для кнопок меню
-      document.querySelectorAll('#bottom-menu button').forEach(button => {
-        button.addEventListener('click', function() {
-          const pageKey = this.getAttribute('data-page');
-          showPage(pageKey);
-          
-          // Сохраняем аналитику перехода на страницу
-          // saveAnalytics('page_view', { page: pageKey }); // Убрали, так как убрали аналитику
-        });
-      });
-      
-      // Обработчик для кнопки топа
-      document.getElementById('topButton').addEventListener('click', function() {
-        showPage('top');
-      });
-      
-      // Обработчик для кнопки назад в топе
-      document.getElementById('backButton').addEventListener('click', function() {
-        showPage('clicker');
-      });
-      
-      // Обработчик для кнопки закрытия модального окна
-      document.getElementById('levelUpButton').addEventListener('click', function() {
-        document.getElementById('levelUpModal').style.display = 'none';
-      });
-      
-      // Обработчики для задания с кошельком
-      document.getElementById('wallet-task-button').addEventListener('click', function() {
-        if (userData.walletAddress && !userData.walletTaskCompleted) {
-          claimWalletTaskReward();
-        } else {
-          openWalletTaskModal();
-        }
-      });
-      
-      document.getElementById('wallet-modal-close').addEventListener('click', closeWalletTaskModal);
-      document.getElementById('wallet-modal-button').addEventListener('click', function() {
-        closeWalletTaskModal();
-        tonConnectUI.connectWallet();
-      });
-      
-      // Обработчики для задания с подпиской на канал
-      document.getElementById('channel-task-button').addEventListener('click', function() {
-        if (!userData.channelTaskCompleted) {
-          openChannelTaskModal();
-        }
-      });
-      
-      document.getElementById('channel-modal-close').addEventListener('click', closeChannelTaskModal);
-      document.getElementById('channel-modal-button').addEventListener('click', goToChannel);
-      document.getElementById('channel-verify-button').addEventListener('click', function() {
-        claimChannelTaskReward();
-        closeChannelTaskModal();
-      });
-      
-      // Обработчики для задания с рефералами
-      document.getElementById('referral-task-button').addEventListener('click', function() {
-        if (userData.referrals.length >= 3) {
-          claimReferralTaskReward();
-        } else {
-          openReferralTaskModal();
-        }
-      });
-      
-      document.getElementById('referral-modal-close').addEventListener('click', closeReferralTaskModal);
-      document.getElementById('referral-modal-button').addEventListener('click', copyReferralLink);
-      document.getElementById('referral-share-button').addEventListener('click', shareReferralLink);
-      
-      // Обработчики для задания с рекламой
-      document.getElementById('ads-task-button').addEventListener('click', function() {
-        if (userData.ads_watched >= 10) {
-          claimAdsTaskReward();
-        } else {
-          watchAds();
-        }
-      });
-      
-      // Обработчик для кнопки TonConnect в профиле
-      document.getElementById('ton-connect-button').addEventListener('click', function() {
-        if (userData.walletAddress) {
-          tonConnectUI.disconnect();
-        } else {
-          tonConnectUI.connectWallet();
-        }
-      });
-      
-      // Обработчик для затемнения фона
-      document.getElementById('task-modal-overlay').addEventListener('click', function() {
-        closeWalletTaskModal();
-        closeChannelTaskModal();
-        closeReferralTaskModal();
-      });
-      
-      // Обработчики для улучшений
-      document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
-      document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
-      document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
-      
-      // Обработчики для вкладок заданий
-      document.querySelectorAll('.task-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-          const tabType = this.getAttribute('data-tab');
-          
-          // Обновляем активную вкладку
-          document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Обновляем активное содержимое
-          document.querySelectorAll('.task-content').forEach(content => {
-            content.classList.remove('active');
-          });
-          document.getElementById(`${tabType}-tasks`).classList.add('active');
-        });
-      });
-      
-      // Обработчики для мини-игр
-      document.querySelectorAll('.start-minigame-button').forEach(button => {
-        button.addEventListener('click', function() {
-          const minigameItem = this.closest('.minigame-item');
-          const minigameId = minigameItem.getAttribute('data-minigame');
-          startMinigame(minigameId);
-          
-          // Сохраняем аналитику запуска мини-игры
-          // saveAnalytics('minigame_start', { minigame_id: minigameId }); // Убрали, так как убрали аналитику
-        });
-      });
-      
-      // Обработчик для кнопки получения ежедневного бонуса
-      document.getElementById('claim-daily-bonus-button').addEventListener('click', claimDailyBonus);
-      
-      // Обработчики для переключения языка
-      document.getElementById('lang-ru').addEventListener('click', function() {
-        currentLanguage = 'ru';
-        userData.language = 'ru';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        // saveAnalytics('language_change', { language: 'ru' }); // Убрали, так как убрали аналитику
-      });
-      
-      document.getElementById('lang-en').addEventListener('click', function() {
-        currentLanguage = 'en';
-        userData.language = 'en';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        // saveAnalytics('language_change', { language: 'en' }); // Убрали, так как убрали аналитику
-      });
-      
-      // Устанавливаем начальную страницу
-      showPage('clicker');
-      
-      // Загружаем превью топа
-      await updateTopData();
-      
-      // Устанавливаем периодическое обновление топа каждые 3 секунды
-      setInterval(updateTopData, 3000);
-      
-      // Устанавливаем интервал для обновления энергии каждую секунду
-      setInterval(updateEnergy, 1000);
-      
-      // Устанавливаем интервал для пассивного дохода каждые 5 секунд
-      setInterval(applyPassiveIncome, 5000);
-      
-      // Обновляем уровень при загрузке
-      updateLevel();
-    });
-
-    // --- Код для клика ---
-
-    const circle = document.getElementById('circle');
-    const img = document.getElementById('femboyImg');
-    const scoreDisplay = document.getElementById('score');
-
-    const imgNormal = "/static/Photo_femb_static.jpg";
-    const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
-
-    function incrementScore() {
-      // Проверяем, достаточно ли энергии
-      if (userData.energy <= 0) {
-        showNoEnergyNotification();
-        return;
-      }
-      
-      // Тратим энергию
-      userData.energy--;
-      
-      // Рассчитываем бонус за клик
-      const clickBonus = calculateClickBonus();
-      
-      // Проверяем активные бусты
-      let scoreMultiplier = 1;
-      userData.active_boosts.forEach(boost => {
-        if (boost.type === 'score_multiplier') {
-          scoreMultiplier *= boost.multiplier;
-        }
-      });
-      
-      // Увеличиваем счет с учетом бонуса и бустов
-      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
-      userData.score += scoreIncrease;
-      userData.total_clicks++;
-      
-      // Создаем эффект молнии
-      createLightning();
-      
-      // Обновляем отображение
-      updateScoreDisplay();
-      updateEnergyDisplay();
-      updateLevel();
-      
-      // Сохраняем данные на сервере после каждого клика
-      saveUserData();
-      
-      // Сохраняем аналитику клика
-      // saveAnalytics('click', { score_increase: scoreIncrease }); // Убрали, так как убрали аналитику
-      
-      // Проверяем достижения
-      checkNewAchievements();
-    }
-
-    function pressVisualOn() {
-      circle.classList.add('pressed');
-      img.src = imgActive;
-    }
-
-    function pressVisualOff() {
-      circle.classList.remove('pressed');
-      img.src = imgNormal;
-    }
-
-    circle.addEventListener('mousedown', (e) => {
-      if (e.button === 0) { 
-        pressVisualOn();
-        incrementScore();
-      }
-    });
-    circle.addEventListener('mouseup', pressVisualOff);
-    circle.addEventListener('mouseleave', pressVisualOff);
-
-    circle.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      pressVisualOn();
-      incrementScore();
-    }, {passive:false});
-    circle.addEventListener('touchend', (e) => {
-      pressVisualOff();
-    });
-
-    circle.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') {
-        e.preventDefault();
-        if (!circle.classList.contains('pressed')) {
-          pressVisualOn();
-          incrementScore();
-        }
-      }
-    });
-
-    circle.addEventListener('keyup', (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') {
-        e.preventDefault();
-        pressVisualOff();
-      }
-    });
-
-    // Запрет масштабирования двумя пальцами
-    document.addEventListener('touchstart', function(event) {
-      if (event.touches.length > 1) {
-        event.preventDefault();
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchmove', function(event) {
-      if (event.touches.length > 1) {
-        event.preventDefault();
-      }
-    }, { passive: false });
-
-    document.addEventListener('gesturestart', function(event) {
-      event.preventDefault();
-    });
-
-  </script>
-
-</body>
-</html>
-"""
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return HTMLResponse(content=html_content)
-
-@app.get("/tonconnect-manifest.json")
-async def tonconnect_manifest():
-    manifest = {
-        "url": "https://tofemb.onrender.com",
-        "name": "Femboy Gaming",
-        "iconUrl": "https://tofemb.onrender.com/static/FemboyCoinsPink.png",
-        "termsOfUseUrl": "https://tofemb.onrender.com/terms",
-        "privacyPolicyUrl": "https://tofemb.onrender.com/privacy"
-    }
-    return JSONResponse(content=manifest)
-
-# Добавим эндпоинты для страниц условий использования и политики конфиденциальности
-@app.get("/terms", response_class=HTMLResponse)
-async def terms():
-    return HTMLResponse(content="""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Условия использования</title>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #ff66cc; }
-        </style>
-    </head>
-    <body>
-        <h1>Условия использования</h1>
-        <p>Добро пожаловать в Femboy Gaming! Используя наше приложение, вы соглашаетесь с следующими условиями:</p>
-        <ul>
-            <li>Все игровые монеты являются виртуальной валютой и не имеют реальной ценности.</li>
-            <li>Администрация оставляет за собой право изменять правила игры в любое время.</li>
-            <li>Запрещено использование ботов, читов и других методов нечестной игры.</li>
-            <li>Администрация не несет ответственности за утерю игровых монет из-за технических сбоев.</li>
-        </ul>
-        <p>Если у вас есть вопросы, свяжитесь с поддержкой через Telegram.</p>
-    </body>
-    </html>
-    """)
-
-@app.get("/privacy", response_class=HTMLResponse)
-async def privacy():
-    return HTMLResponse(content="""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Политика конфиденциальности</title>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #ff66cc; }
-        </style>
-    </head>
-    <body>
-        <h1>Политика конфиденциальности</h1>
-        <p>В Femboy Gaming мы ценим вашу конфиденциальность. Эта политика описывает, как мы собираем, используем и защищаем ваши данные:</p>
-        <ul>
-            <li>Мы собираем только минимально необходимые данные для работы приложения (ID пользователя, имя, никнейм).</li>
-            <li>Мы не передаем ваши данные третьим лицам без вашего согласия.</li>
-            <li>Все данные хранятся в зашифрованном виде на защищенных серверах.</li>
-            <li>Вы можете запросить удаление своих данных в любой момент.</li>
-        </ul>
-        <p>Если у вас есть вопросы о вашей конфиденциальности, свяжитесь с нами через Telegram.</p>
-    </body>
-    </html>
-    """)
-
-@app.get("/user/{user_id}")
-async def get_user_data(user_id: str):
-    """Получение данных пользователя по ID"""
-    try:
-        logger.info(f"GET /user/{user_id} endpoint called")
-        user_data = load_user(user_id)
-        
-        if user_data:
-            # Преобразуем данные для фронтенда
-            response_data = {
-                "id": user_data["user_id"],
-                "first_name": user_data["first_name"],
-                "last_name": user_data["last_name"],
-                "username": user_data["username"],
-                "photo_url": user_data["photo_url"],
-                "score": user_data["score"],
-                "total_clicks": user_data["total_clicks"],
-                "level": user_data["level"],
-                "walletAddress": user_data["wallet_address"],
-                "walletTaskCompleted": user_data["wallet_task_completed"],
-                "channelTaskCompleted": user_data["channel_task_completed"],
-                "referrals": user_data["referrals"],
-                "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
-                "energy": user_data["energy"],
-                "lastEnergyUpdate": user_data["last_energy_update"],
-                "upgrades": user_data["upgrades"],
-                "ads_watched": user_data["ads_watched"],
-                "achievements": user_data["achievements"],
-                "friends": user_data["friends"],
-                "daily_bonus": user_data["daily_bonus"],
-                "active_boosts": user_data["active_boosts"],
-                "skins": user_data["skins"],
-                "active_skin": user_data["active_skin"],
-                "auto_clickers": user_data["auto_clickers"],
-                "language": user_data["language"]
-            }
-            
-            logger.info(f"Returning user data for {user_data['first_name']}")
-            return JSONResponse(content={"user": response_data})
-        else:
-            logger.info(f"User not found with ID {user_id}")
-            return JSONResponse(content={"status": "error", "message": "User not found"}, status_code=404)
-    except Exception as e:
-        logger.error(f"Error in /user/{user_id}: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-@app.post("/user")
-async def save_user_data(request: Request):
-    """Сохранение данных пользователя на сервере"""
-    try:
-        logger.info(f"POST /user endpoint called")
-        data = await request.json()
-        
-        # Сохраняем в базу данных
-        success = save_user(data)
-        
-        if success:
-            # Получаем обновленные данные
-            user_id = str(data.get('id'))
-            user_data = load_user(user_id)
-            
-            if user_data:
-                # Преобразуем данные для фронтенда
-                response_data = {
-                    "id": user_data["user_id"],
-                    "first_name": user_data["first_name"],
-                    "last_name": user_data["last_name"],
-                    "username": user_data["username"],
-                    "photo_url": user_data["photo_url"],
-                    "score": user_data["score"],
-                    "total_clicks": user_data["total_clicks"],
-                    "level": user_data["level"],
-                    "walletAddress": user_data["wallet_address"],
-                    "walletTaskCompleted": user_data["wallet_task_completed"],
-                    "channelTaskCompleted": user_data["channel_task_completed"],
-                    "referrals": user_data["referrals"],
-                    "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
-                    "energy": user_data["energy"],
-                    "lastEnergyUpdate": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"],
-                    "ads_watched": user_data["ads_watched"],
-                    "achievements": user_data["achievements"],
-                    "friends": user_data["friends"],
-                    "daily_bonus": user_data["daily_bonus"],
-                    "active_boosts": user_data["active_boosts"],
-                    "skins": user_data["skins"],
-                    "active_skin": user_data["active_skin"],
-                    "auto_clickers": user_data["auto_clickers"],
-                    "language": user_data["language"]
-                }
-                
-                logger.info(f"User saved successfully: {user_data['first_name']}")
-                return JSONResponse(content={"status": "success", "user": response_data})
-            else:
-                logger.info(f"Failed to retrieve saved user")
-                return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
-        else:
-            logger.info(f"Failed to save user")
-            return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
-    except Exception as e:
-        logger.error(f"Error in POST /user: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-@app.post("/referral")
-async def handle_referral(request: Request):
-    """Обработка реферальной ссылки"""
-    try:
-        logger.info(f"POST /referral endpoint called")
-        data = await request.json()
-        referrer_id = str(data.get('referrer_id'))
-        referred_id = str(data.get('referred_id'))
-        
-        if referrer_id and referred_id and referrer_id != referred_id:
-            success = add_referral(referrer_id, referred_id)
-            
-            if success:
-                logger.info(f"Referral added successfully: {referrer_id} -> {referred_id}")
-                return JSONResponse(content={"status": "success"})
-            else:
-                logger.info(f"Failed to add referral")
-                return JSONResponse(content={"status": "error", "message": "Failed to add referral"})
-        else:
-            logger.info(f"Invalid referral data")
-            return JSONResponse(content={"status": "error", "message": "Invalid data"})
-    except Exception as e:
-        logger.error(f"Error in POST /referral: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-@app.get("/top")
-async def get_top_users_endpoint():
-    """Получение топа пользователей"""
-    try:
-        logger.info(f"GET /top endpoint called")
-        top_users = get_top_users()
-        
-        # Преобразуем данные для фронтенда
-        response_users = []
-        for user in top_users:
-            response_users.append({
-                "id": user["user_id"],
-                "first_name": user["first_name"],
-                "last_name": user["last_name"],
-                "username": user["username"],
-                "photo_url": user["photo_url"],
-                "score": user["score"],
-                "level": user["level"]
-            })
-        
-        logger.info(f"Returning {len(response_users)} top users")
-        return JSONResponse(content={"users": response_users})
-    except Exception as e:
-        logger.error(f"Error in GET /top: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-@app.post("/daily-bonus")
-async def claim_daily_bonus_endpoint(request: Request):
-    """Получение ежедневного бонуса"""
-    try:
-        logger.info(f"POST /daily-bonus endpoint called")
-        data = await request.json()
-        user_id = data.get('user_id')
-        
-        if not user_id:
-            return JSONResponse(content={"status": "error", "message": "Missing user_id"}, status_code=400)
-        
-        result = claim_daily_bonus(user_id)
-        
-        if result["status"] == "success":
-            logger.info(f"Daily bonus claimed successfully for user {user_id}")
-            return JSONResponse(content=result)
-        else:
-            logger.info(f"Failed to claim daily bonus for user {user_id}: {result['message']}")
-            return JSONResponse(content=result, status_code=400)
-    except Exception as e:
-        logger.error(f"Error in POST /daily-bonus: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-@app.post("/gift")
-async def send_gift_endpoint(request: Request):
-    """Отправка подарка другу"""
-    try:
-        logger.info(f"POST /gift endpoint called")
-        data = await request.json()
-        sender_id = data.get('sender_id')
-        receiver_id = data.get('receiver_id')
-        gift_type = data.get('gift_type')
-        gift_value = data.get('gift_value')
-        
-        if not all([sender_id, receiver_id, gift_type, gift_value]):
-            return JSONResponse(content={"status": "error", "message": "Missing required fields"}, status_code=400)
-        
-        success = send_gift(sender_id, receiver_id, gift_type, gift_value)
-        
-        if success:
-            logger.info(f"Gift sent successfully from {sender_id} to {receiver_id}")
-            return JSONResponse(content={"status": "success"})
-        else:
-            logger.info(f"Failed to send gift from {sender_id} to {receiver_id}")
-            return JSONResponse(content={"status": "error", "message": "Failed to send gift"})
-    except Exception as e:
-        logger.error(f"Error in POST /gift: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
-# Добавляем код для запуска на сервере
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    logger.info(f"Starting server on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port)        const dayElement = document.createElement('div');
+        const dayElement = document.createElement('div');
         dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
         
         dayElement.innerHTML = `
@@ -5488,194 +4588,6 @@ if __name__ == "__main__":
       });
     }
 
-    // Вешаем обработчики на кнопки
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Инициализируем TonConnect
-      initTonConnect();
-      
-      // Инициализируем Adsgram с вашим UnitID
-      initAdsgram();
-      
-      // Загружаем данные пользователя при запуске
-      if (user) {
-        await loadUserData();
-        // Обрабатываем реферальный параметр
-        await processReferralParam();
-        
-        // Сохраняем аналитику запуска приложения
-        // saveAnalytics('app_start'); // Убрали, так как убрали аналитику
-      }
-      
-      // Обработчик для кнопок меню
-      document.querySelectorAll('#bottom-menu button').forEach(button => {
-        button.addEventListener('click', function() {
-          const pageKey = this.getAttribute('data-page');
-          showPage(pageKey);
-          
-          // Сохраняем аналитику перехода на страницу
-          // saveAnalytics('page_view', { page: pageKey }); // Убрали, так как убрали аналитику
-        });
-      });
-      
-      // Обработчик для кнопки топа
-      document.getElementById('topButton').addEventListener('click', function() {
-        showPage('top');
-      });
-      
-      // Обработчик для кнопки назад в топе
-      document.getElementById('backButton').addEventListener('click', function() {
-        showPage('clicker');
-      });
-      
-      // Обработчик для кнопки закрытия модального окна
-      document.getElementById('levelUpButton').addEventListener('click', function() {
-        document.getElementById('levelUpModal').style.display = 'none';
-      });
-      
-      // Обработчики для задания с кошельком
-      document.getElementById('wallet-task-button').addEventListener('click', function() {
-        if (userData.walletAddress && !userData.walletTaskCompleted) {
-          claimWalletTaskReward();
-        } else {
-          openWalletTaskModal();
-        }
-      });
-      
-      document.getElementById('wallet-modal-close').addEventListener('click', closeWalletTaskModal);
-      document.getElementById('wallet-modal-button').addEventListener('click', function() {
-        closeWalletTaskModal();
-        tonConnectUI.connectWallet();
-      });
-      
-      // Обработчики для задания с подпиской на канал
-      document.getElementById('channel-task-button').addEventListener('click', function() {
-        if (!userData.channelTaskCompleted) {
-          openChannelTaskModal();
-        }
-      });
-      
-      document.getElementById('channel-modal-close').addEventListener('click', closeChannelTaskModal);
-      document.getElementById('channel-modal-button').addEventListener('click', goToChannel);
-      document.getElementById('channel-verify-button').addEventListener('click', function() {
-        claimChannelTaskReward();
-        closeChannelTaskModal();
-      });
-      
-      // Обработчики для задания с рефералами
-      document.getElementById('referral-task-button').addEventListener('click', function() {
-        if (userData.referrals.length >= 3) {
-          claimReferralTaskReward();
-        } else {
-          openReferralTaskModal();
-        }
-      });
-      
-      document.getElementById('referral-modal-close').addEventListener('click', closeReferralTaskModal);
-      document.getElementById('referral-modal-button').addEventListener('click', copyReferralLink);
-      document.getElementById('referral-share-button').addEventListener('click', shareReferralLink);
-      
-      // Обработчики для задания с рекламой
-      document.getElementById('ads-task-button').addEventListener('click', function() {
-        if (userData.ads_watched >= 10) {
-          claimAdsTaskReward();
-        } else {
-          watchAds();
-        }
-      });
-      
-      // Обработчик для кнопки TonConnect в профиле
-      document.getElementById('ton-connect-button').addEventListener('click', function() {
-        if (userData.walletAddress) {
-          tonConnectUI.disconnect();
-        } else {
-          tonConnectUI.connectWallet();
-        }
-      });
-      
-      // Обработчик для затемнения фона
-      document.getElementById('task-modal-overlay').addEventListener('click', function() {
-        closeWalletTaskModal();
-        closeChannelTaskModal();
-        closeReferralTaskModal();
-      });
-      
-      // Обработчики для улучшений
-      document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
-      document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
-      document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
-      
-      // Обработчики для вкладок заданий
-      document.querySelectorAll('.task-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-          const tabType = this.getAttribute('data-tab');
-          
-          // Обновляем активную вкладку
-          document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Обновляем активное содержимое
-          document.querySelectorAll('.task-content').forEach(content => {
-            content.classList.remove('active');
-          });
-          document.getElementById(`${tabType}-tasks`).classList.add('active');
-        });
-      });
-      
-      // Обработчики для мини-игр
-      document.querySelectorAll('.start-minigame-button').forEach(button => {
-        button.addEventListener('click', function() {
-          const minigameItem = this.closest('.minigame-item');
-          const minigameId = minigameItem.getAttribute('data-minigame');
-          startMinigame(minigameId);
-          
-          // Сохраняем аналитику запуска мини-игры
-          // saveAnalytics('minigame_start', { minigame_id: minigameId }); // Убрали, так как убрали аналитику
-        });
-      });
-      
-      // Обработчик для кнопки получения ежедневного бонуса
-      document.getElementById('claim-daily-bonus-button').addEventListener('click', claimDailyBonus);
-      
-      // Обработчики для переключения языка
-      document.getElementById('lang-ru').addEventListener('click', function() {
-        currentLanguage = 'ru';
-        userData.language = 'ru';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        // saveAnalytics('language_change', { language: 'ru' }); // Убрали, так как убрали аналитику
-      });
-      
-      document.getElementById('lang-en').addEventListener('click', function() {
-        currentLanguage = 'en';
-        userData.language = 'en';
-        updateLanguageUI();
-        saveUserData();
-        
-        // Сохраняем аналитику смены языка
-        // saveAnalytics('language_change', { language: 'en' }); // Убрали, так как убрали аналитику
-      });
-      
-      // Устанавливаем начальную страницу
-      showPage('clicker');
-      
-      // Загружаем превью топа
-      await updateTopData();
-      
-      // Устанавливаем периодическое обновление топа каждые 3 секунды
-      setInterval(updateTopData, 3000);
-      
-      // Устанавливаем интервал для обновления энергии каждую секунду
-      setInterval(updateEnergy, 1000);
-      
-      // Устанавливаем интервал для пассивного дохода каждые 5 секунд
-      setInterval(applyPassiveIncome, 5000);
-      
-      // Обновляем уровень при загрузке
-      updateLevel();
-    });
-
     // --- Код для клика ---
 
     const circle = document.getElementById('circle');
@@ -5721,9 +4633,6 @@ if __name__ == "__main__":
       
       // Сохраняем данные на сервере после каждого клика
       saveUserData();
-      
-      // Сохраняем аналитику клика
-      // saveAnalytics('click', { score_increase: scoreIncrease }); // Убрали, так как убрали аналитику
       
       // Проверяем достижения
       checkNewAchievements();
@@ -5791,6 +4700,178 @@ if __name__ == "__main__":
       event.preventDefault();
     });
 
+    // Вешаем обработчики на кнопки
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Инициализируем TonConnect
+      initTonConnect();
+      
+      // Инициализируем Adsgram с вашим UnitID
+      initAdsgram();
+      
+      // Загружаем данные пользователя при запуске
+      if (user) {
+        await loadUserData();
+        // Обрабатываем реферальный параметр
+        await processReferralParam();
+      }
+      
+      // Обработчик для кнопок меню
+      document.querySelectorAll('#bottom-menu button').forEach(button => {
+        button.addEventListener('click', function() {
+          const pageKey = this.getAttribute('data-page');
+          showPage(pageKey);
+        });
+      });
+      
+      // Обработчик для кнопки топа
+      document.getElementById('topButton').addEventListener('click', function() {
+        showPage('top');
+      });
+      
+      // Обработчик для кнопки назад в топе
+      document.getElementById('backButton').addEventListener('click', function() {
+        showPage('clicker');
+      });
+      
+      // Обработчик для кнопки закрытия модального окна
+      document.getElementById('levelUpButton').addEventListener('click', function() {
+        document.getElementById('levelUpModal').style.display = 'none';
+      });
+      
+      // Обработчики для задания с кошельком
+      document.getElementById('wallet-task-button').addEventListener('click', function() {
+        if (userData.wallet_address && !userData.wallet_task_completed) {
+          claimWalletTaskReward();
+        } else {
+          openWalletTaskModal();
+        }
+      });
+      
+      document.getElementById('wallet-modal-close').addEventListener('click', closeWalletTaskModal);
+      document.getElementById('wallet-modal-button').addEventListener('click', function() {
+        closeWalletTaskModal();
+        tonConnectUI.connectWallet();
+      });
+      
+      // Обработчики для задания с подпиской на канал
+      document.getElementById('channel-task-button').addEventListener('click', function() {
+        if (!userData.channel_task_completed) {
+          openChannelTaskModal();
+        }
+      });
+      
+      document.getElementById('channel-modal-close').addEventListener('click', closeChannelTaskModal);
+      document.getElementById('channel-modal-button').addEventListener('click', goToChannel);
+      document.getElementById('channel-verify-button').addEventListener('click', function() {
+        claimChannelTaskReward();
+        closeChannelTaskModal();
+      });
+      
+      // Обработчики для задания с рефералами
+      document.getElementById('referral-task-button').addEventListener('click', function() {
+        if (userData.referrals.length >= 3) {
+          claimReferralTaskReward();
+        } else {
+          openReferralTaskModal();
+        }
+      });
+      
+      document.getElementById('referral-modal-close').addEventListener('click', closeReferralTaskModal);
+      document.getElementById('referral-modal-button').addEventListener('click', copyReferralLink);
+      document.getElementById('referral-share-button').addEventListener('click', shareReferralLink);
+      
+      // Обработчики для задания с рекламой
+      document.getElementById('ads-task-button').addEventListener('click', function() {
+        if (userData.ads_watched >= 10) {
+          claimAdsTaskReward();
+        } else {
+          watchAds();
+        }
+      });
+      
+      // Обработчик для кнопки TonConnect в профиле
+      document.getElementById('ton-connect-button').addEventListener('click', function() {
+        if (userData.wallet_address) {
+          tonConnectUI.disconnect();
+        } else {
+          tonConnectUI.connectWallet();
+        }
+      });
+      
+      // Обработчик для затемнения фона
+      document.getElementById('task-modal-overlay').addEventListener('click', function() {
+        closeWalletTaskModal();
+        closeChannelTaskModal();
+        closeReferralTaskModal();
+      });
+      
+      // Обработчики для улучшений
+      document.getElementById('upgrades-button').addEventListener('click', openUpgradesModal);
+      document.getElementById('upgrades-modal-close').addEventListener('click', closeUpgradesModal);
+      document.getElementById('upgrades-modal-overlay').addEventListener('click', closeUpgradesModal);
+      
+      // Обработчики для вкладок заданий
+      document.querySelectorAll('.task-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabType = this.getAttribute('data-tab');
+          
+          // Обновляем активную вкладку
+          document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Обновляем активное содержимое
+          document.querySelectorAll('.task-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          document.getElementById(`${tabType}-tasks`).classList.add('active');
+        });
+      });
+      
+      // Обработчики для мини-игр
+      document.querySelectorAll('.start-minigame-button').forEach(button => {
+        button.addEventListener('click', function() {
+          const minigameItem = this.closest('.minigame-item');
+          const minigameId = minigameItem.getAttribute('data-minigame');
+          startMinigame(minigameId);
+        });
+      });
+      
+      // Обработчик для кнопки получения ежедневного бонуса
+      document.getElementById('claim-daily-bonus-button').addEventListener('click', claimDailyBonus);
+      
+      // Обработчики для переключения языка
+      document.getElementById('lang-ru').addEventListener('click', function() {
+        currentLanguage = 'ru';
+        userData.language = 'ru';
+        updateLanguageUI();
+        saveUserData();
+      });
+      
+      document.getElementById('lang-en').addEventListener('click', function() {
+        currentLanguage = 'en';
+        userData.language = 'en';
+        updateLanguageUI();
+        saveUserData();
+      });
+      
+      // Устанавливаем начальную страницу
+      showPage('clicker');
+      
+      // Загружаем превью топа
+      await updateTopData();
+      
+      // Устанавливаем периодическое обновление топа каждые 3 секунды
+      setInterval(updateTopData, 3000);
+      
+      // Устанавливаем интервал для обновления энергии каждую секунду
+      setInterval(updateEnergy, 1000);
+      
+      // Устанавливаем интервал для пассивного дохода каждые 5 секунд
+      setInterval(applyPassiveIncome, 5000);
+      
+      // Обновляем уровень при загрузке
+      updateLevel();
+    });
   </script>
 
 </body>
@@ -5885,13 +4966,13 @@ async def get_user_data(user_id: str):
                 "score": user_data["score"],
                 "total_clicks": user_data["total_clicks"],
                 "level": user_data["level"],
-                "walletAddress": user_data["wallet_address"],
-                "walletTaskCompleted": user_data["wallet_task_completed"],
-                "channelTaskCompleted": user_data["channel_task_completed"],
+                "wallet_address": user_data["wallet_address"],
+                "wallet_task_completed": user_data["wallet_task_completed"],
+                "channel_task_completed": user_data["channel_task_completed"],
                 "referrals": user_data["referrals"],
-                "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
+                "last_referral_task_completion": user_data["last_referral_task_completion"],
                 "energy": user_data["energy"],
-                "lastEnergyUpdate": user_data["last_energy_update"],
+                "last_energy_update": user_data["last_energy_update"],
                 "upgrades": user_data["upgrades"],
                 "ads_watched": user_data["ads_watched"],
                 "achievements": user_data["achievements"],
@@ -5939,13 +5020,13 @@ async def save_user_data(request: Request):
                     "score": user_data["score"],
                     "total_clicks": user_data["total_clicks"],
                     "level": user_data["level"],
-                    "walletAddress": user_data["wallet_address"],
-                    "walletTaskCompleted": user_data["wallet_task_completed"],
-                    "channelTaskCompleted": user_data["channel_task_completed"],
+                    "wallet_address": user_data["wallet_address"],
+                    "wallet_task_completed": user_data["wallet_task_completed"],
+                    "channel_task_completed": user_data["channel_task_completed"],
                     "referrals": user_data["referrals"],
-                    "lastReferralTaskCompletion": user_data["last_referral_task_completion"],
+                    "last_referral_task_completion": user_data["last_referral_task_completion"],
                     "energy": user_data["energy"],
-                    "lastEnergyUpdate": user_data["last_energy_update"],
+                    "last_energy_update": user_data["last_energy_update"],
                     "upgrades": user_data["upgrades"],
                     "ads_watched": user_data["ads_watched"],
                     "achievements": user_data["achievements"],
@@ -6075,4 +5156,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
