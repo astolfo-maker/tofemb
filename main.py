@@ -676,13 +676,17 @@ def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
         today = current_time.date().isoformat()
         
         # Проверяем, был ли уже получен бонус сегодня
-        if daily_bonus.get('last_claim') and daily_bonus['last_claim'].date() == current_time.date():
+        last_claim = daily_bonus.get('last_claim')
+        if last_claim and isinstance(last_claim, str):
+            last_claim = datetime.fromisoformat(last_claim.replace('Z', '+00:00'))
+        
+        if last_claim and last_claim.date() == current_time.date():
             logger.info("Daily bonus already claimed today")
             return {"status": "error", "message": "Daily bonus already claimed today"}
         
         # Определяем день бонуса
-        if daily_bonus['streak'] == 0 or (daily_bonus.get('last_claim') and 
-                                         (current_time.date() - daily_bonus['last_claim'].date()).days > 1):
+        if daily_bonus['streak'] == 0 or (last_claim and 
+                                         (current_time.date() - last_claim.date()).days > 1):
             # Если серия прервана, начинаем заново
             daily_bonus['streak'] = 1
         else:
@@ -698,7 +702,7 @@ def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
         bonus_reward = DAILY_BONUSES[bonus_day - 1]['reward']
         
         # Обновляем данные пользователя
-        daily_bonus['last_claim'] = current_time
+        daily_bonus['last_claim'] = current_time.isoformat()  # Преобразуем в строку
         if today not in daily_bonus['claimed_days']:
             daily_bonus['claimed_days'].append(today)
         
@@ -721,7 +725,8 @@ def claim_daily_bonus(user_id: str) -> Dict[str, Any]:
         return {
             "status": "success", 
             "reward": bonus_reward,
-            "streak": daily_bonus['streak']
+            "streak": daily_bonus['streak'],
+            "daily_bonus": daily_bonus
         }
     except Exception as e:
         logger.error(f"Error claiming daily bonus: {e}")
@@ -1786,13 +1791,18 @@ html_content = """
       font-size: 14px;
     }
     .upgrade-image {
-      width: 60px;
-      height: 60px;
-      margin: 0 auto 10px;
-      border-radius: 50%;
-      object-fit: cover;
-      background-color: #ff66cc;
-    }
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background-color: #ff66cc;
+  background-size: cover;
+  background-position: center;
+  /* Добавляем обводку для видимости */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  /* Добавляем тень для глубины */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
     .upgrade-description {
       font-size: 12px;
       opacity: 0.8;
@@ -5156,3 +5166,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+.upgrade-image
+claim_daily_bonus
