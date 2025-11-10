@@ -4395,32 +4395,40 @@ html_content = """
     }
     
     // Обновление ежедневных бонусов
-    function updateDailyBonus() {
-      const calendar = document.getElementById('daily-bonus-calendar');
-      calendar.innerHTML = '';
-      
-      const today = new Date().getDate();
-      const currentStreak = userData.daily_bonus.streak;
-      
-      // Отображаем календарь бонусов
-      DAILY_BONUSES.forEach((bonus, index) => {
-        const dayNumber = index + 1;
-        const isCurrentDay = dayNumber === currentStreak + 1;
-        const isClaimed = dayNumber <= currentStreak;
-        
-                const dayElement = document.createElement('div');
-        dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
-        
-        dayElement.innerHTML = `
-          <div class="bonus-day-number">День ${dayNumber}</div>
-          <div class="bonus-day-reward">
-            <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>${bonus.reward}</span>
-          </div>
-        `;
-        
-        calendar.appendChild(dayElement);
-      });
+function updateDailyBonus() {
+  const calendar = document.getElementById('daily-bonus-calendar');
+  calendar.innerHTML = '';
+  
+  const today = new Date().getDate();
+  const currentStreak = userData.daily_bonus.streak;
+  
+  // Отображаем календарь бонусов
+  DAILY_BONUSES.forEach((bonus, index) => {
+    const dayNumber = index + 1;
+    const isCurrentDay = dayNumber === currentStreak + 1;
+    const isClaimed = dayNumber <= currentStreak;
+    
+    // Создаем элемент для дня
+    const dayElement = document.createElement('div');
+    dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
+    
+    dayElement.innerHTML = `
+      <div class="bonus-day-number">День ${dayNumber}</div>
+      <div class="bonus-day-reward">
+        <img src="/static/FemboyCoinsPink.png" alt="монетки">
+        <span>${bonus.reward}</span>
+      </div>
+    `;
+    
+    calendar.appendChild(dayElement);
+  });
+  
+  // Обновляем текущую серию
+  document.getElementById('current-streak').textContent = currentStreak;
+  
+  // Проверяем, можно ли получить бонус сегодня
+  checkDailyBonusAvailability();
+}
       
       // Обновляем текущую серию
       document.getElementById('current-streak').textContent = currentStreak;
@@ -6067,3 +6075,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
