@@ -5167,6 +5167,3 @@ if __name__ == "__main__":
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-
-.upgrade-image
-claim_daily_bonus
