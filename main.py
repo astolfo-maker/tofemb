@@ -272,6 +272,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['language'] = 'ru'
                 logger.info("Added default language value to user data")
             
+            # Добавляем поле для последнего обновления пассивного дохода
+            if 'last_passive_income_update' not in user_data:
+                user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
+                logger.info("Added default last_passive_income_update value to user data")
+            
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
@@ -360,7 +365,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "skins": user_data.get('skins', []),
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
-            "language": user_data.get('language', 'ru')
+            "language": user_data.get('language', 'ru'),
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
         }
         
         def query():
@@ -817,9 +823,8 @@ html_content = """
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
-      /* ИСПРАВЛЕНИЕ: Добавляем прокрутку для секции профиля */
+      max-height: calc(100vh - 120px);
       overflow-y: auto;
-      max-height: calc(100vh - 120px); /* Высота экрана минус высота шапки и меню */
     }
     
     #userProfile {
@@ -1685,15 +1690,12 @@ html_content = """
       width: 60px;
       height: 60px;
       margin: 0 auto 10px;
-      border-radius: 50%;
+      border-radius: 0;
+      background-color: transparent;
       background-size: cover;
       background-position: center;
-      /* ИСПРАВЛЕНИЕ: Убираем розовый фон */
-      background-color: transparent;
-      /* Добавляем обводку для видимости */
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      /* Добавляем тень для глубины */
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border: none;
+      box-shadow: none;
     }
     .upgrade-description {
       font-size: 12px;
@@ -2110,8 +2112,8 @@ html_content = """
       </div>
       
       <div class="profile-stats">
-        <p>Собранные монетки: <span id="profileScore">0</span></p>
-        <p>Уровень фембоя: <span id="userLevel">Новичок</span></p>
+        <p data-i18n="score">Собранные монетки: <span id="profileScore">0</span></p>
+        <p data-i18n="level">Уровень фембоя: <span id="userLevel">Новичок</span></p>
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
         <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
@@ -2449,37 +2451,7 @@ html_content = """
         "wallet_disconnected": "TON кошелек отключен",
         "not_enough_coins": "Недостаточно монет!",
         "upgrade_purchased": "Улучшение куплено!",
-        "upgrade_already_purchased": "Улучшение уже куплено!",
-        "top_100_femboys": "Топ 100 фембоев",
-        "loading": "Загрузка...",
-        "no_data": "Нет данных для отображения",
-        "error_loading_top": "Ошибка загрузки топа",
-        "back": "← Назад",
-        "connect_ton_wallet": "Подключить TON кошелек",
-        "get_reward": "Получить награду",
-        "task_completed": "Задание выполнено",
-        "start": "НАЧАТЬ",
-        "copy_link": "Скопировать ссылку",
-        "send_to_friends": "Переслать друзьям",
-        "watch_ads": "Просмотр рекламы",
-        "ads_watched": "Просмотрено",
-        "invite_friends": "Пригласить 3-х друзей",
-        "friends_invited": "Приглашено друзей",
-        "task_available_in": "Задание будет доступно через",
-        "hours": "ч",
-        "minutes": "м",
-        "seconds": "с",
-        "claim_daily_bonus": "Получить бонус",
-        "bonus_claimed": "Бонус получен",
-        "current_streak": "Текущая серия",
-        "days": "дней",
-        "day": "День",
-        "play": "Играть",
-        "game_over": "Игра окончена!",
-        "coins_caught": "Вы поймали",
-        "coins": "монеток",
-        "claim_reward": "Забрать награду",
-        "not_enough_energy": "Недостаточно энергии!"
+        "upgrade_already_purchased": "Улучшение уже куплено!"
       },
       en: {
         "score": "Score",
@@ -2500,37 +2472,7 @@ html_content = """
         "wallet_disconnected": "TON wallet disconnected",
         "not_enough_coins": "Not enough coins!",
         "upgrade_purchased": "Upgrade purchased!",
-        "upgrade_already_purchased": "Upgrade already purchased!",
-        "top_100_femboys": "Top 100 Femboys",
-        "loading": "Loading...",
-        "no_data": "No data to display",
-        "error_loading_top": "Error loading top",
-        "back": "← Back",
-        "connect_ton_wallet": "Connect TON Wallet",
-        "get_reward": "Get Reward",
-        "task_completed": "Task completed",
-        "start": "START",
-        "copy_link": "Copy Link",
-        "send_to_friends": "Send to Friends",
-        "watch_ads": "Watch Ads",
-        "ads_watched": "Watched",
-        "invite_friends": "Invite 3 Friends",
-        "friends_invited": "Friends Invited",
-        "task_available_in": "Task available in",
-        "hours": "h",
-        "minutes": "m",
-        "seconds": "s",
-        "claim_daily_bonus": "Claim Bonus",
-        "bonus_claimed": "Bonus claimed",
-        "current_streak": "Current streak",
-        "days": "days",
-        "day": "Day",
-        "play": "Play",
-        "game_over": "Game Over!",
-        "coins_caught": "You caught",
-        "coins": "coins",
-        "claim_reward": "Claim Reward",
-        "not_enough_energy": "Not enough energy!"
+        "upgrade_already_purchased": "Upgrade already purchased!"
       }
     };
     
@@ -2587,7 +2529,8 @@ html_content = """
       skins: [],
       active_skin: 'default',
       auto_clickers: 0,
-      language: 'ru'
+      language: 'ru',
+      last_passive_income_update: new Date().toISOString()
     };
     
     // Максимальное количество энергии
@@ -2801,6 +2744,9 @@ html_content = """
             if (!userData.language) {
               userData.language = 'ru';
             }
+            if (!userData.last_passive_income_update) {
+              userData.last_passive_income_update = new Date().toISOString();
+            }
             
             // Устанавливаем текущий язык
             currentLanguage = userData.language;
@@ -2842,6 +2788,9 @@ html_content = """
             // Запускаем автокликеры
             startAutoClickers();
             
+            // Начисляем пассивный доход за время отсутствия
+            calculateOfflinePassiveIncome();
+            
             return;
           }
         }
@@ -2875,7 +2824,8 @@ html_content = """
           skins: [],
           active_skin: 'default',
           auto_clickers: 0,
-          language: 'ru'
+          language: 'ru',
+          last_passive_income_update: new Date().toISOString()
         };
         
         // Сохраняем нового пользователя на сервере
@@ -2896,6 +2846,36 @@ html_content = """
         checkAdsTask();
         updateAchievements();
         updateDailyBonus();
+      }
+    }
+    
+    // Функция для расчета пассивного дохода за время отсутствия
+    function calculateOfflinePassiveIncome() {
+      const now = new Date();
+      const lastUpdate = new Date(userData.last_passive_income_update);
+      const timeDiffSeconds = Math.floor((now - lastUpdate) / 1000);
+      const maxPeriods = 1000; // Максимальное количество периодов для начисления за раз
+      const periods = Math.min(maxPeriods, Math.floor(timeDiffSeconds / 5));
+      
+      if (periods > 0) {
+        const passiveIncome = calculatePassiveIncome();
+        const totalIncome = passiveIncome * periods;
+        userData.score += totalIncome;
+        userData.last_passive_income_update = now.toISOString();
+        
+        // Сохраняем данные
+        saveUserData().catch(error => {
+          console.error('Error saving user data after offline passive income:', error);
+        });
+        
+        // Обновляем отображение
+        updateScoreDisplay();
+        updateLevel();
+        
+        // Показываем уведомление о начислении
+        if (totalIncome > 0) {
+          showNotification(`Получено ${totalIncome} монет за время отсутствия!`);
+        }
       }
     }
     
@@ -2942,6 +2922,7 @@ html_content = """
             const oldActiveSkin = userData.active_skin;
             const oldAutoClickers = userData.auto_clickers;
             const oldLanguage = userData.language;
+            const oldLastPassiveIncomeUpdate = userData.last_passive_income_update;
             
             userData = data.user;
             
@@ -2963,6 +2944,7 @@ html_content = """
             userData.active_skin = oldActiveSkin;
             userData.auto_clickers = oldAutoClickers;
             userData.language = oldLanguage;
+            userData.last_passive_income_update = oldLastPassiveIncomeUpdate;
             
             console.log('User data saved successfully');
             return true;
@@ -3161,7 +3143,7 @@ html_content = """
     // Загрузка топа пользователей с сервера
     async function loadTop() {
       const topList = document.getElementById('topList');
-      topList.innerHTML = '<p>' + translations[currentLanguage].loading + '</p>';
+      topList.innerHTML = '<p>Загрузка топа...</p>';
       
       try {
         const response = await fetch('/top');
@@ -3171,11 +3153,11 @@ html_content = """
           renderTop(data.users);
           updateTopPreview(data.users.slice(0, 3));
         } else {
-          topList.innerHTML = '<p>' + translations[currentLanguage].no_data + '</p>';
+          topList.innerHTML = '<p>Нет данных для отображения</p>';
         }
       } catch (error) {
         console.error('Error loading top:', error);
-        topList.innerHTML = '<p>' + translations[currentLanguage].error_loading_top + '</p>';
+        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
       }
     }
 
@@ -3309,7 +3291,7 @@ html_content = """
     function checkWalletTask() {
       if (userData.wallet_address && !userData.wallet_task_completed) {
         // Задание выполнено, но награда не получена
-        document.getElementById('wallet-task-button').textContent = translations[currentLanguage].get_reward;
+        document.getElementById('wallet-task-button').textContent = 'Получить награду';
         document.getElementById('wallet-task-button').disabled = false;
       } else if (userData.wallet_task_completed) {
         // Награда уже получена
@@ -3317,7 +3299,7 @@ html_content = """
         document.getElementById('wallet-task-status').style.display = 'block';
       } else {
         // Задание не выполнено
-        document.getElementById('wallet-task-button').textContent = translations[currentLanguage].start;
+        document.getElementById('wallet-task-button').textContent = 'НАЧАТЬ';
         document.getElementById('wallet-task-button').disabled = false;
       }
     }
@@ -3330,7 +3312,7 @@ html_content = """
         document.getElementById('channel-task-status').style.display = 'block';
       } else {
         // Задание не выполнено
-        document.getElementById('channel-task-button').textContent = translations[currentLanguage].start;
+        document.getElementById('channel-task-button').textContent = 'НАЧАТЬ';
         document.getElementById('channel-task-button').disabled = false;
         document.getElementById('channel-task-button').style.display = 'block';
         document.getElementById('channel-task-status').style.display = 'none';
@@ -3363,14 +3345,14 @@ html_content = """
         updateReferralTimer();
       } else if (userData.referrals.length >= 3) {
         // Задание доступно для выполнения
-        document.getElementById('referral-task-button').textContent = translations[currentLanguage].get_reward;
+        document.getElementById('referral-task-button').textContent = 'Получить награду';
         document.getElementById('referral-task-button').disabled = false;
         document.getElementById('referral-task-button').style.display = 'block';
         document.getElementById('referral-task-status').style.display = 'none';
         document.getElementById('referral-task-timer').style.display = 'none';
       } else {
         // Задание не выполнено
-        document.getElementById('referral-task-button').textContent = translations[currentLanguage].start;
+        document.getElementById('referral-task-button').textContent = 'НАЧАТЬ';
         document.getElementById('referral-task-button').disabled = false;
         document.getElementById('referral-task-button').style.display = 'block';
         document.getElementById('referral-task-status').style.display = 'none';
@@ -3399,7 +3381,7 @@ html_content = """
         // Задание доступно для получения награды
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
-          adsTaskButton.textContent = translations[currentLanguage].get_reward;
+          adsTaskButton.textContent = 'Получить награду';
           adsTaskButton.disabled = false;
           adsTaskButton.style.display = 'block';
         }
@@ -3411,7 +3393,7 @@ html_content = """
         // Задание не выполнено
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
-          adsTaskButton.textContent = translations[currentLanguage].start;
+          adsTaskButton.textContent = 'НАЧАТЬ';
           adsTaskButton.disabled = false;
           adsTaskButton.style.display = 'block';
         }
@@ -3436,7 +3418,7 @@ html_content = """
         // Время истекло
         document.getElementById('referral-task-timer').style.display = 'none';
         document.getElementById('referral-task-button').style.display = 'block';
-        document.getElementById('referral-task-button').textContent = translations[currentLanguage].get_reward;
+        document.getElementById('referral-task-button').textContent = 'Получить награду';
         document.getElementById('referral-task-status').style.display = 'none';
         return;
       }
@@ -3448,7 +3430,7 @@ html_content = """
       
       // Обновляем текст таймера
       document.getElementById('referral-task-timer').textContent = 
-        `${translations[currentLanguage].task_available_in} ${hours}${translations[currentLanguage].hours} ${minutes}${translations[currentLanguage].minutes} ${seconds}${translations[currentLanguage].seconds}`;
+        `Задание будет доступно через: ${hours}ч ${minutes}м ${seconds}с`;
       
       // Запускаем обновление через секунду
       setTimeout(updateReferralTimer, 1000);
@@ -3504,13 +3486,15 @@ html_content = """
       
       // Проверяем, прошло ли 24 часа с последнего выполнения
       if (lastCompletion && (now - lastCompletion) < 24 * 60 * 60 * 1000) {
-        showNotification(translations[currentLanguage].task_available_in + ' 24 ' + translations[currentLanguage].hours);
+        showNotification('Задание можно выполнять раз в 24 часа');
         return;
       }
       
       // Добавляем награду
       userData.score += 5000;
       userData.last_referral_task_completion = now.toISOString();
+      // Очищаем рефералы после выполнения задания
+      userData.referrals = [];
       
       // Сохраняем данные
       await saveUserData();
@@ -3551,7 +3535,7 @@ html_content = """
       showNotification('Вы получили 5000 монеток!');
     }
     
-        // Функция для просмотра рекламы через Adsgram
+    // Функция для просмотра рекламы через Adsgram
     function watchAds() {
       console.log('Watching ads');
       
@@ -3709,7 +3693,7 @@ html_content = """
       if (user) {
         const botUsername = 'Fnmby_bot';
         const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
-        document.getElementById('referral-link').textContent = referralLink;
+                document.getElementById('referral-link').textContent = referralLink;
       }
       
       document.getElementById('task-modal-overlay').classList.add('active');
@@ -3916,6 +3900,7 @@ html_content = """
       
       if (passiveIncome > 0) {
         userData.score += passiveIncome;
+        userData.last_passive_income_update = new Date().toISOString();
         updateScoreDisplay();
         saveUserData();
         
@@ -4027,7 +4012,7 @@ html_content = """
         dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
         
         dayElement.innerHTML = `
-          <div class="bonus-day-number">${translations[currentLanguage].day} ${dayNumber}</div>
+          <div class="bonus-day-number">День ${dayNumber}</div>
           <div class="bonus-day-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${bonus.reward}</span>
@@ -4038,7 +4023,7 @@ html_content = """
       });
       
       // Обновляем текущую серию
-      document.getElementById('current-streak').textContent = `${currentStreak} ${translations[currentLanguage].days}`;
+      document.getElementById('current-streak').textContent = currentStreak;
       
       // Проверяем, можно ли получить бонус сегодня
       checkDailyBonusAvailability();
@@ -4057,11 +4042,11 @@ html_content = """
       if (lastClaimDate === today) {
         // Бонус уже получен сегодня
         claimButton.disabled = true;
-        claimButton.textContent = translations[currentLanguage].bonus_claimed;
+        claimButton.textContent = 'Бонус получен';
       } else {
         // Бонус доступен для получения
         claimButton.disabled = false;
-        claimButton.textContent = translations[currentLanguage].claim_daily_bonus;
+        claimButton.textContent = 'Получить бонус';
       }
     }
     
@@ -4092,7 +4077,7 @@ html_content = """
             updateDailyBonus();
             
             // Показываем уведомление
-            showNotification(`${translations[currentLanguage].daily_bonus}: ${data.reward} ${translations[currentLanguage].coins}`);
+            showNotification(`Ежедневный бонус получен: ${data.reward} монеток`);
           } else {
             showNotification(data.message || 'Ошибка при получении бонуса');
           }
@@ -4128,50 +4113,6 @@ html_content = """
       updateScoreDisplay();
       updateEnergyDisplay();
       updateLevel();
-      
-      // Обновляем тексты в заданиях
-      checkWalletTask();
-      checkChannelTask();
-      checkReferralTask();
-      checkAdsTask();
-      
-      // Обновляем тексты в топе
-      document.getElementById('topButton').innerHTML = `
-        ${translations[currentLanguage].top_100_femboys}
-        <div class="top-preview" id="topPreview">
-          <div class="top-preview-item">${translations[currentLanguage].loading}</div>
-        </div>
-      `;
-      
-      document.getElementById('backButton').textContent = translations[currentLanguage].back;
-      
-      // Обновляем тексты в улучшениях
-      document.getElementById('upgrades-modal-title').textContent = translations[currentLanguage].upgrades;
-      
-      // Обновляем тексты в ежедневных бонусах
-      document.getElementById('claim-daily-bonus-button').textContent = translations[currentLanguage].claim_daily_bonus;
-      
-      // Обновляем тексты в мини-играх
-      document.querySelectorAll('.minigame-name').forEach((element, index) => {
-        element.textContent = MINIGAMES[index].name;
-      });
-      
-      document.querySelectorAll('.minigame-description').forEach((element, index) => {
-        element.textContent = MINIGAMES[index].description;
-      });
-      
-      document.querySelectorAll('.start-minigame-button').forEach(element => {
-        element.textContent = translations[currentLanguage].play;
-      });
-      
-      // Обновляем тексты в достижениях
-      document.querySelectorAll('.achievement-name').forEach((element, index) => {
-        element.textContent = ACHIEVEMENTS[index].name;
-      });
-      
-      document.querySelectorAll('.achievement-description').forEach((element, index) => {
-        element.textContent = ACHIEVEMENTS[index].description;
-      });
     }
     
     // Функции для мини-игры "Поймай монетки"
@@ -4305,7 +4246,7 @@ html_content = """
         saveUserData();
         
         // Показываем уведомление
-        showNotification(`${translations[currentLanguage].minigame_reward}: ${reward} ${translations[currentLanguage].coins}`);
+        showNotification(`Награда за мини-игру: ${reward} монеток`);
       });
     }
 
@@ -4702,7 +4643,8 @@ async def get_user_data(user_id: str):
                 "skins": user_data["skins"],
                 "active_skin": user_data["active_skin"],
                 "auto_clickers": user_data["auto_clickers"],
-                "language": user_data["language"]
+                "language": user_data["language"],
+                "last_passive_income_update": user_data["last_passive_income_update"]
             }
             
             logger.info(f"Returning user data for {user_data['first_name']}")
@@ -4755,7 +4697,8 @@ async def save_user_data(request: Request):
                     "skins": user_data["skins"],
                     "active_skin": user_data["active_skin"],
                     "auto_clickers": user_data["auto_clickers"],
-                    "language": user_data["language"]
+                    "language": user_data["language"],
+                    "last_passive_income_update": user_data["last_passive_income_update"]
                 }
                 
                 logger.info(f"User saved successfully: {user_data['first_name']}")
