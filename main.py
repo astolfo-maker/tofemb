@@ -817,16 +817,17 @@ html_content = """
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
+      /* ИСПРАВЛЕНИЕ: Добавляем прокрутку для секции профиля */
+      overflow-y: auto;
+      max-height: calc(100vh - 120px); /* Высота экрана минус высота шапки и меню */
     }
     
-    #profile {
-  font-size: 18px;
-  line-height: 1.5;
-  user-select: text;
-  overflow-y: auto; /* Добавлена прокрутка */
-  max-height: calc(100vh - 180px); /* Ограничение высоты */
-  padding-bottom: 20px; /* Отступ снизу */
-}
+    #userProfile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
     #userAvatar {
       width: 120px;
       height: 120px;
@@ -1681,16 +1682,19 @@ html_content = """
       font-size: 14px;
     }
     .upgrade-image {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-  background-color: transparent; /* Изменено с розового на прозрачный */
-  background-size: cover;
-  background-position: center;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+      /* ИСПРАВЛЕНИЕ: Убираем розовый фон */
+      background-color: transparent;
+      /* Добавляем обводку для видимости */
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      /* Добавляем тень для глубины */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
     .upgrade-description {
       font-size: 12px;
       opacity: 0.8;
@@ -2093,7 +2097,7 @@ html_content = """
 
     <!-- Окно профиля -->
     <section id="profile" class="page" aria-label="Профиль">
-      <h2>Профиль</h2>
+      <h2 data-i18n="profile">Профиль</h2>
       
       <div id="loadingIndicator">
         <p>Загрузка данных профиля...</p>
@@ -2116,15 +2120,15 @@ html_content = """
       
       <!-- Секция кошелька -->
       <div id="wallet-section">
-        <h3>TON Кошелек</h3>
+        <h3 data-i18n="wallet">TON Кошелек</h3>
         <div id="wallet-address">Не подключен</div>
-        <button id="ton-connect-button">Подключить кошелек</button>
+        <button id="ton-connect-button" data-i18n="connect_wallet">Подключить кошелек</button>
       </div>
     </section>
 
     <!-- Окно заданий -->
     <section id="tasks" class="page" aria-label="задания">
-      <h2>Задания</h2>
+      <h2 data-i18n="tasks">Задания</h2>
       
       <!-- Вкладки заданий -->
       <div class="task-tabs">
@@ -2196,13 +2200,13 @@ html_content = """
     
     <!-- Окно достижений -->
     <section id="achievements" class="page" aria-label="Достижения">
-      <h2>Достижения</h2>
+      <h2 data-i18n="achievements">Достижения</h2>
       <div id="achievements-list"></div>
     </section>
     
     <!-- Окно мини-игр -->
     <section id="minigames" class="page" aria-label="Мини-игры">
-      <h2>Мини-игры</h2>
+      <h2 data-i18n="minigames">Мини-игры</h2>
       <div class="minigames-container">
         <div class="minigame-item" data-minigame="catch_coins">
           <div class="minigame-icon">🪙</div>
@@ -2219,7 +2223,7 @@ html_content = """
     
     <!-- Окно ежедневных бонусов -->
     <section id="daily" class="page" aria-label="Ежедневные бонусы">
-      <h2>Ежедневные бонусы</h2>
+      <h2 data-i18n="daily">Ежедневные бонусы</h2>
       <div class="daily-bonus-streak">Текущая серия: <span id="current-streak">0</span> дней</div>
       <div id="daily-bonus-calendar"></div>
       <button id="claim-daily-bonus-button">Получить бонус</button>
@@ -2229,7 +2233,7 @@ html_content = """
     <section id="top" class="page" aria-label="Топ пользователей">
       <div id="topHeader">
         <button id="backButton">← Назад</button>
-        <h2>Топ 100 фембоев</h2>
+        <h2 data-i18n="top">Топ 100 фембоев</h2>
         <div></div> <!-- Для выравнивания -->
       </div>
       <div id="topList"></div>
@@ -2310,7 +2314,7 @@ html_content = """
 </div>
 
   <!-- Кнопка улучшений -->
-  <button id="upgrades-button">
+  <button id="upgrades-button" data-i18n="upgrades">
     УЛУЧШЕНИЯ
   </button>
 
@@ -2318,7 +2322,7 @@ html_content = """
   <div id="upgrades-modal-overlay"></div>
   <div id="upgrades-modal">
     <div class="upgrades-modal-header">
-      <div class="upgrades-modal-title">УЛУЧШЕНИЯ</div>
+      <div class="upgrades-modal-title" data-i18n="upgrades">УЛУЧШЕНИЯ</div>
       <button class="upgrades-modal-close" id="upgrades-modal-close">×</button>
     </div>
     <div class="upgrades-container" id="upgrades-container">
@@ -2348,12 +2352,12 @@ html_content = """
   <div id="noEnergyNotification" class="no-energy">Недостаточно энергии!</div>
 
   <nav id="bottom-menu" role="navigation" aria-label="Нижнее меню">
-    <button id="btn-profile" data-page="profile">Профиль</button>
-    <button id="btn-clicker" data-page="clicker" class="active">Кликер</button>
-    <button id="btn-tasks" data-page="tasks">Задания</button>
-    <button id="btn-achievements" data-page="achievements">Достижения</button>
-    <button id="btn-minigames" data-page="minigames">Мини-игры</button>
-    <button id="btn-daily" data-page="daily">Бонусы</button>
+    <button id="btn-profile" data-page="profile" data-i18n="profile">Профиль</button>
+    <button id="btn-clicker" data-page="clicker" class="active" data-i18n="clicker">Кликер</button>
+    <button id="btn-tasks" data-page="tasks" data-i18n="tasks">Задания</button>
+    <button id="btn-achievements" data-page="achievements" data-i18n="achievements">Достижения</button>
+    <button id="btn-minigames" data-page="minigames" data-i18n="minigames">Мини-игры</button>
+    <button id="btn-daily" data-page="daily" data-i18n="daily">Бонусы</button>
   </nav>
 
   <script>
@@ -2445,7 +2449,37 @@ html_content = """
         "wallet_disconnected": "TON кошелек отключен",
         "not_enough_coins": "Недостаточно монет!",
         "upgrade_purchased": "Улучшение куплено!",
-        "upgrade_already_purchased": "Улучшение уже куплено!"
+        "upgrade_already_purchased": "Улучшение уже куплено!",
+        "top_100_femboys": "Топ 100 фембоев",
+        "loading": "Загрузка...",
+        "no_data": "Нет данных для отображения",
+        "error_loading_top": "Ошибка загрузки топа",
+        "back": "← Назад",
+        "connect_ton_wallet": "Подключить TON кошелек",
+        "get_reward": "Получить награду",
+        "task_completed": "Задание выполнено",
+        "start": "НАЧАТЬ",
+        "copy_link": "Скопировать ссылку",
+        "send_to_friends": "Переслать друзьям",
+        "watch_ads": "Просмотр рекламы",
+        "ads_watched": "Просмотрено",
+        "invite_friends": "Пригласить 3-х друзей",
+        "friends_invited": "Приглашено друзей",
+        "task_available_in": "Задание будет доступно через",
+        "hours": "ч",
+        "minutes": "м",
+        "seconds": "с",
+        "claim_daily_bonus": "Получить бонус",
+        "bonus_claimed": "Бонус получен",
+        "current_streak": "Текущая серия",
+        "days": "дней",
+        "day": "День",
+        "play": "Играть",
+        "game_over": "Игра окончена!",
+        "coins_caught": "Вы поймали",
+        "coins": "монеток",
+        "claim_reward": "Забрать награду",
+        "not_enough_energy": "Недостаточно энергии!"
       },
       en: {
         "score": "Score",
@@ -2466,7 +2500,37 @@ html_content = """
         "wallet_disconnected": "TON wallet disconnected",
         "not_enough_coins": "Not enough coins!",
         "upgrade_purchased": "Upgrade purchased!",
-        "upgrade_already_purchased": "Upgrade already purchased!"
+        "upgrade_already_purchased": "Upgrade already purchased!",
+        "top_100_femboys": "Top 100 Femboys",
+        "loading": "Loading...",
+        "no_data": "No data to display",
+        "error_loading_top": "Error loading top",
+        "back": "← Back",
+        "connect_ton_wallet": "Connect TON Wallet",
+        "get_reward": "Get Reward",
+        "task_completed": "Task completed",
+        "start": "START",
+        "copy_link": "Copy Link",
+        "send_to_friends": "Send to Friends",
+        "watch_ads": "Watch Ads",
+        "ads_watched": "Watched",
+        "invite_friends": "Invite 3 Friends",
+        "friends_invited": "Friends Invited",
+        "task_available_in": "Task available in",
+        "hours": "h",
+        "minutes": "m",
+        "seconds": "s",
+        "claim_daily_bonus": "Claim Bonus",
+        "bonus_claimed": "Bonus claimed",
+        "current_streak": "Current streak",
+        "days": "days",
+        "day": "Day",
+        "play": "Play",
+        "game_over": "Game Over!",
+        "coins_caught": "You caught",
+        "coins": "coins",
+        "claim_reward": "Claim Reward",
+        "not_enough_energy": "Not enough energy!"
       }
     };
     
@@ -3097,7 +3161,7 @@ html_content = """
     // Загрузка топа пользователей с сервера
     async function loadTop() {
       const topList = document.getElementById('topList');
-      topList.innerHTML = '<p>Загрузка топа...</p>';
+      topList.innerHTML = '<p>' + translations[currentLanguage].loading + '</p>';
       
       try {
         const response = await fetch('/top');
@@ -3107,11 +3171,11 @@ html_content = """
           renderTop(data.users);
           updateTopPreview(data.users.slice(0, 3));
         } else {
-          topList.innerHTML = '<p>Нет данных для отображения</p>';
+          topList.innerHTML = '<p>' + translations[currentLanguage].no_data + '</p>';
         }
       } catch (error) {
         console.error('Error loading top:', error);
-        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+        topList.innerHTML = '<p>' + translations[currentLanguage].error_loading_top + '</p>';
       }
     }
 
@@ -3245,7 +3309,7 @@ html_content = """
     function checkWalletTask() {
       if (userData.wallet_address && !userData.wallet_task_completed) {
         // Задание выполнено, но награда не получена
-        document.getElementById('wallet-task-button').textContent = 'Получить награду';
+        document.getElementById('wallet-task-button').textContent = translations[currentLanguage].get_reward;
         document.getElementById('wallet-task-button').disabled = false;
       } else if (userData.wallet_task_completed) {
         // Награда уже получена
@@ -3253,7 +3317,7 @@ html_content = """
         document.getElementById('wallet-task-status').style.display = 'block';
       } else {
         // Задание не выполнено
-        document.getElementById('wallet-task-button').textContent = 'НАЧАТЬ';
+        document.getElementById('wallet-task-button').textContent = translations[currentLanguage].start;
         document.getElementById('wallet-task-button').disabled = false;
       }
     }
@@ -3266,7 +3330,7 @@ html_content = """
         document.getElementById('channel-task-status').style.display = 'block';
       } else {
         // Задание не выполнено
-        document.getElementById('channel-task-button').textContent = 'НАЧАТЬ';
+        document.getElementById('channel-task-button').textContent = translations[currentLanguage].start;
         document.getElementById('channel-task-button').disabled = false;
         document.getElementById('channel-task-button').style.display = 'block';
         document.getElementById('channel-task-status').style.display = 'none';
@@ -3299,14 +3363,14 @@ html_content = """
         updateReferralTimer();
       } else if (userData.referrals.length >= 3) {
         // Задание доступно для выполнения
-        document.getElementById('referral-task-button').textContent = 'Получить награду';
+        document.getElementById('referral-task-button').textContent = translations[currentLanguage].get_reward;
         document.getElementById('referral-task-button').disabled = false;
         document.getElementById('referral-task-button').style.display = 'block';
         document.getElementById('referral-task-status').style.display = 'none';
         document.getElementById('referral-task-timer').style.display = 'none';
       } else {
         // Задание не выполнено
-        document.getElementById('referral-task-button').textContent = 'НАЧАТЬ';
+        document.getElementById('referral-task-button').textContent = translations[currentLanguage].start;
         document.getElementById('referral-task-button').disabled = false;
         document.getElementById('referral-task-button').style.display = 'block';
         document.getElementById('referral-task-status').style.display = 'none';
@@ -3335,7 +3399,7 @@ html_content = """
         // Задание доступно для получения награды
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
-          adsTaskButton.textContent = 'Получить награду';
+          adsTaskButton.textContent = translations[currentLanguage].get_reward;
           adsTaskButton.disabled = false;
           adsTaskButton.style.display = 'block';
         }
@@ -3347,7 +3411,7 @@ html_content = """
         // Задание не выполнено
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
-          adsTaskButton.textContent = 'НАЧАТЬ';
+          adsTaskButton.textContent = translations[currentLanguage].start;
           adsTaskButton.disabled = false;
           adsTaskButton.style.display = 'block';
         }
@@ -3372,7 +3436,7 @@ html_content = """
         // Время истекло
         document.getElementById('referral-task-timer').style.display = 'none';
         document.getElementById('referral-task-button').style.display = 'block';
-        document.getElementById('referral-task-button').textContent = 'Получить награду';
+        document.getElementById('referral-task-button').textContent = translations[currentLanguage].get_reward;
         document.getElementById('referral-task-status').style.display = 'none';
         return;
       }
@@ -3384,7 +3448,7 @@ html_content = """
       
       // Обновляем текст таймера
       document.getElementById('referral-task-timer').textContent = 
-        `Задание будет доступно через: ${hours}ч ${minutes}м ${seconds}с`;
+        `${translations[currentLanguage].task_available_in} ${hours}${translations[currentLanguage].hours} ${minutes}${translations[currentLanguage].minutes} ${seconds}${translations[currentLanguage].seconds}`;
       
       // Запускаем обновление через секунду
       setTimeout(updateReferralTimer, 1000);
@@ -3440,7 +3504,7 @@ html_content = """
       
       // Проверяем, прошло ли 24 часа с последнего выполнения
       if (lastCompletion && (now - lastCompletion) < 24 * 60 * 60 * 1000) {
-        showNotification('Задание можно выполнять раз в 24 часа');
+        showNotification(translations[currentLanguage].task_available_in + ' 24 ' + translations[currentLanguage].hours);
         return;
       }
       
@@ -3487,7 +3551,7 @@ html_content = """
       showNotification('Вы получили 5000 монеток!');
     }
     
-    // Функция для просмотра рекламы через Adsgram
+        // Функция для просмотра рекламы через Adsgram
     function watchAds() {
       console.log('Watching ads');
       
@@ -3963,7 +4027,7 @@ html_content = """
         dayElement.className = `bonus-day ${isCurrentDay ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`;
         
         dayElement.innerHTML = `
-          <div class="bonus-day-number">День ${dayNumber}</div>
+          <div class="bonus-day-number">${translations[currentLanguage].day} ${dayNumber}</div>
           <div class="bonus-day-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${bonus.reward}</span>
@@ -3974,7 +4038,7 @@ html_content = """
       });
       
       // Обновляем текущую серию
-      document.getElementById('current-streak').textContent = currentStreak;
+      document.getElementById('current-streak').textContent = `${currentStreak} ${translations[currentLanguage].days}`;
       
       // Проверяем, можно ли получить бонус сегодня
       checkDailyBonusAvailability();
@@ -3993,11 +4057,11 @@ html_content = """
       if (lastClaimDate === today) {
         // Бонус уже получен сегодня
         claimButton.disabled = true;
-        claimButton.textContent = 'Бонус получен';
+        claimButton.textContent = translations[currentLanguage].bonus_claimed;
       } else {
         // Бонус доступен для получения
         claimButton.disabled = false;
-        claimButton.textContent = 'Получить бонус';
+        claimButton.textContent = translations[currentLanguage].claim_daily_bonus;
       }
     }
     
@@ -4028,7 +4092,7 @@ html_content = """
             updateDailyBonus();
             
             // Показываем уведомление
-            showNotification(`Ежедневный бонус получен: ${data.reward} монеток`);
+            showNotification(`${translations[currentLanguage].daily_bonus}: ${data.reward} ${translations[currentLanguage].coins}`);
           } else {
             showNotification(data.message || 'Ошибка при получении бонуса');
           }
@@ -4064,6 +4128,50 @@ html_content = """
       updateScoreDisplay();
       updateEnergyDisplay();
       updateLevel();
+      
+      // Обновляем тексты в заданиях
+      checkWalletTask();
+      checkChannelTask();
+      checkReferralTask();
+      checkAdsTask();
+      
+      // Обновляем тексты в топе
+      document.getElementById('topButton').innerHTML = `
+        ${translations[currentLanguage].top_100_femboys}
+        <div class="top-preview" id="topPreview">
+          <div class="top-preview-item">${translations[currentLanguage].loading}</div>
+        </div>
+      `;
+      
+      document.getElementById('backButton').textContent = translations[currentLanguage].back;
+      
+      // Обновляем тексты в улучшениях
+      document.getElementById('upgrades-modal-title').textContent = translations[currentLanguage].upgrades;
+      
+      // Обновляем тексты в ежедневных бонусах
+      document.getElementById('claim-daily-bonus-button').textContent = translations[currentLanguage].claim_daily_bonus;
+      
+      // Обновляем тексты в мини-играх
+      document.querySelectorAll('.minigame-name').forEach((element, index) => {
+        element.textContent = MINIGAMES[index].name;
+      });
+      
+      document.querySelectorAll('.minigame-description').forEach((element, index) => {
+        element.textContent = MINIGAMES[index].description;
+      });
+      
+      document.querySelectorAll('.start-minigame-button').forEach(element => {
+        element.textContent = translations[currentLanguage].play;
+      });
+      
+      // Обновляем тексты в достижениях
+      document.querySelectorAll('.achievement-name').forEach((element, index) => {
+        element.textContent = ACHIEVEMENTS[index].name;
+      });
+      
+      document.querySelectorAll('.achievement-description').forEach((element, index) => {
+        element.textContent = ACHIEVEMENTS[index].description;
+      });
     }
     
     // Функции для мини-игры "Поймай монетки"
@@ -4197,7 +4305,7 @@ html_content = """
         saveUserData();
         
         // Показываем уведомление
-        showNotification(`Награда за мини-игру: ${reward} монеток`);
+        showNotification(`${translations[currentLanguage].minigame_reward}: ${reward} ${translations[currentLanguage].coins}`);
       });
     }
 
@@ -4613,7 +4721,7 @@ async def save_user_data(request: Request):
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
-                # Сохраняем в базу данных
+        # Сохраняем в базу данных
         success = save_user(data)
         
         if success:
@@ -4741,10 +4849,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-
-
-
