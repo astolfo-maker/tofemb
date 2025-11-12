@@ -819,12 +819,14 @@ html_content = """
       user-select: text;
     }
     
-    #userProfile {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 20px;
-    }
+    #profile {
+  font-size: 18px;
+  line-height: 1.5;
+  user-select: text;
+  overflow-y: auto; /* Добавлена прокрутка */
+  max-height: calc(100vh - 180px); /* Ограничение высоты */
+  padding-bottom: 20px; /* Отступ снизу */
+}
     #userAvatar {
       width: 120px;
       height: 120px;
@@ -1679,18 +1681,16 @@ html_content = """
       font-size: 14px;
     }
     .upgrade-image {
-      width: 60px;
-      height: 60px;
-      margin: 0 auto 10px;
-      border-radius: 50%;
-      background-color: #ff66cc;
-      background-size: cover;
-      background-position: center;
-      /* Добавляем обводку для видимости */
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      /* Добавляем тень для глубины */
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background-color: transparent; /* Изменено с розового на прозрачный */
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
     .upgrade-description {
       font-size: 12px;
       opacity: 0.8;
@@ -4741,4 +4741,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-    
+
+
+
+
+
+
+
