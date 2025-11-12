@@ -745,6 +745,7 @@ html_content = """
       user-select: none;
     }
 
+    /* ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ НИЖНЕГО МЕНЮ */
     #bottom-menu {
       position: fixed;
       bottom: 0;
@@ -754,16 +755,31 @@ html_content = """
       background: rgba(0,0,0,0.3);
       backdrop-filter: blur(10px);
       display: flex;
-      justify-content: space-around;
+      justify-content: flex-start; /* Изменено на flex-start для лучшей прокрутки */
       align-items: center;
       box-shadow: 0 -2px 10px rgba(255, 102, 204, 0.5);
       z-index: 100;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      /* Исправление для полного скролла влево */
-      scroll-snap-type: x mandatory;
-      scroll-padding: 0 10px;
+      padding: 0 10px; /* Добавлены отступы по бокам */
+      /* Убраны scroll-snap для естественной прокрутки */
     }
+    
+    /* Стилизация скроллбара для WebKit браузеров */
+    #bottom-menu::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    #bottom-menu::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+    
+    #bottom-menu::-webkit-scrollbar-thumb {
+      background: rgba(255, 102, 204, 0.5);
+      border-radius: 2px;
+    }
+    
     #bottom-menu button {
       background: transparent;
       border: none;
@@ -771,21 +787,27 @@ html_content = """
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      padding: 8px 12px;
+      padding: 8px 16px; /* Увеличены горизонтальные отступы */
       border-radius: 12px;
       transition: background-color 0.3s, color 0.3s;
       user-select: none;
       pointer-events: auto;
       white-space: nowrap;
-      /* Добавляем для фиксации проблемы с прокруткой */
-      scroll-snap-align: center;
-      flex-shrink: 0;
+      margin-right: 8px; /* Добавлены отступы между кнопками */
+      flex-shrink: 0; /* Запрещаем сжиматься */
+      min-width: fit-content; /* Минимальная ширина по содержимому */
     }
+    
+    #bottom-menu button:last-child {
+      margin-right: 0; /* Убираем правый отступ у последней кнопки */
+    }
+    
     #bottom-menu button.active {
       background-color: #ff66cc;
       color: #fff;
       box-shadow: 0 0 8px #ff66cc;
     }
+    
     #bottom-menu button:focus {
       outline: 2px solid #ff66cc;
       outline-offset: 2px;
@@ -4590,7 +4612,7 @@ async def save_user_data(request: Request):
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
-        # Сохраняем в базу данных
+                # Сохраняем в базу данных
         success = save_user(data)
         
         if success:
