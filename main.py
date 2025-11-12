@@ -2291,22 +2291,23 @@ html_content = """
     <button id="channel-verify-button" class="task-modal-button-secondary">Проверить подписку</button>
   </div>
 
-  <!-- Модальное окно задания с рефералами -->
-  <div id="referral-task-modal" class="task-modal">
-    <div class="task-modal-header">
-      <div class="task-modal-title">Пригласить 3-х друзей</div>
-      <button class="task-modal-close" id="referral-modal-close">×</button>
-    </div>
-    <div class="task-modal-content">
-      <div class="task-modal-description">
-        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
-        Задание можно выполнять раз в 24 часа.
-      </div>
-      <div class="referral-link" id="referral-link">https://t.me/Femboysgame_bot?startapp=123456</div>
-    </div>
-    <button id="referral-modal-button" class="task-modal-button">Скопировать ссылку</button>
-    <button id="referral-share-button" class="task-modal-button-secondary">Переслать друзьям</button>
+<!-- Модальное окно задания с рефералами -->
+<div id="referral-task-modal" class="task-modal">
+  <div class="task-modal-header">
+    <div class="task-modal-title">Пригласить 3-х друзей</div>
+    <button class="task-modal-close" id="referral-modal-close">×</button>
   </div>
+  <div class="task-modal-content">
+    <div class="task-modal-description">
+      Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
+      Задание можно выполнять раз в 24 часа.
+    </div>
+    <!-- ИЗМЕНЕНО: возвращаем старое имя бота в ссылке -->
+    <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+  </div>
+  <button id="referral-modal-button" class="task-modal-button">Скопировать ссылку</button>
+  <button id="referral-share-button" class="task-modal-button-secondary">Переслать друзьям</button>
+</div>
 
   <!-- Кнопка улучшений -->
   <button id="upgrades-button">
@@ -2543,7 +2544,7 @@ html_content = """
         manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Femboysgame_bot'
+          twaReturnUrl: 'https://t.me/Fnmby_bot'
         }
       });
       
@@ -3544,7 +3545,7 @@ html_content = """
     function copyReferralLink() {
       if (!user) return;
       
-      const botUsername = 'Femboysgame_bot';
+      const botUsername = 'Fnmby_bot';
       const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
       
       // Создаем временный элемент для копирования
@@ -3578,7 +3579,7 @@ html_content = """
     function shareReferralLink() {
       if (!user) return;
       
-      const botUsername = 'Femboysgame_bot';
+      const botUsername = 'Fnmby_bot';
       const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
       const shareText = `Привет! Заходи в классную игру про фембоев! ${referralLink}`;
       
@@ -4740,3 +4741,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
