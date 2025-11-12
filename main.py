@@ -131,13 +131,6 @@ ACHIEVEMENTS = [
         "condition": {"type": "score", "value": 1000}
     },
     {
-        "id": "first_friend",
-        "name": "Первый друг",
-        "description": "Пригласите первого друга",
-        "reward": 2000,
-        "condition": {"type": "referrals", "value": 1}
-    },
-    {
         "id": "daily_login",
         "name": "Ежедневный вход",
         "description": "Входите в игру 7 дней подряд",
@@ -245,11 +238,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'achievements' not in user_data:
                 user_data['achievements'] = []
                 logger.info("Added default achievements value to user data")
-            
-            # Добавляем поля для друзей
-            if 'friends' not in user_data:
-                user_data['friends'] = []
-                logger.info("Added default friends value to user data")
             
             # Добавляем поля для ежедневных бонусов
             if 'daily_bonus' not in user_data:
@@ -363,7 +351,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
-            "friends": user_data.get('friends', []),
             "daily_bonus": user_data.get('daily_bonus', {
                 'last_claim': None,
                 'streak': 0,
@@ -517,133 +504,6 @@ def add_achievement(user_id: str, achievement_id: str) -> bool:
         return update_response.data is not None
     except Exception as e:
         logger.error(f"Error adding achievement: {e}")
-        return False
-
-# Функция для получения друзей
-def get_friends(user_id: str) -> List[Dict[str, Any]]:
-    if supabase is None:
-        logger.error("Supabase client is not initialized")
-        return []
-        
-    try:
-        logger.info(f"Getting friends for user: {user_id}")
-        
-        def query():
-            return supabase.table("users").select("friends").eq("user_id", user_id).execute()
-        
-        response = execute_supabase_query(query)
-        
-        if response.data and len(response.data) > 0:
-            return response.data[0].get("friends", [])
-        else:
-            return []
-    except Exception as e:
-        logger.error(f"Error getting friends: {e}")
-        return []
-
-# Функция для добавления друга
-def add_friend(user_id: str, friend_id: str) -> bool:
-    if supabase is None:
-        logger.error("Supabase client is not initialized")
-        return False
-        
-    try:
-        logger.info(f"Adding friend {friend_id} to user: {user_id}")
-        
-        # Получаем текущих друзей пользователя
-        def query():
-            return supabase.table("users").select("friends").eq("user_id", user_id).execute()
-        
-        response = execute_supabase_query(query)
-        
-        if not response.data or len(response.data) == 0:
-            logger.info(f"User not found: {user_id}")
-            return False
-        
-        friends = response.data[0].get("friends", [])
-        
-        # Если друг уже добавлен, ничего не делаем
-        if friend_id in friends:
-            logger.info("Friend already exists")
-            return True
-        
-        # Добавляем нового друга
-        friends.append(friend_id)
-        
-        # Обновляем данные пользователя
-        def update_query():
-            return supabase.table("users").update({"friends": friends}).eq("user_id", user_id).execute()
-        
-        update_response = execute_supabase_query(update_query)
-        
-        logger.info("Friend added successfully")
-        return update_response.data is not None
-    except Exception as e:
-        logger.error(f"Error adding friend: {e}")
-        return False
-
-# Функция для отправки подарка
-def send_gift(sender_id: str, receiver_id: str, gift_type: str, gift_value: int) -> bool:
-    if supabase is None:
-        logger.error("Supabase client is not initialized")
-        return False
-        
-    try:
-        logger.info(f"Sending gift from {sender_id} to {receiver_id}: {gift_type} ({gift_value})")
-        
-        # Получаем данные отправителя
-        def sender_query():
-            return supabase.table("users").select("score").eq("user_id", sender_id).execute()
-        
-        sender_response = execute_supabase_query(sender_query)
-        
-        if not sender_response.data or len(sender_response.data) == 0:
-            logger.info(f"Sender not found: {sender_id}")
-            return False
-        
-        sender_score = sender_response.data[0].get("score", 0)
-        
-        # Проверяем, достаточно ли очков у отправителя
-        if sender_score < gift_value:
-            logger.info("Sender doesn't have enough score")
-            return False
-        
-        # Получаем данные получателя
-        def receiver_query():
-            return supabase.table("users").select("score").eq("user_id", receiver_id).execute()
-        
-        receiver_response = execute_supabase_query(receiver_query)
-        
-        if not receiver_response.data or len(receiver_response.data) == 0:
-            logger.info(f"Receiver not found: {receiver_id}")
-            return False
-        
-        receiver_score = receiver_response.data[0].get("score", 0)
-        
-        # Списываем очки у отправителя
-        def update_sender_query():
-            return supabase.table("users").update({"score": sender_score - gift_value}).eq("user_id", sender_id).execute()
-        
-        update_sender_response = execute_supabase_query(update_sender_query)
-        
-        if not update_sender_response.data:
-            logger.info("Failed to update sender score")
-            return False
-        
-        # Добавляем очки получателю
-        def update_receiver_query():
-            return supabase.table("users").update({"score": receiver_score + gift_value}).eq("user_id", receiver_id).execute()
-        
-        update_receiver_response = execute_supabase_query(update_receiver_query)
-        
-        if not update_receiver_response.data:
-            logger.info("Failed to update receiver score")
-            return False
-        
-        logger.info("Gift sent successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Error sending gift: {e}")
         return False
 
 # Функция для получения ежедневного бонуса
@@ -900,6 +760,9 @@ html_content = """
       z-index: 100;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      /* Исправление для полного скролла влево */
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 10px;
     }
     #bottom-menu button {
       background: transparent;
@@ -914,6 +777,9 @@ html_content = """
       user-select: none;
       pointer-events: auto;
       white-space: nowrap;
+      /* Добавляем для фиксации проблемы с прокруткой */
+      scroll-snap-align: center;
+      flex-shrink: 0;
     }
     #bottom-menu button.active {
       background-color: #ff66cc;
@@ -925,7 +791,7 @@ html_content = """
       outline-offset: 2px;
     }
 
-    #profile, #tasks, #top, #achievements, #friends, #minigames, #daily {
+    #profile, #tasks, #top, #achievements, #minigames, #daily {
       font-size: 18px;
       line-height: 1.5;
       user-select: text;
@@ -1791,18 +1657,18 @@ html_content = """
       font-size: 14px;
     }
     .upgrade-image {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-  background-color: #ff66cc;
-  background-size: cover;
-  background-position: center;
-  /* Добавляем обводку для видимости */
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  /* Добавляем тень для глубины */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      background-color: #ff66cc;
+      background-size: cover;
+      background-position: center;
+      /* Добавляем обводку для видимости */
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      /* Добавляем тень для глубины */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
     .upgrade-description {
       font-size: 12px;
       opacity: 0.8;
@@ -1892,84 +1758,6 @@ html_content = """
     .achievement-progress {
       font-size: 12px;
       margin-top: 5px;
-    }
-    
-    /* Стили для друзей */
-    #friends-list {
-      margin-top: 20px;
-      max-height: 60vh;
-      overflow-y: auto;
-    }
-    .friend-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 12px;
-      padding: 10px;
-      transition: transform 0.2s ease;
-    }
-    .friend-item:hover {
-      transform: translateX(5px);
-    }
-    .friend-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      margin-right: 10px;
-      object-fit: cover;
-    }
-    .friend-info {
-      flex-grow: 1;
-      text-align: left;
-    }
-    .friend-name {
-      font-weight: bold;
-      font-size: 16px;
-    }
-    .friend-score {
-      font-size: 14px;
-      opacity: 0.8;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .friend-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .friend-button {
-      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
-      border: none;
-      border-radius: 8px;
-      padding: 5px 10px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.3s ease;
-    }
-    .friend-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 3px 10px rgba(255, 102, 204, 0.4);
-    }
-    #add-friend-button {
-      background: linear-gradient(90deg, #ff66cc, #ff9a9e);
-      border: none;
-      border-radius: 10px;
-      padding: 10px 15px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      margin-top: 20px;
-      width: 100%;
-    }
-    #add-friend-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(255, 102, 204, 0.4);
     }
     
     /* Стили для мини-игр */
@@ -2301,7 +2089,6 @@ html_content = """
         <p>Всего кликов: <span id="totalClicks">0</span></p>
         <p>Бонус за клик: <span id="clickBonus">0</span></p>
         <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
-        <p>Друзей: <span id="friendsCount">0</span></p>
         <p>Достижений: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
       </div>
       
@@ -2389,13 +2176,6 @@ html_content = """
     <section id="achievements" class="page" aria-label="Достижения">
       <h2>Достижения</h2>
       <div id="achievements-list"></div>
-    </section>
-    
-    <!-- Окно друзей -->
-    <section id="friends" class="page" aria-label="Друзья">
-      <h2>Друзья</h2>
-      <div id="friends-list"></div>
-      <button id="add-friend-button">Добавить друга</button>
     </section>
     
     <!-- Окно мини-игр -->
@@ -2500,7 +2280,7 @@ html_content = """
         Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
         Задание можно выполнять раз в 24 часа.
       </div>
-      <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+      <div class="referral-link" id="referral-link">https://t.me/Femboysgame_bot?startapp=123456</div>
     </div>
     <button id="referral-modal-button" class="task-modal-button">Скопировать ссылку</button>
     <button id="referral-share-button" class="task-modal-button-secondary">Переслать друзьям</button>
@@ -2549,7 +2329,6 @@ html_content = """
     <button id="btn-clicker" data-page="clicker" class="active">Кликер</button>
     <button id="btn-tasks" data-page="tasks">Задания</button>
     <button id="btn-achievements" data-page="achievements">Достижения</button>
-    <button id="btn-friends" data-page="friends">Друзья</button>
     <button id="btn-minigames" data-page="minigames">Мини-игры</button>
     <button id="btn-daily" data-page="daily">Бонусы</button>
   </nav>
@@ -2603,7 +2382,6 @@ html_content = """
       {id: "first_click", name: "Первый клик", description: "Сделайте свой первый клик", reward: 100, condition: {type: "clicks", value: 1}},
       {id: "click_master", name: "Мастер кликов", description: "Сделайте 1000 кликов", reward: 5000, condition: {type: "clicks", value: 1000}},
       {id: "score_1000", name: "Тысячник", description: "Наберите 1000 очков", reward: 1000, condition: {type: "score", value: 1000}},
-      {id: "first_friend", name: "Первый друг", description: "Пригласите первого друга", reward: 2000, condition: {type: "referrals", value: 1}},
       {id: "daily_login", name: "Ежедневный вход", description: "Входите в игру 7 дней подряд", reward: 3000, condition: {type: "daily_streak", value: 7}}
     ];
     
@@ -2633,7 +2411,6 @@ html_content = """
         "clicker": "Кликер",
         "tasks": "Задания",
         "achievements": "Достижения",
-        "friends": "Друзья",
         "minigames": "Мини-игры",
         "daily": "Бонусы",
         "top": "Топ",
@@ -2655,7 +2432,6 @@ html_content = """
         "clicker": "Clicker",
         "tasks": "Tasks",
         "achievements": "Achievements",
-        "friends": "Friends",
         "minigames": "Minigames",
         "daily": "Bonuses",
         "top": "Top",
@@ -2715,7 +2491,6 @@ html_content = """
       upgrades: [],
       ads_watched: 0,
       achievements: [],
-      friends: [],
       daily_bonus: {
         last_claim: null,
         streak: 0,
@@ -2746,7 +2521,7 @@ html_content = """
         manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Fnmby_bot'
+          twaReturnUrl: 'https://t.me/Femboysgame_bot'
         }
       });
       
@@ -2917,9 +2692,6 @@ html_content = """
             if (!userData.achievements) {
               userData.achievements = [];
             }
-            if (!userData.friends) {
-              userData.friends = [];
-            }
             if (!userData.daily_bonus) {
               userData.daily_bonus = {
                 last_claim: null,
@@ -2974,9 +2746,6 @@ html_content = """
             // Обновляем достижения
             updateAchievements();
             
-            // Обновляем друзей
-            updateFriends();
-            
             // Обновляем ежедневные бонусы
             updateDailyBonus();
             
@@ -3010,7 +2779,6 @@ html_content = """
           upgrades: [],
           ads_watched: 0,
           achievements: [],
-          friends: [],
           daily_bonus: {
             last_claim: null,
             streak: 0,
@@ -3031,7 +2799,6 @@ html_content = """
         checkReferralTask();
         checkAdsTask();
         updateAchievements();
-        updateFriends();
         updateDailyBonus();
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -3041,7 +2808,6 @@ html_content = """
         checkReferralTask();
         checkAdsTask();
         updateAchievements();
-        updateFriends();
         updateDailyBonus();
       }
     }
@@ -3083,7 +2849,6 @@ html_content = """
             const oldUpgrades = userData.upgrades;
             const oldAdsWatched = userData.ads_watched; // Сохраняем текущее значение ads_watched
             const oldAchievements = userData.achievements;
-            const oldFriends = userData.friends;
             const oldDailyBonus = userData.daily_bonus;
             const oldActiveBoosts = userData.active_boosts;
             const oldSkins = userData.skins;
@@ -3105,7 +2870,6 @@ html_content = """
             userData.upgrades = oldUpgrades;
             userData.ads_watched = oldAdsWatched; // Восстанавливаем текущее значение ads_watched
             userData.achievements = oldAchievements;
-            userData.friends = oldFriends;
             userData.daily_bonus = oldDailyBonus;
             userData.active_boosts = oldActiveBoosts;
             userData.skins = oldSkins;
@@ -3167,7 +2931,6 @@ html_content = """
       tasks: document.getElementById('tasks'),
       top: document.getElementById('top'),
       achievements: document.getElementById('achievements'),
-      friends: document.getElementById('friends'),
       minigames: document.getElementById('minigames'),
       daily: document.getElementById('daily')
     };
@@ -3226,11 +2989,6 @@ html_content = """
         updateAchievements();
       }
       
-      // При открытии друзей обновляем данные
-      if (pageKey === 'friends') {
-        updateFriends();
-      }
-      
       // При открытии мини-игр обновляем данные
       if (pageKey === 'minigames') {
         // Мини-игры не требуют обновления данных
@@ -3267,9 +3025,6 @@ html_content = """
         
         document.getElementById('clickBonus').textContent = clickBonus;
         document.getElementById('passiveIncomeStat').textContent = passiveIncome;
-        
-        // Обновляем количество друзей
-        document.getElementById('friendsCount').textContent = userData.friends.length;
         
         // Обновляем количество достижений
         document.getElementById('achievementsCount').textContent = userData.achievements.length;
@@ -3751,7 +3506,7 @@ html_content = """
       // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
       adsgramAd.show().then(() => {
         // Реклама успешно показана
-                console.log('Ad shown successfully');
+        console.log('Ad shown successfully');
       }).catch((error) => {
         // Ошибка при показе рекламы
         console.error('Error showing ad:', error);
@@ -3767,7 +3522,7 @@ html_content = """
     function copyReferralLink() {
       if (!user) return;
       
-      const botUsername = 'Fnmby_bot';
+      const botUsername = 'Femboysgame_bot';
       const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
       
       // Создаем временный элемент для копирования
@@ -3786,7 +3541,7 @@ html_content = """
           if (tg.HapticFeedback) {
             tg.HapticFeedback.notificationOccurred('success');
           }
-          showNotification(translations[currentLanguage].copy_link);
+          showNotification('Ссылка скопирована!');
         } else {
           showNotification('Не удалось скопировать ссылку');
         }
@@ -3801,7 +3556,7 @@ html_content = """
     function shareReferralLink() {
       if (!user) return;
       
-      const botUsername = 'Fnmby_bot';
+      const botUsername = 'Femboysgame_bot';
       const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
       const shareText = `Привет! Заходи в классную игру про фембоев! ${referralLink}`;
       
@@ -3818,7 +3573,7 @@ html_content = """
         tg.HapticFeedback.notificationOccurred('success');
       }
       
-      showNotification(translations[currentLanguage].share_link);
+      showNotification('Ссылка отправлена!');
     }
     
     // Открытие модального окна задания с кошельком
@@ -3865,7 +3620,7 @@ html_content = """
     function openReferralTaskModal() {
       // Обновляем ссылку в модальном окне
       if (user) {
-        const botUsername = 'Fnmby_bot';
+        const botUsername = 'Femboysgame_bot';
         const referralLink = `https://t.me/${botUsername}?startapp=${user.id}`;
         document.getElementById('referral-link').textContent = referralLink;
       }
@@ -4107,9 +3862,6 @@ html_content = """
         } else if (achievement.condition.type === 'score') {
           progressValue = userData.score;
           progress = `${progressValue}/${achievement.condition.value}`;
-        } else if (achievement.condition.type === 'referrals') {
-          progressValue = userData.referrals.length;
-          progress = `${progressValue}/${achievement.condition.value}`;
         } else if (achievement.condition.type === 'daily_streak') {
           progressValue = userData.daily_bonus.streak;
           progress = `${progressValue}/${achievement.condition.value}`;
@@ -4145,8 +3897,6 @@ html_content = """
           isUnlocked = userData.total_clicks >= achievement.condition.value;
         } else if (achievement.condition.type === 'score') {
           isUnlocked = userData.score >= achievement.condition.value;
-        } else if (achievement.condition.type === 'referrals') {
-          isUnlocked = userData.referrals.length >= achievement.condition.value;
         } else if (achievement.condition.type === 'daily_streak') {
           isUnlocked = userData.daily_bonus.streak >= achievement.condition.value;
         }
@@ -4167,178 +3917,9 @@ html_content = """
           updateAchievements();
           
           // Показываем уведомление
-          showNotification(`${translations[currentLanguage].achievement_unlocked}: ${achievement.name}`);
+          showNotification(`Достижение разблокировано: ${achievement.name}`);
         }
       });
-    }
-    
-    // Обновление друзей
-    function updateFriends() {
-      const friendsList = document.getElementById('friends-list');
-      friendsList.innerHTML = '';
-      
-      if (userData.friends.length === 0) {
-        friendsList.innerHTML = '<p>У вас пока нет друзей</p>';
-        return;
-      }
-      
-      // Загружаем данные друзей
-      userData.friends.forEach(friendId => {
-        // Создаем элемент друга
-        const friendElement = document.createElement('div');
-        friendElement.className = 'friend-item';
-        
-        // Временно показываем заглушку, пока данные не загружены
-        friendElement.innerHTML = `
-          <div class="friend-avatar" src="/static/default-avatar.png"></div>
-          <div class="friend-info">
-            <div class="friend-name">Загрузка...</div>
-            <div class="friend-score">-</div>
-          </div>
-          <div class="friend-actions">
-            <button class="friend-button send-gift" data-friend-id="${friendId}">Подарок</button>
-          </div>
-        `;
-        
-        friendsList.appendChild(friendElement);
-        
-        // Загружаем данные друга
-        fetch(`/user/${friendId}`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.user) {
-              const friend = data.user;
-              friendElement.innerHTML = `
-                <img class="friend-avatar" src="${friend.photo_url || `https://t.me/i/userpic/320/${friend.id}.jpg`}" alt="${friend.first_name}">
-                <div class="friend-info">
-                  <div class="friend-name">${friend.first_name} ${friend.last_name || ''}</div>
-                  <div class="friend-score">${friend.score} <img src="/static/FemboyCoinsPink.png" alt="монетки" style="width: 16px; height: 16px;"></div>
-                </div>
-                <div class="friend-actions">
-                  <button class="friend-button send-gift" data-friend-id="${friendId}">Подарок</button>
-                </div>
-              `;
-            }
-          })
-          .catch(error => {
-            console.error('Error loading friend data:', error);
-          });
-      });
-      
-      // Добавляем обработчики для кнопок подарков
-      document.querySelectorAll('.send-gift').forEach(button => {
-        button.addEventListener('click', function() {
-          const friendId = this.getAttribute('data-friend-id');
-          openGiftModal(friendId);
-        });
-      });
-    }
-    
-    // Открытие модального окна подарка
-    function openGiftModal(friendId) {
-      // Создаем модальное окно для подарка
-      const modalOverlay = document.createElement('div');
-      modalOverlay.className = 'task-modal-overlay active';
-      
-      const modal = document.createElement('div');
-      modal.className = 'task-modal active';
-      modal.style.width = '90%';
-      modal.style.maxWidth = '400px';
-      
-      modal.innerHTML = `
-        <div class="task-modal-header">
-          <div class="task-modal-title">Отправить подарок</div>
-          <button class="task-modal-close">×</button>
-        </div>
-        <div class="task-modal-content">
-          <div class="task-modal-description">
-            Выберите количество монеток для подарка:
-          </div>
-          <div style="margin: 20px 0;">
-            <input type="range" id="gift-amount" min="100" max="1000" value="100" step="100" style="width: 100%;">
-            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-              <span>100</span>
-              <span id="gift-amount-display">100</span>
-              <span>1000</span>
-            </div>
-          </div>
-        </div>
-        <button class="task-modal-button" id="send-gift-button">Отправить подарок</button>
-      `;
-      
-      document.body.appendChild(modalOverlay);
-      document.body.appendChild(modal);
-      
-      // Обработчик для закрытия модального окна
-      modal.querySelector('.task-modal-close').addEventListener('click', function() {
-        modalOverlay.remove();
-        modal.remove();
-      });
-      
-      // Обработчик для изменения суммы подарка
-      const giftAmountInput = document.getElementById('gift-amount');
-      const giftAmountDisplay = document.getElementById('gift-amount-display');
-      
-      giftAmountInput.addEventListener('input', function() {
-        giftAmountDisplay.textContent = this.value;
-      });
-      
-      // Обработчик для отправки подарка
-      document.getElementById('send-gift-button').addEventListener('click', function() {
-        const amount = parseInt(giftAmountInput.value);
-        
-        // Проверяем, достаточно ли монет
-        if (userData.score < amount) {
-          showNotification(translations[currentLanguage].not_enough_coins);
-          return;
-        }
-        
-        // Отправляем подарок
-        sendGift(user.id, friendId, 'coins', amount);
-        
-        // Закрываем модальное окно
-        modalOverlay.remove();
-        modal.remove();
-      });
-    }
-    
-    // Отправка подарка
-    async function sendGift(senderId, receiverId, giftType, giftValue) {
-      try {
-        const response = await fetch('/gift', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender_id: senderId,
-            receiver_id: receiverId,
-            gift_type: giftType,
-            gift_value: giftValue
-          })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.status === 'success') {
-            // Обновляем данные пользователя
-            userData.score -= giftValue;
-            updateScoreDisplay();
-            saveUserData();
-            
-            // Показываем уведомление
-            showNotification(translations[currentLanguage].gift_sent);
-          } else {
-            showNotification('Ошибка при отправке подарка');
-          }
-        } else {
-          showNotification('Ошибка при отправке подарка');
-        }
-      } catch (error) {
-        console.error('Error sending gift:', error);
-        showNotification('Ошибка при отправке подарка');
-      }
     }
     
     // Обновление ежедневных бонусов
@@ -4424,7 +4005,7 @@ html_content = """
             updateDailyBonus();
             
             // Показываем уведомление
-            showNotification(`${translations[currentLanguage].daily_bonus_claimed}: ${data.reward} монеток`);
+            showNotification(`Ежедневный бонус получен: ${data.reward} монеток`);
           } else {
             showNotification(data.message || 'Ошибка при получении бонуса');
           }
@@ -4452,7 +4033,6 @@ html_content = """
       document.getElementById('btn-clicker').textContent = translations[currentLanguage].clicker;
       document.getElementById('btn-tasks').textContent = translations[currentLanguage].tasks;
       document.getElementById('btn-achievements').textContent = translations[currentLanguage].achievements;
-      document.getElementById('btn-friends').textContent = translations[currentLanguage].friends;
       document.getElementById('btn-minigames').textContent = translations[currentLanguage].minigames;
       document.getElementById('btn-daily').textContent = translations[currentLanguage].daily;
       document.getElementById('upgrades-button').textContent = translations[currentLanguage].upgrades;
@@ -4594,7 +4174,7 @@ html_content = """
         saveUserData();
         
         // Показываем уведомление
-        showNotification(`${translations[currentLanguage].minigame_reward}: ${reward} монеток`);
+        showNotification(`Награда за мини-игру: ${reward} монеток`);
       });
     }
 
@@ -4986,7 +4566,6 @@ async def get_user_data(user_id: str):
                 "upgrades": user_data["upgrades"],
                 "ads_watched": user_data["ads_watched"],
                 "achievements": user_data["achievements"],
-                "friends": user_data["friends"],
                 "daily_bonus": user_data["daily_bonus"],
                 "active_boosts": user_data["active_boosts"],
                 "skins": user_data["skins"],
@@ -5040,7 +4619,6 @@ async def save_user_data(request: Request):
                     "upgrades": user_data["upgrades"],
                     "ads_watched": user_data["ads_watched"],
                     "achievements": user_data["achievements"],
-                    "friends": user_data["friends"],
                     "daily_bonus": user_data["daily_bonus"],
                     "active_boosts": user_data["active_boosts"],
                     "skins": user_data["skins"],
@@ -5135,35 +4713,8 @@ async def claim_daily_bonus_endpoint(request: Request):
         logger.error(f"Error in POST /daily-bonus: {e}")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
-@app.post("/gift")
-async def send_gift_endpoint(request: Request):
-    """Отправка подарка другу"""
-    try:
-        logger.info(f"POST /gift endpoint called")
-        data = await request.json()
-        sender_id = data.get('sender_id')
-        receiver_id = data.get('receiver_id')
-        gift_type = data.get('gift_type')
-        gift_value = data.get('gift_value')
-        
-        if not all([sender_id, receiver_id, gift_type, gift_value]):
-            return JSONResponse(content={"status": "error", "message": "Missing required fields"}, status_code=400)
-        
-        success = send_gift(sender_id, receiver_id, gift_type, gift_value)
-        
-        if success:
-            logger.info(f"Gift sent successfully from {sender_id} to {receiver_id}")
-            return JSONResponse(content={"status": "success"})
-        else:
-            logger.info(f"Failed to send gift from {sender_id} to {receiver_id}")
-            return JSONResponse(content={"status": "error", "message": "Failed to send gift"})
-    except Exception as e:
-        logger.error(f"Error in POST /gift: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
-
 # Добавляем код для запуска на сервере
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
