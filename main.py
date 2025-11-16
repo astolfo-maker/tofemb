@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -60,20 +59,20 @@ LEVELS = [
     {"score": 10000000, "name": "Бог фембоев"}
 ]
 
-# Определение улучшений (только 12 штук)
+# Определение улучшений (сбалансированные цены)
 UPGRADES = [
-    {"id": "upgrade1", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
-    {"id": "upgrade2", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
-    {"id": "upgrade3", "description": "+5 за клик", "cost": 10000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
-    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 15000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
-    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
-    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 50000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
-    {"id": "upgrade7", "description": "+10 за клик", "cost": 75000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
-    {"id": "upgrade8", "description": "+15 за клик", "cost": 100000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
-    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
-    {"id": "upgrade10", "description": "+25 за клик", "cost": 250000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
-    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 500000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade1", "description": "+1 за клик", "cost": 5000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "description": "+2 за клик", "cost": 25000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "description": "+5 за клик", "cost": 100000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 250000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 750000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 2000000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "description": "+10 за клик", "cost": 5000000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "description": "+15 за клик", "cost": 15000000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 40000000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "description": "+25 за клик", "cost": 100000000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 250000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
 # Определение заданий
@@ -709,6 +708,7 @@ html_content = """
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
 
@@ -726,6 +726,21 @@ html_content = """
       overflow-x: hidden;
       touch-action: none;
       overscroll-behavior: none;
+    }
+
+    body.en {
+      font-family: 'Comfortaa', cursive;
+    }
+
+    body.en #score,
+    body.en #levelProgressText,
+    body.en #energyText,
+    body.en .task-title,
+    body.en .top-name,
+    body.en .achievement-name,
+    body.en .minigame-name,
+    body.en .bonus-day-number {
+      font-family: 'Comfortaa', cursive;
     }
 
     #content {
@@ -2049,7 +2064,7 @@ html_content = """
     #claim-daily-bonus-button {
       background: linear-gradient(90deg, #ff66cc, #ff9a9e);
       border: none;
-            border-radius: 10px;
+      border-radius: 10px;
       padding: 12px 20px;
       color: white;
       font-weight: bold;
@@ -2110,7 +2125,7 @@ html_content = """
   <div id="content">
     <!-- Кликер (по умолчанию видим) -->
     <section id="clicker" class="page active" aria-label="Окно кликера">
-      <button id="topButton">
+      <button id="topButton" data-i18n="top_100_femboys">
         Топ 100 фембоев
         <div class="top-preview" id="topPreview">
           <div class="top-preview-item">Загрузка...</div>
@@ -2128,7 +2143,7 @@ html_content = """
       <!-- Прогресс-бар уровня -->
       <div id="levelProgress">
         <div id="levelProgressBar" style="width: 0%"></div>
-        <div id="levelProgressText">Уровень: Новичок (0/100)</div>
+        <div id="levelProgressText" data-i18n="level_progress" data-i18n-args='["Новичок", "0", "100"]'>Уровень: Новичок (0/100)</div>
       </div>
       
       <!-- Прогресс-бар энергии -->
@@ -2136,7 +2151,7 @@ html_content = """
         <div id="energyBar">
           <div id="energyProgress" style="width: 100%"></div>
         </div>
-        <div id="energyText">
+        <div id="energyText" data-i18n="energy_text" data-i18n-args='["250", "250"]'>
           <span id="energyIcon">⚡</span>
           <span>Энергия: 250/250</span>
         </div>
@@ -2145,7 +2160,7 @@ html_content = """
 
     <!-- Окно профиля -->
     <section id="profile" class="page" aria-label="Профиль">
-      <h2>Профиль</h2>
+      <h2 data-i18n="profile_title">Профиль</h2>
       
       <div id="loadingIndicator">
         <p>Загрузка данных профиля...</p>
@@ -2158,30 +2173,30 @@ html_content = """
       </div>
       
       <div class="profile-stats">
-        <p>Собранные монетки: <span id="profileScore">0</span></p>
-        <p>Уровень фембоя: <span id="userLevel">Новичок</span></p>
-        <p>Всего кликов: <span id="totalClicks">0</span></p>
-        <p>Бонус за клик: <span id="clickBonus">0</span></p>
-        <p>Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
-        <p>Достижений: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
+        <p><span data-i18n="collected_coins">Собранные монетки</span>: <span id="profileScore">0</span></p>
+        <p><span data-i18n="femboy_level">Уровень фембоя</span>: <span id="userLevel">Новичок</span></p>
+        <p><span data-i18n="total_clicks">Всего кликов</span>: <span id="totalClicks">0</span></p>
+        <p><span data-i18n="click_bonus">Бонус за клик</span>: <span id="clickBonus">0</span></p>
+        <p><span data-i18n="passive_income">Пассивный доход</span>: <span id="passiveIncomeStat">0</span>/5 сек</p>
+        <p><span data-i18n="achievements_count">Достижений</span>: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
       </div>
       
       <!-- Секция кошелька -->
       <div id="wallet-section">
-        <h3>TON Кошелек</h3>
+        <h3 data-i18n="wallet">TON Кошелек</h3>
         <div id="wallet-address">Не подключен</div>
-        <button id="ton-connect-button">Подключить кошелек</button>
+        <button id="ton-connect-button" data-i18n="connect_wallet">Подключить кошелек</button>
       </div>
     </section>
 
     <!-- Окно заданий -->
     <section id="tasks" class="page" aria-label="задания">
-      <h2>Задания</h2>
+      <h2 data-i18n="tasks_title">Задания</h2>
       
       <!-- Вкладки заданий -->
       <div class="task-tabs">
-        <div class="task-tab active" data-tab="normal">Обычные</div>
-        <div class="task-tab" data-tab="daily">Повседневные</div>
+        <div class="task-tab active" data-tab="normal" data-i18n="normal_tasks">Обычные</div>
+        <div class="task-tab" data-tab="daily" data-i18n="daily_tasks">Повседневные</div>
       </div>
       
       <!-- Содержимое вкладки "Обычные" -->
@@ -2189,27 +2204,27 @@ html_content = """
         <!-- Задание: Подключить TON кошелек -->
         <div class="task-item">
           <div class="task-header">
-            <div class="task-title">Подключить TON кошелек</div>
-            <button id="wallet-task-button" class="task-button">НАЧАТЬ</button>
+            <div class="task-title" data-i18n="connect_ton_wallet">Подключить TON кошелек</div>
+            <button id="wallet-task-button" class="task-button" data-i18n="start">НАЧАТЬ</button>
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>1000 монеток</span>
+            <span>1000 <span data-i18n="coins">монеток</span></span>
           </div>
-          <div id="wallet-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div id="wallet-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
         </div>
         
         <!-- Задание: Подписка на канал -->
         <div class="task-item">
           <div class="task-header">
-            <div class="task-title">Подписка на канал</div>
-            <button id="channel-task-button" class="task-button">НАЧАТЬ</button>
+            <div class="task-title" data-i18n="subscribe_channel">Подписка на канал</div>
+            <button id="channel-task-button" class="task-button" data-i18n="start">НАЧАТЬ</button>
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>2000 монеток</span>
+            <span>2000 <span data-i18n="coins">монеток</span></span>
           </div>
-          <div id="channel-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div id="channel-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
         </div>
       </div>
       
@@ -2218,70 +2233,70 @@ html_content = """
         <!-- Задание: Пригласить 3 друзей -->
         <div class="task-item">
           <div class="task-header">
-            <div class="task-title">Пригласить 3-х друзей</div>
-            <button id="referral-task-button" class="task-button">НАЧАТЬ</button>
+            <div class="task-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
+            <button id="referral-task-button" class="task-button" data-i18n="start">НАЧАТЬ</button>
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>5000 монеток</span>
+            <span>5000 <span data-i18n="coins">монеток</span></span>
           </div>
-          <div class="task-progress">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
-          <div id="referral-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div class="task-progress"><span data-i18n="friends_invited">Приглашено друзей</span>: <span id="referral-count-value">0</span>/3</div>
+          <div id="referral-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
           <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
         </div>
         
         <!-- Задание: Просмотр рекламы -->
         <div class="task-item">
           <div class="task-header">
-            <div class="task-title">Просмотр рекламы</div>
-            <button id="ads-task-button" class="task-button">НАЧАТЬ</button>
+            <div class="task-title" data-i18n="watch_ads">Просмотр рекламы</div>
+            <button id="ads-task-button" class="task-button" data-i18n="start">НАЧАТЬ</button>
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>5000 монеток</span>
+            <span>5000 <span data-i18n="coins">монеток</span></span>
           </div>
-          <div class="task-progress">Просмотрено: <span id="ads-count-value">0</span>/10</div>
-          <div id="ads-task-status" class="task-completed" style="display: none;">Задание выполнено</div>
+          <div class="task-progress"><span data-i18n="watched">Просмотрено</span>: <span id="ads-count-value">0</span>/10</div>
+          <div id="ads-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
         </div>
       </div>
     </section>
     
     <!-- Окно достижений -->
     <section id="achievements" class="page" aria-label="Достижения">
-      <h2>Достижения</h2>
+      <h2 data-i18n="achievements_title">Достижения</h2>
       <div id="achievements-list"></div>
     </section>
     
     <!-- Окно мини-игр -->
     <section id="minigames" class="page" aria-label="Мини-игры">
-      <h2>Мини-игры</h2>
+      <h2 data-i18n="minigames_title">Мини-игры</h2>
       <div class="minigames-container">
         <div class="minigame-item" data-minigame="catch_coins">
           <div class="minigame-icon">🪙</div>
-          <div class="minigame-name">Поймай монетки</div>
-          <div class="minigame-description">Ловите падающие монетки!</div>
+          <div class="minigame-name" data-i18n="catch_coins_name">Поймай монетки</div>
+          <div class="minigame-description" data-i18n="catch_coins_desc">Ловите падающие монетки!</div>
           <div class="minigame-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>100 монеток</span>
+            <span>100 <span data-i18n="coins">монеток</span></span>
           </div>
-          <button class="start-minigame-button">Играть</button>
+          <button class="start-minigame-button" data-i18n="play">Играть</button>
         </div>
       </div>
     </section>
     
     <!-- Окно ежедневных бонусов -->
     <section id="daily" class="page" aria-label="Ежедневные бонусы">
-      <h2>Ежедневные бонусы</h2>
-      <div class="daily-bonus-streak">Текущая серия: <span id="current-streak">0</span> дней</div>
+      <h2 data-i18n="daily_bonus_title">Ежедневные бонусы</h2>
+      <div class="daily-bonus-streak"><span data-i18n="current_streak">Текущая серия</span>: <span id="current-streak">0</span> <span data-i18n="days">дней</span></div>
       <div id="daily-bonus-calendar"></div>
-      <button id="claim-daily-bonus-button">Получить бонус</button>
+      <button id="claim-daily-bonus-button" data-i18n="claim_bonus">Получить бонус</button>
     </section>
     
     <!-- Окно топа -->
     <section id="top" class="page" aria-label="Топ пользователей">
       <div id="topHeader">
-        <button id="backButton">← Назад</button>
-        <h2>Топ 100 фембоев</h2>
+        <button id="backButton" data-i18n="back">← Назад</button>
+        <h2 data-i18n="top_title">Топ 100 фембоев</h2>
         <div></div> <!-- Для выравнивания -->
       </div>
       <div id="topList"></div>
@@ -2303,9 +2318,9 @@ html_content = """
   <!-- Модальное окно повышения уровня -->
   <div id="levelUpModal">
     <div class="levelUpContent">
-      <div class="levelUpTitle">🎉 Новый уровень! 🎉</div>
+      <div class="levelUpTitle" data-i18n="level_up_title">🎉 Новый уровень! 🎉</div>
       <div class="levelUpLevel" id="levelUpLevelText">Новичок</div>
-      <button class="levelUpButton" id="levelUpButton">Отлично!</button>
+      <button class="levelUpButton" id="levelUpButton" data-i18n="great">Отлично!</button>
     </div>
   </div>
 
@@ -2315,7 +2330,7 @@ html_content = """
   <!-- Модальное окно задания с кошельком -->
   <div id="wallet-task-modal" class="task-modal">
     <div class="task-modal-header">
-      <div class="task-modal-title">Подключить TON кошелек</div>
+      <div class="task-modal-title" data-i18n="connect_ton_wallet">Подключить TON кошелек</div>
       <button class="task-modal-close" id="wallet-modal-close">×</button>
     </div>
     <div class="task-modal-content">
@@ -2324,13 +2339,13 @@ html_content = """
         Ваш кошелек будет привязан к вашему профилю и отображен в разделе "Профиль".
       </div>
     </div>
-    <button id="wallet-modal-button" class="task-modal-button">Подключить кошелек</button>
+    <button id="wallet-modal-button" class="task-modal-button" data-i18n="connect_wallet">Подключить кошелек</button>
   </div>
 
   <!-- Модальное окно задания с подпиской на канал -->
   <div id="channel-task-modal" class="task-modal">
     <div class="task-modal-header">
-      <div class="task-modal-title">Подписка на канал</div>
+      <div class="task-modal-title" data-i18n="subscribe_channel">Подписка на канал</div>
       <button class="task-modal-close" id="channel-modal-close">×</button>
     </div>
     <div class="task-modal-content">
@@ -2339,14 +2354,14 @@ html_content = """
         После подписки вернитесь в приложение и нажмите "Проверить подписку".
       </div>
     </div>
-    <button id="channel-modal-button" class="task-modal-button">Перейти к каналу</button>
-    <button id="channel-verify-button" class="task-modal-button-secondary">Проверить подписку</button>
+    <button id="channel-modal-button" class="task-modal-button" data-i18n="go_to_channel">Перейти к каналу</button>
+    <button id="channel-verify-button" class="task-modal-button-secondary" data-i18n="check_subscription">Проверить подписку</button>
   </div>
 
 <!-- Модальное окно задания с рефералами -->
 <div id="referral-task-modal" class="task-modal">
   <div class="task-modal-header">
-    <div class="task-modal-title">Пригласить 3-х друзей</div>
+    <div class="task-modal-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
     <button class="task-modal-close" id="referral-modal-close">×</button>
   </div>
   <div class="task-modal-content">
@@ -2357,12 +2372,12 @@ html_content = """
     <!-- ИЗМЕНЕНО: возвращаем старое имя бота в ссылке -->
     <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
   </div>
-  <button id="referral-modal-button" class="task-modal-button">Скопировать ссылку</button>
-  <button id="referral-share-button" class="task-modal-button-secondary">Переслать друзьям</button>
+  <button id="referral-modal-button" class="task-modal-button" data-i18n="copy_link">Скопировать ссылку</button>
+  <button id="referral-share-button" class="task-modal-button-secondary" data-i18n="share_friends">Переслать друзьям</button>
 </div>
 
   <!-- Кнопка улучшений -->
-  <button id="upgrades-button">
+  <button id="upgrades-button" data-i18n="upgrades">
     УЛУЧШЕНИЯ
   </button>
 
@@ -2370,7 +2385,7 @@ html_content = """
   <div id="upgrades-modal-overlay"></div>
   <div id="upgrades-modal">
     <div class="upgrades-modal-header">
-      <div class="upgrades-modal-title">УЛУЧШЕНИЯ</div>
+      <div class="upgrades-modal-title" data-i18n="upgrades">УЛУЧШЕНИЯ</div>
       <button class="upgrades-modal-close" id="upgrades-modal-close">×</button>
     </div>
     <div class="upgrades-container" id="upgrades-container">
@@ -2381,15 +2396,15 @@ html_content = """
   <!-- Мини-игра "Поймай монетки" -->
   <div id="minigame-catch-coins">
     <div class="minigame-header">
-      <div class="minigame-score">Счет: <span id="minigame-score">0</span></div>
-      <div class="minigame-timer">Время: <span id="minigame-timer">30</span></div>
+      <div class="minigame-score"><span data-i18n="score_minigame">Счет</span>: <span id="minigame-score">0</span></div>
+      <div class="minigame-timer"><span data-i18n="time">Время</span>: <span id="minigame-timer">30</span></div>
       <button class="minigame-close" id="minigame-close">×</button>
     </div>
     <div class="minigame-area" id="minigame-area"></div>
     <div class="minigame-result" id="minigame-result">
-      <div class="minigame-result-title">Игра окончена!</div>
-      <div class="minigame-result-score">Вы поймали <span id="minigame-result-score">0</span> монеток</div>
-      <button class="minigame-result-button" id="minigame-result-button">Забрать награду</button>
+      <div class="minigame-result-title" data-i18n="game_over">Игра окончена!</div>
+      <div class="minigame-result-score" data-i18n="coins_caught">Вы поймали <span id="minigame-result-score">0</span> монеток</div>
+      <button class="minigame-result-button" id="minigame-result-button" data-i18n="get_reward">Забрать награду</button>
     </div>
   </div>
 
@@ -2397,15 +2412,15 @@ html_content = """
   <div id="notification" class="notification"></div>
   
   <!-- Уведомление о недостатке энергии -->
-  <div id="noEnergyNotification" class="no-energy">Недостаточно энергии!</div>
+  <div id="noEnergyNotification" class="no-energy" data-i18n="notification_energy_low">Недостаточно энергии!</div>
 
   <nav id="bottom-menu" role="navigation" aria-label="Нижнее меню">
-    <button id="btn-profile" data-page="profile">Профиль</button>
-    <button id="btn-clicker" data-page="clicker" class="active">Кликер</button>
-    <button id="btn-tasks" data-page="tasks">Задания</button>
-    <button id="btn-achievements" data-page="achievements">Достижения</button>
-    <button id="btn-minigames" data-page="minigames">Мини-игры</button>
-    <button id="btn-daily" data-page="daily">Бонусы</button>
+    <button id="btn-profile" data-page="profile" data-i18n="profile">Профиль</button>
+    <button id="btn-clicker" data-page="clicker" class="active" data-i18n="clicker">Кликер</button>
+    <button id="btn-tasks" data-page="tasks" data-i18n="tasks">Задания</button>
+    <button id="btn-achievements" data-page="achievements" data-i18n="achievements">Достижения</button>
+    <button id="btn-minigames" data-page="minigames" data-i18n="minigames">Мини-игры</button>
+    <button id="btn-daily" data-page="daily" data-i18n="daily">Бонусы</button>
   </nav>
 
   <script>
@@ -2425,20 +2440,20 @@ html_content = """
       {score: 10000000, name: "Бог фембоев"}
     ];
     
-    // Улучшения игры (только 12 штук)
+    // Улучшения игры (сбалансированные цены)
     const UPGRADES = [
-      {id: "upgrade1", description: "+1 за клик", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", description: "+5 за клик", cost: 10000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 15000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 30000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 50000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", description: "+10 за клик", cost: 75000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", description: "+15 за клик", cost: 100000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 150000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", description: "+25 за клик", cost: 250000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 500000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade1", description: "+1 за клик", cost: 5000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
+      {id: "upgrade2", description: "+2 за клик", cost: 25000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", description: "+5 за клик", cost: 100000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 250000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 750000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 2000000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", description: "+10 за клик", cost: 5000000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", description: "+15 за клик", cost: 15000000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 40000000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", description: "+25 за клик", cost: 100000000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 250000000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", description: "+100 за клик", cost: 1000000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
     ];
     
     // Задания игры
@@ -2547,7 +2562,26 @@ html_content = """
         "notification_ad_error": "Ошибка при показе рекламы",
         "notification_referral": "Вы были приглашены по реферальной ссылке!",
         "notification_task_cooldown": "Задание можно выполнять раз в 24 часа",
-        "notification_minigame_reward": "Награда за мини-игру: {0} монеток"
+        "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
+        "top_100_femboys": "Топ 100 фембоев",
+        "level_progress": "Уровень: {0} ({1}/{2})",
+        "energy_text": "Энергия: {0}/{1}",
+        "per_click": "за клик",
+        "every_5_sec": "каждые 5 сек",
+        "current_streak": "Текущая серия",
+        "time": "Время",
+        "score_minigame": "Счет",
+        "friends_invited": "Приглашено друзей",
+        "task_completed": "Задание выполнено",
+        "watched": "Просмотрено",
+        "coins": "монеток",
+        "wait": "Ожидание",
+        "catch_coins_name": "Поймай монетки",
+        "catch_coins_desc": "Ловите падающие монетки!",
+        "game_over": "Игра окончена!",
+        "coins_caught": "Вы поймали {0} монеток",
+        "go_to_channel": "Перейти к каналу",
+        "check_subscription": "Проверить подписку"
       },
       en: {
         "score": "Score",
@@ -2574,7 +2608,7 @@ html_content = """
         "femboy_level": "Femboy level",
         "total_clicks": "Total clicks",
         "click_bonus": "Click bonus",
-        "passive_income": "Passive income",
+                "passive_income": "Passive income",
         "achievements_count": "Achievements",
         "top_title": "Top 100 femboys",
         "back": "← Back",
@@ -2618,7 +2652,26 @@ html_content = """
         "notification_ad_error": "Error showing ad",
         "notification_referral": "You were invited by a referral link!",
         "notification_task_cooldown": "Task can be completed once every 24 hours",
-        "notification_minigame_reward": "Minigame reward: {0} coins"
+        "notification_minigame_reward": "Minigame reward: {0} coins",
+        "top_100_femboys": "Top 100 femboys",
+        "level_progress": "Level: {0} ({1}/{2})",
+        "energy_text": "Energy: {0}/{1}",
+        "per_click": "per click",
+        "every_5_sec": "every 5 sec",
+        "current_streak": "Current streak",
+        "time": "Time",
+        "score_minigame": "Score",
+        "friends_invited": "Friends invited",
+        "task_completed": "Task completed",
+        "watched": "Watched",
+        "coins": "coins",
+        "wait": "Wait",
+        "catch_coins_name": "Catch coins",
+        "catch_coins_desc": "Catch falling coins!",
+        "game_over": "Game over!",
+        "coins_caught": "You caught {0} coins",
+        "go_to_channel": "Go to channel",
+        "check_subscription": "Check subscription"
       }
     };
     
@@ -3323,11 +3376,19 @@ html_content = """
         const progress = ((score - currentLevelScore) / (nextLevelScore - currentLevelScore)) * 100;
         
         document.getElementById('levelProgressBar').style.width = `${progress}%`;
-        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name} (${score - currentLevelScore}/${nextLevelScore - currentLevelScore})`;
+        document.getElementById('levelProgressText').textContent = 
+          translations[currentLanguage].level_progress
+            .replace('{0}', currentLevel.name)
+            .replace('{1}', score - currentLevelScore)
+            .replace('{2}', nextLevelScore - currentLevelScore);
       } else {
         // Если достигнут максимальный уровень
         document.getElementById('levelProgressBar').style.width = '100%';
-        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name}`;
+        document.getElementById('levelProgressText').textContent = 
+          translations[currentLanguage].level_progress
+            .replace('{0}', currentLevel.name)
+            .replace('{1}', score - currentLevel.score)
+            .replace('{2}', 'MAX');
       }
       
       // Обновляем уровень в профиле
@@ -3657,26 +3718,36 @@ html_content = """
       // Показываем уведомление о начале загрузки рекламы
       showNotification('Реклама загружается...');
       
-      // Запускаем таймер на 3 секунды
-      setTimeout(() => {
-        // Увеличиваем счетчик просмотренной рекламы
-        userData.ads_watched = (userData.ads_watched || 0) + 1;
-        console.log('Updated ads_watched locally:', userData.ads_watched);
-        
-        // Обновляем интерфейс
-        checkAdsTask();
-        
-        // Показываем уведомление
-        showNotification(translations[currentLanguage].notification_ad_watched);
-        
-        // Сохраняем данные
-        saveUserData().catch(error => {
-          console.error('Error saving user data after ad watch:', error);
-        });
-        
-        // Разблокируем кнопку
-        adsTaskButton.disabled = false;
-      }, 3000);
+      // Блокируем кнопку на 40 секунд после просмотра
+      let secondsLeft = 40;
+      
+      const countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(countdownInterval);
+          adsTaskButton.disabled = false;
+          adsTaskButton.textContent = userData.ads_watched >= 10 ? 
+            translations[currentLanguage].get_reward : 
+            translations[currentLanguage].start;
+        } else {
+          adsTaskButton.textContent = `${translations[currentLanguage].wait} ${secondsLeft}s`;
+        }
+      }, 1000);
+      
+      // Увеличиваем счетчик просмотренной рекламы
+      userData.ads_watched = (userData.ads_watched || 0) + 1;
+      console.log('Updated ads_watched locally:', userData.ads_watched);
+      
+      // Обновляем интерфейс
+      checkAdsTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].notification_ad_watched);
+      
+      // Сохраняем данные
+      saveUserData().catch(error => {
+        console.error('Error saving user data after ad watch:', error);
+      });
       
       // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
       adsgramAd.show().then(() => {
@@ -3688,8 +3759,11 @@ html_content = """
         showNotification(translations[currentLanguage].notification_ad_error);
         
         // Разблокируем кнопку в случае ошибки
+        clearInterval(countdownInterval);
         adsTaskButton.disabled = false;
-        adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
+        adsTaskButton.textContent = userData.ads_watched >= 10 ? 
+          translations[currentLanguage].get_reward : 
+          translations[currentLanguage].start;
       });
     }
     
@@ -4195,11 +4269,22 @@ html_content = """
     
     // Обновление языка интерфейса
     function updateLanguageUI() {
-      // Обновляем тексты элементов интерфейса
+      // Обновляем язык тела документа
+      document.body.className = currentLanguage === 'en' ? 'en' : '';
+      
+      // Обновляем все элементы с data-i18n
       document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (translations[currentLanguage][key]) {
-          element.textContent = translations[currentLanguage][key];
+          // Для элементов с форматированием
+          if (element.getAttribute('data-i18n-args')) {
+            const args = JSON.parse(element.getAttribute('data-i18n-args'));
+            element.textContent = translations[currentLanguage][key].replace(/{(\d+)}/g, (match, index) => {
+              return args[index] || match;
+            });
+          } else {
+            element.textContent = translations[currentLanguage][key];
+          }
         }
       });
       
@@ -4933,4 +5018,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
