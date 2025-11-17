@@ -45,47 +45,49 @@ if not supabase_url or not supabase_key:
 
 # Определение уровней
 LEVELS = [
-    {"score": 0, "name": "Новичок"},
-    {"score": 100, "name": "Любитель"},
-    {"score": 500, "name": "Профи"},
-    {"score": 2000, "name": "Мастер"},
-    {"score": 5000, "name": "Эксперт по Фембоям"},
-    {"score": 10000, "name": "Фембой"},
-    {"score": 50000, "name": "Фурри-Фембой"},
-    {"score": 200000, "name": "Феликс"},
-    {"score": 500000, "name": "Астольфо"},
-    {"score": 1000000, "name": "Владелец фембоев"},
-    {"score": 5000000, "name": "Император фембоев"},
-    {"score": 10000000, "name": "Бог фембоев"}
+    {"score": 0, "name": "Новичок", "name_en": "Newbie"},
+    {"score": 100, "name": "Любитель", "name_en": "Amateur"},
+    {"score": 500, "name": "Профи", "name_en": "Pro"},
+    {"score": 2000, "name": "Мастер", "name_en": "Master"},
+    {"score": 5000, "name": "Эксперт по Фембоям", "name_en": "Femboy Expert"},
+    {"score": 10000, "name": "Фембой", "name_en": "Femboy"},
+    {"score": 50000, "name": "Фурри-Фембой", "name_en": "Furry Femboy"},
+    {"score": 200000, "name": "Феликс", "name_en": "Felix"},
+    {"score": 500000, "name": "Астольфо", "name_en": "Astolfo"},
+    {"score": 1000000, "name": "Владелец фембоев", "name_en": "Femboy Owner"},
+    {"score": 5000000, "name": "Император фембоев", "name_en": "Emperor of Femboys"},
+    {"score": 10000000, "name": "Бог фембоев", "name_en": "God of Femboys"}
 ]
 
 # Определение улучшений (сбалансированные цены)
 UPGRADES = [
-    {"id": "upgrade1", "description": "+1 за клик", "cost": 5000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
-    {"id": "upgrade2", "description": "+2 за клик", "cost": 25000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
-    {"id": "upgrade3", "description": "+5 за клик", "cost": 100000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
-    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 250000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
-    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 750000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
-    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 2000000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
-    {"id": "upgrade7", "description": "+10 за клик", "cost": 5000000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
-    {"id": "upgrade8", "description": "+15 за клик", "cost": 15000000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
-    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 40000000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
-    {"id": "upgrade10", "description": "+25 за клик", "cost": 100000000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
-    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 250000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "description": "+100 за клик", "cost": 1000000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade1", "description_ru": "+1 за клик", "description_en": "+1 per click", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "description_ru": "+2 за клик", "description_en": "+2 per click", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "description_ru": "+5 за клик", "description_en": "+5 per click", "cost": 15000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "description_ru": "+1 каждые 5 сек", "description_en": "+1 every 5 sec", "cost": 30000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "description_ru": "+10 за клик", "description_en": "+10 per click", "cost": 60000, "effect": {"clickBonus": 10}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "description_ru": "+5 каждые 5 сек", "description_en": "+5 every 5 sec", "cost": 100000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "description_ru": "+25 за клик", "description_en": "+25 per click", "cost": 200000, "effect": {"clickBonus": 25}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "description_ru": "+10 каждые 5 сек", "description_en": "+10 every 5 sec", "cost": 400000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "description_ru": "+50 за клик", "description_en": "+50 per click", "cost": 800000, "effect": {"clickBonus": 50}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "description_ru": "+25 каждые 5 сек", "description_en": "+25 every 5 sec", "cost": 1000000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "description_ru": "+100 за клик", "description_en": "+100 per click", "cost": 1500000, "effect": {"clickBonus": 100}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "description_ru": "+50 каждые 5 сек", "description_en": "+50 every 5 sec", "cost": 2000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade12.png"}
 ]
 
 # Определение заданий
 NORMAL_TASKS = [
     {
         "id": "wallet_task",
-        "title": "Подключить TON кошелек",
+        "title_ru": "Подключить TON кошелек",
+        "title_en": "Connect TON Wallet",
         "reward": 1000,
         "type": "normal"
     },
     {
         "id": "channel_subscription",
-        "title": "Подписка на канал",
+        "title_ru": "Подписка на канал",
+        "title_en": "Subscribe to Channel",
         "reward": 2000,
         "type": "normal"
     }
@@ -94,13 +96,15 @@ NORMAL_TASKS = [
 DAILY_TASKS = [
     {
         "id": "referral_task",
-        "title": "Пригласить 3-х друзей",
+        "title_ru": "Пригласить 3-х друзей",
+        "title_en": "Invite 3 Friends",
         "reward": 5000,
         "type": "daily"
     },
     {
         "id": "ads_task",
-        "title": "Просмотр рекламы",
+        "title_ru": "Просмотр рекламы",
+        "title_en": "Watch Ads",
         "reward": 5000,
         "type": "daily",
         "no_reset": True
@@ -111,29 +115,37 @@ DAILY_TASKS = [
 ACHIEVEMENTS = [
     {
         "id": "first_click",
-        "name": "Первый клик",
-        "description": "Сделайте свой первый клик",
+        "name_ru": "Первый клик",
+        "name_en": "First Click",
+        "description_ru": "Сделайте свой первый клик",
+        "description_en": "Make your first click",
         "reward": 100,
         "condition": {"type": "clicks", "value": 1}
     },
     {
         "id": "click_master",
-        "name": "Мастер кликов",
-        "description": "Сделайте 1000 кликов",
+        "name_ru": "Мастер кликов",
+        "name_en": "Click Master",
+        "description_ru": "Сделайте 1000 кликов",
+        "description_en": "Make 1000 clicks",
         "reward": 5000,
         "condition": {"type": "clicks", "value": 1000}
     },
     {
         "id": "score_1000",
-        "name": "Тысячник",
-        "description": "Наберите 1000 очков",
+        "name_ru": "Тысячник",
+        "name_en": "Thousandaire",
+        "description_ru": "Наберите 1000 очков",
+        "description_en": "Score 1000 points",
         "reward": 1000,
         "condition": {"type": "score", "value": 1000}
     },
     {
         "id": "daily_login",
-        "name": "Ежедневный вход",
-        "description": "Входите в игру 7 дней подряд",
+        "name_ru": "Ежедневный вход",
+        "name_en": "Daily Login",
+        "description_ru": "Входите в игру 7 дней подряд",
+        "description_en": "Log in for 7 days in a row",
         "reward": 3000,
         "condition": {"type": "daily_streak", "value": 7}
     }
@@ -143,8 +155,10 @@ ACHIEVEMENTS = [
 MINIGAMES = [
     {
         "id": "catch_coins",
-        "name": "Поймай монетки",
-        "description": "Ловите падающие монетки!",
+        "name_ru": "Поймай монетки",
+        "name_en": "Catch Coins",
+        "description_ru": "Ловите падающие монетки!",
+        "description_en": "Catch falling coins!",
         "reward": 100,
         "duration": 30
     }
@@ -162,11 +176,11 @@ DAILY_BONUSES = [
 ]
 
 # Функция для определения уровня по очкам
-def get_level_by_score(score: int) -> str:
+def get_level_by_score(score: int) -> Dict[str, Any]:
     for i in range(len(LEVELS) - 1, -1, -1):
         if score >= LEVELS[i]["score"]:
-            return LEVELS[i]["name"]
-    return LEVELS[0]["name"]
+            return LEVELS[i]
+    return LEVELS[0]
 
 # Инициализация Supabase клиента (один раз для всего приложения)
 try:
@@ -276,6 +290,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'last_passive_income_update' not in user_data:
                 user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_passive_income_update value to user data")
+            
+            # Добавляем поле для блокировки рекламы
+            if 'ads_cooldown' not in user_data:
+                user_data['ads_cooldown'] = None
+                logger.info("Added default ads_cooldown value to user data")
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -387,7 +406,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "photo_url": user_data.get('photo_url', ''),
             "score": int(user_data.get('score', 0)),
             "total_clicks": int(user_data.get('total_clicks', 0)),
-            "level": get_level_by_score(int(user_data.get('score', 0))),
+            "level": get_level_by_score(int(user_data.get('score', 0)))['name'],
             "wallet_address": user_data.get('wallet_address', ''),
             "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
             "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
@@ -408,7 +427,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
+            "ads_cooldown": user_data.get('ads_cooldown', None)
         }
         
         def query():
@@ -682,7 +702,11 @@ async def adsgram_reward(request: Request):
         old_count = user_data['ads_watched']
         user_data['ads_watched'] += 1
         
+        # Устанавливаем время блокировки рекламы (40 секунд)
+        user_data['ads_cooldown'] = (datetime.now(timezone.utc) + timedelta(seconds=40)).isoformat()
+        
         logger.info(f"Updated ads_watched for user {user_id}: {old_count} -> {user_data['ads_watched']}")
+        logger.info(f"Set ads cooldown for user {user_id}: {user_data['ads_cooldown']}")
         
         # Сохраняем обновленные данные
         success = save_user(user_data)
@@ -708,9 +732,9 @@ html_content = """
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
     body {
       margin: 0;
@@ -729,18 +753,7 @@ html_content = """
     }
 
     body.en {
-      font-family: 'Comfortaa', cursive;
-    }
-
-    body.en #score,
-    body.en #levelProgressText,
-    body.en #energyText,
-    body.en .task-title,
-    body.en .top-name,
-    body.en .achievement-name,
-    body.en .minigame-name,
-    body.en .bonus-day-number {
-      font-family: 'Comfortaa', cursive;
+      font-family: 'Roboto', sans-serif;
     }
 
     #content {
@@ -2125,7 +2138,7 @@ html_content = """
   <div id="content">
     <!-- Кликер (по умолчанию видим) -->
     <section id="clicker" class="page active" aria-label="Окно кликера">
-      <button id="topButton" data-i18n="top_100_femboys">
+      <button id="topButton" data-i18n="top_title">
         Топ 100 фембоев
         <div class="top-preview" id="topPreview">
           <div class="top-preview-item">Загрузка...</div>
@@ -2143,7 +2156,7 @@ html_content = """
       <!-- Прогресс-бар уровня -->
       <div id="levelProgress">
         <div id="levelProgressBar" style="width: 0%"></div>
-        <div id="levelProgressText" data-i18n="level_progress" data-i18n-args='["Новичок", "0", "100"]'>Уровень: Новичок (0/100)</div>
+        <div id="levelProgressText">Уровень: Новичок (0/100)</div>
       </div>
       
       <!-- Прогресс-бар энергии -->
@@ -2151,7 +2164,7 @@ html_content = """
         <div id="energyBar">
           <div id="energyProgress" style="width: 100%"></div>
         </div>
-        <div id="energyText" data-i18n="energy_text" data-i18n-args='["250", "250"]'>
+        <div id="energyText">
           <span id="energyIcon">⚡</span>
           <span>Энергия: 250/250</span>
         </div>
@@ -2173,12 +2186,12 @@ html_content = """
       </div>
       
       <div class="profile-stats">
-        <p><span data-i18n="collected_coins">Собранные монетки</span>: <span id="profileScore">0</span></p>
-        <p><span data-i18n="femboy_level">Уровень фембоя</span>: <span id="userLevel">Новичок</span></p>
-        <p><span data-i18n="total_clicks">Всего кликов</span>: <span id="totalClicks">0</span></p>
-        <p><span data-i18n="click_bonus">Бонус за клик</span>: <span id="clickBonus">0</span></p>
-        <p><span data-i18n="passive_income">Пассивный доход</span>: <span id="passiveIncomeStat">0</span>/5 сек</p>
-        <p><span data-i18n="achievements_count">Достижений</span>: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
+        <p data-i18n="collected_coins">Собранные монетки: <span id="profileScore">0</span></p>
+        <p data-i18n="femboy_level">Уровень фембоя: <span id="userLevel">Новичок</span></p>
+        <p data-i18n="total_clicks">Всего кликов: <span id="totalClicks">0</span></p>
+        <p data-i18n="click_bonus">Бонус за клик: <span id="clickBonus">0</span></p>
+        <p data-i18n="passive_income">Пассивный доход: <span id="passiveIncomeStat">0</span>/5 сек</p>
+        <p data-i18n="achievements_count">Достижений: <span id="achievementsCount">0</span>/<span id="totalAchievements">0</span></p>
       </div>
       
       <!-- Секция кошелька -->
@@ -2209,9 +2222,9 @@ html_content = """
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>1000 <span data-i18n="coins">монеток</span></span>
+            <span>1000 монеток</span>
           </div>
-          <div id="wallet-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
+          <div id="wallet-task-status" class="task-completed" data-i18n="task_completed" style="display: none;">Задание выполнено</div>
         </div>
         
         <!-- Задание: Подписка на канал -->
@@ -2222,9 +2235,9 @@ html_content = """
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>2000 <span data-i18n="coins">монеток</span></span>
+            <span>2000 монеток</span>
           </div>
-          <div id="channel-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
+          <div id="channel-task-status" class="task-completed" data-i18n="task_completed" style="display: none;">Задание выполнено</div>
         </div>
       </div>
       
@@ -2238,10 +2251,10 @@ html_content = """
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>5000 <span data-i18n="coins">монеток</span></span>
+            <span>5000 монеток</span>
           </div>
-          <div class="task-progress"><span data-i18n="friends_invited">Приглашено друзей</span>: <span id="referral-count-value">0</span>/3</div>
-          <div id="referral-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
+          <div class="task-progress" data-i18n="friends_invited">Приглашено друзей: <span id="referral-count-value">0</span>/3</div>
+          <div id="referral-task-status" class="task-completed" data-i18n="task_completed" style="display: none;">Задание выполнено</div>
           <div id="referral-task-timer" class="task-timer" style="display: none;"></div>
         </div>
         
@@ -2253,10 +2266,10 @@ html_content = """
           </div>
           <div class="task-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>5000 <span data-i18n="coins">монеток</span></span>
+            <span>5000 монеток</span>
           </div>
-          <div class="task-progress"><span data-i18n="watched">Просмотрено</span>: <span id="ads-count-value">0</span>/10</div>
-          <div id="ads-task-status" class="task-completed" style="display: none;" data-i18n="task_completed">Задание выполнено</div>
+          <div class="task-progress" data-i18n="ads_watched">Просмотрено: <span id="ads-count-value">0</span>/10</div>
+          <div id="ads-task-status" class="task-completed" data-i18n="task_completed" style="display: none;">Задание выполнено</div>
         </div>
       </div>
     </section>
@@ -2274,10 +2287,10 @@ html_content = """
         <div class="minigame-item" data-minigame="catch_coins">
           <div class="minigame-icon">🪙</div>
           <div class="minigame-name" data-i18n="catch_coins_name">Поймай монетки</div>
-          <div class="minigame-description" data-i18n="catch_coins_desc">Ловите падающие монетки!</div>
+          <div class="minigame-description" data-i18n="catch_coins_description">Ловите падающие монетки!</div>
           <div class="minigame-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
-            <span>100 <span data-i18n="coins">монеток</span></span>
+            <span>100 монеток</span>
           </div>
           <button class="start-minigame-button" data-i18n="play">Играть</button>
         </div>
@@ -2287,7 +2300,7 @@ html_content = """
     <!-- Окно ежедневных бонусов -->
     <section id="daily" class="page" aria-label="Ежедневные бонусы">
       <h2 data-i18n="daily_bonus_title">Ежедневные бонусы</h2>
-      <div class="daily-bonus-streak"><span data-i18n="current_streak">Текущая серия</span>: <span id="current-streak">0</span> <span data-i18n="days">дней</span></div>
+      <div class="daily-bonus-streak" data-i18n="current_streak">Текущая серия: <span id="current-streak">0</span> дней</div>
       <div id="daily-bonus-calendar"></div>
       <button id="claim-daily-bonus-button" data-i18n="claim_bonus">Получить бонус</button>
     </section>
@@ -2355,26 +2368,25 @@ html_content = """
       </div>
     </div>
     <button id="channel-modal-button" class="task-modal-button" data-i18n="go_to_channel">Перейти к каналу</button>
-    <button id="channel-verify-button" class="task-modal-button-secondary" data-i18n="check_subscription">Проверить подписку</button>
+    <button id="channel-verify-button" class="task-modal-button-secondary" data-i18n="verify_subscription">Проверить подписку</button>
   </div>
 
-<!-- Модальное окно задания с рефералами -->
-<div id="referral-task-modal" class="task-modal">
-  <div class="task-modal-header">
-    <div class="task-modal-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
-    <button class="task-modal-close" id="referral-modal-close">×</button>
-  </div>
-  <div class="task-modal-content">
-    <div class="task-modal-description">
-      Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
-      Задание можно выполнять раз в 24 часа.
+  <!-- Модальное окно задания с рефералами -->
+  <div id="referral-task-modal" class="task-modal">
+    <div class="task-modal-header">
+      <div class="task-modal-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
+      <button class="task-modal-close" id="referral-modal-close">×</button>
     </div>
-    <!-- ИЗМЕНЕНО: возвращаем старое имя бота в ссылке -->
-    <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+    <div class="task-modal-content">
+      <div class="task-modal-description">
+        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
+        Задание можно выполнять раз в 24 часа.
+      </div>
+      <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+    </div>
+    <button id="referral-modal-button" class="task-modal-button" data-i18n="copy_link">Скопировать ссылку</button>
+    <button id="referral-share-button" class="task-modal-button-secondary" data-i18n="share_friends">Переслать друзьям</button>
   </div>
-  <button id="referral-modal-button" class="task-modal-button" data-i18n="copy_link">Скопировать ссылку</button>
-  <button id="referral-share-button" class="task-modal-button-secondary" data-i18n="share_friends">Переслать друзьям</button>
-</div>
 
   <!-- Кнопка улучшений -->
   <button id="upgrades-button" data-i18n="upgrades">
@@ -2396,8 +2408,8 @@ html_content = """
   <!-- Мини-игра "Поймай монетки" -->
   <div id="minigame-catch-coins">
     <div class="minigame-header">
-      <div class="minigame-score"><span data-i18n="score_minigame">Счет</span>: <span id="minigame-score">0</span></div>
-      <div class="minigame-timer"><span data-i18n="time">Время</span>: <span id="minigame-timer">30</span></div>
+      <div class="minigame-score" data-i18n="score">Счет: <span id="minigame-score">0</span></div>
+      <div class="minigame-timer" data-i18n="time">Время: <span id="minigame-timer">30</span></div>
       <button class="minigame-close" id="minigame-close">×</button>
     </div>
     <div class="minigame-area" id="minigame-area"></div>
@@ -2426,58 +2438,58 @@ html_content = """
   <script>
     // Уровни игры
     const LEVELS = [
-      {score: 0, name: "Новичок"},
-      {score: 100, name: "Любитель"},
-      {score: 500, name: "Профи"},
-      {score: 2000, name: "Мастер"},
-      {score: 5000, name: "Эксперт по Фембоям"},
-      {score: 10000, name: "Фембой"},
-      {score: 50000, name: "Фурри-Фембой"},
-      {score: 200000, name: "Феликс"},
-      {score: 500000, name: "Астольфо"},
-      {score: 1000000, name: "Владелец фембоев"},
-      {score: 5000000, name: "Император фембоев"},
-      {score: 10000000, name: "Бог фембоев"}
+      {score: 0, name: "Новичок", name_en: "Newbie"},
+      {score: 100, name: "Любитель", name_en: "Amateur"},
+      {score: 500, name: "Профи", name_en: "Pro"},
+      {score: 2000, name: "Мастер", name_en: "Master"},
+      {score: 5000, name: "Эксперт по Фембоям", name_en: "Femboy Expert"},
+      {score: 10000, name: "Фембой", name_en: "Femboy"},
+      {score: 50000, name: "Фурри-Фембой", name_en: "Furry Femboy"},
+      {score: 200000, name: "Феликс", name_en: "Felix"},
+      {score: 500000, name: "Астольфо", name_en: "Astolfo"},
+      {score: 1000000, name: "Владелец фембоев", name_en: "Femboy Owner"},
+      {score: 5000000, name: "Император фембоев", name_en: "Emperor of Femboys"},
+      {score: 10000000, name: "Бог фембоев", name_en: "God of Femboys"}
     ];
     
     // Улучшения игры (сбалансированные цены)
     const UPGRADES = [
-      {id: "upgrade1", description: "+1 за клик", cost: 5000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
-      {id: "upgrade2", description: "+2 за клик", cost: 25000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
-      {id: "upgrade3", description: "+5 за клик", cost: 100000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
-      {id: "upgrade4", description: "+1 каждые 5 сек", cost: 250000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
-      {id: "upgrade5", description: "+5 каждые 5 сек", cost: 750000, effect: {passiveIncome: 5}, image: "/static/upgrade5.png"},
-      {id: "upgrade6", description: "+10 каждые 5 сек", cost: 2000000, effect: {passiveIncome: 10}, image: "/static/upgrade6.png"},
-      {id: "upgrade7", description: "+10 за клик", cost: 5000000, effect: {clickBonus: 10}, image: "/static/upgrade7.png"},
-      {id: "upgrade8", description: "+15 за клик", cost: 15000000, effect: {clickBonus: 15}, image: "/static/upgrade8.png"},
-      {id: "upgrade9", description: "+25 каждые 5 сек", cost: 40000000, effect: {passiveIncome: 25}, image: "/static/upgrade9.png"},
-      {id: "upgrade10", description: "+25 за клик", cost: 100000000, effect: {clickBonus: 25}, image: "/static/upgrade10.png"},
-      {id: "upgrade11", description: "+50 каждые 5 сек", cost: 250000000, effect: {passiveIncome: 50}, image: "/static/upgrade11.png"},
-      {id: "upgrade12", description: "+100 за клик", cost: 1000000000, effect: {clickBonus: 100}, image: "/static/upgrade12.png"}
+      {id: "upgrade1", description_ru: "+1 за клик", description_en: "+1 per click", cost: 1000, effect: {clickBonus: 1}, image: "/static/upgrade1.png"},
+      {id: "upgrade2", description_ru: "+2 за клик", description_en: "+2 per click", cost: 5000, effect: {clickBonus: 2}, image: "/static/upgrade2.png"},
+      {id: "upgrade3", description_ru: "+5 за клик", description_en: "+5 per click", cost: 15000, effect: {clickBonus: 5}, image: "/static/upgrade3.png"},
+      {id: "upgrade4", description_ru: "+1 каждые 5 сек", description_en: "+1 every 5 sec", cost: 30000, effect: {passiveIncome: 1}, image: "/static/upgrade4.png"},
+      {id: "upgrade5", description_ru: "+10 за клик", description_en: "+10 per click", cost: 60000, effect: {clickBonus: 10}, image: "/static/upgrade5.png"},
+      {id: "upgrade6", description_ru: "+5 каждые 5 сек", description_en: "+5 every 5 sec", cost: 100000, effect: {passiveIncome: 5}, image: "/static/upgrade6.png"},
+      {id: "upgrade7", description_ru: "+25 за клик", description_en: "+25 per click", cost: 200000, effect: {clickBonus: 25}, image: "/static/upgrade7.png"},
+      {id: "upgrade8", description_ru: "+10 каждые 5 сек", description_en: "+10 every 5 sec", cost: 400000, effect: {passiveIncome: 10}, image: "/static/upgrade8.png"},
+      {id: "upgrade9", description_ru: "+50 за клик", description_en: "+50 per click", cost: 800000, effect: {clickBonus: 50}, image: "/static/upgrade9.png"},
+      {id: "upgrade10", description_ru: "+25 каждые 5 сек", description_en: "+25 every 5 sec", cost: 1000000, effect: {passiveIncome: 25}, image: "/static/upgrade10.png"},
+      {id: "upgrade11", description_ru: "+100 за клик", description_en: "+100 per click", cost: 1500000, effect: {clickBonus: 100}, image: "/static/upgrade11.png"},
+      {id: "upgrade12", description_ru: "+50 каждые 5 сек", description_en: "+50 every 5 sec", cost: 2000000, effect: {passiveIncome: 50}, image: "/static/upgrade12.png"}
     ];
     
     // Задания игры
     const NORMAL_TASKS = [
-      {id: "wallet_task", title: "Подключить TON кошелек", reward: 1000, type: "normal"},
-      {id: "channel_subscription", title: "Подписка на канал", reward: 2000, type: "normal"}
+      {id: "wallet_task", title_ru: "Подключить TON кошелек", title_en: "Connect TON Wallet", reward: 1000, type: "normal"},
+      {id: "channel_subscription", title_ru: "Подписка на канал", title_en: "Subscribe to Channel", reward: 2000, type: "normal"}
     ];
     
     const DAILY_TASKS = [
-      {id: "referral_task", title: "Пригласить 3-х друзей", reward: 5000, type: "daily"},
-      {id: "ads_task", title: "Просмотр рекламы", reward: 5000, type: "daily", no_reset: true}
+      {id: "referral_task", title_ru: "Пригласить 3-х друзей", title_en: "Invite 3 Friends", reward: 5000, type: "daily"},
+      {id: "ads_task", title_ru: "Просмотр рекламы", title_en: "Watch Ads", reward: 5000, type: "daily", no_reset: true}
     ];
     
     // Достижения игры
     const ACHIEVEMENTS = [
-      {id: "first_click", name: "Первый клик", description: "Сделайте свой первый клик", reward: 100, condition: {type: "clicks", value: 1}},
-      {id: "click_master", name: "Мастер кликов", description: "Сделайте 1000 кликов", reward: 5000, condition: {type: "clicks", value: 1000}},
-      {id: "score_1000", name: "Тысячник", description: "Наберите 1000 очков", reward: 1000, condition: {type: "score", value: 1000}},
-      {id: "daily_login", name: "Ежедневный вход", description: "Входите в игру 7 дней подряд", reward: 3000, condition: {type: "daily_streak", value: 7}}
+      {id: "first_click", name_ru: "Первый клик", name_en: "First Click", description_ru: "Сделайте свой первый клик", description_en: "Make your first click", reward: 100, condition: {type: "clicks", value: 1}},
+      {id: "click_master", name_ru: "Мастер кликов", name_en: "Click Master", description_ru: "Сделайте 1000 кликов", description_en: "Make 1000 clicks", reward: 5000, condition: {type: "clicks", value: 1000}},
+      {id: "score_1000", name_ru: "Тысячник", name_en: "Thousandaire", description_ru: "Наберите 1000 очков", description_en: "Score 1000 points", reward: 1000, condition: {type: "score", value: 1000}},
+      {id: "daily_login", name_ru: "Ежедневный вход", name_en: "Daily Login", description_ru: "Входите в игру 7 дней подряд", description_en: "Log in for 7 days in a row", reward: 3000, condition: {type: "daily_streak", value: 7}}
     ];
     
     // Мини-игры
     const MINIGAMES = [
-      {id: "catch_coins", name: "Поймай монетки", description: "Ловите падающие монетки!", reward: 100, duration: 30}
+      {id: "catch_coins", name_ru: "Поймай монетки", name_en: "Catch Coins", description_ru: "Ловите падающие монетки!", description_en: "Catch falling coins!", reward: 100, duration: 30}
     ];
     
     // Ежедневные бонусы
@@ -2563,25 +2575,16 @@ html_content = """
         "notification_referral": "Вы были приглашены по реферальной ссылке!",
         "notification_task_cooldown": "Задание можно выполнять раз в 24 часа",
         "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
-        "top_100_femboys": "Топ 100 фембоев",
-        "level_progress": "Уровень: {0} ({1}/{2})",
-        "energy_text": "Энергия: {0}/{1}",
-        "per_click": "за клик",
-        "every_5_sec": "каждые 5 сек",
-        "current_streak": "Текущая серия",
-        "time": "Время",
-        "score_minigame": "Счет",
-        "friends_invited": "Приглашено друзей",
-        "task_completed": "Задание выполнено",
-        "watched": "Просмотрено",
+        "day": "день",
         "coins": "монеток",
-        "wait": "Ожидание",
-        "catch_coins_name": "Поймай монетки",
-        "catch_coins_desc": "Ловите падающие монетки!",
+        "time": "Время",
+        "score": "Счет",
         "game_over": "Игра окончена!",
         "coins_caught": "Вы поймали {0} монеток",
         "go_to_channel": "Перейти к каналу",
-        "check_subscription": "Проверить подписку"
+        "verify_subscription": "Проверить подписку",
+        "catch_coins_name": "Поймай монетки",
+        "catch_coins_description": "Ловите падающие монетки!"
       },
       en: {
         "score": "Score",
@@ -2608,7 +2611,7 @@ html_content = """
         "femboy_level": "Femboy level",
         "total_clicks": "Total clicks",
         "click_bonus": "Click bonus",
-                "passive_income": "Passive income",
+        "passive_income": "Passive income",
         "achievements_count": "Achievements",
         "top_title": "Top 100 femboys",
         "back": "← Back",
@@ -2653,25 +2656,16 @@ html_content = """
         "notification_referral": "You were invited by a referral link!",
         "notification_task_cooldown": "Task can be completed once every 24 hours",
         "notification_minigame_reward": "Minigame reward: {0} coins",
-        "top_100_femboys": "Top 100 femboys",
-        "level_progress": "Level: {0} ({1}/{2})",
-        "energy_text": "Energy: {0}/{1}",
-        "per_click": "per click",
-        "every_5_sec": "every 5 sec",
-        "current_streak": "Current streak",
-        "time": "Time",
-        "score_minigame": "Score",
-        "friends_invited": "Friends invited",
-        "task_completed": "Task completed",
-        "watched": "Watched",
+        "day": "Day",
         "coins": "coins",
-        "wait": "Wait",
-        "catch_coins_name": "Catch coins",
-        "catch_coins_desc": "Catch falling coins!",
-        "game_over": "Game over!",
+        "time": "Time",
+        "score": "Score",
+        "game_over": "Game Over!",
         "coins_caught": "You caught {0} coins",
-        "go_to_channel": "Go to channel",
-        "check_subscription": "Check subscription"
+        "go_to_channel": "Go to Channel",
+        "verify_subscription": "Verify Subscription",
+        "catch_coins_name": "Catch Coins",
+        "catch_coins_description": "Catch falling coins!"
       }
     };
     
@@ -2728,7 +2722,8 @@ html_content = """
       skins: [],
       active_skin: 'default',
       auto_clickers: 0,
-      language: 'ru'
+      language: 'ru',
+      ads_cooldown: null
     };
     
     // Максимальное количество энергии
@@ -2942,6 +2937,9 @@ html_content = """
             if (!userData.language) {
               userData.language = 'ru';
             }
+            if (!userData.ads_cooldown) {
+              userData.ads_cooldown = null;
+            }
             
             // Устанавливаем текущий язык
             currentLanguage = userData.language;
@@ -3016,7 +3014,8 @@ html_content = """
           skins: [],
           active_skin: 'default',
           auto_clickers: 0,
-          language: 'ru'
+          language: 'ru',
+          ads_cooldown: null
         };
         
         // Сохраняем нового пользователя на сервере
@@ -3083,6 +3082,7 @@ html_content = """
             const oldActiveSkin = userData.active_skin;
             const oldAutoClickers = userData.auto_clickers;
             const oldLanguage = userData.language;
+            const oldAdsCooldown = userData.ads_cooldown;
             
             userData = data.user;
             
@@ -3104,6 +3104,7 @@ html_content = """
             userData.active_skin = oldActiveSkin;
             userData.auto_clickers = oldAutoClickers;
             userData.language = oldLanguage;
+            userData.ads_cooldown = oldAdsCooldown;
             
             console.log('User data saved successfully');
             return true;
@@ -3376,19 +3377,11 @@ html_content = """
         const progress = ((score - currentLevelScore) / (nextLevelScore - currentLevelScore)) * 100;
         
         document.getElementById('levelProgressBar').style.width = `${progress}%`;
-        document.getElementById('levelProgressText').textContent = 
-          translations[currentLanguage].level_progress
-            .replace('{0}', currentLevel.name)
-            .replace('{1}', score - currentLevelScore)
-            .replace('{2}', nextLevelScore - currentLevelScore);
+        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name} (${score - currentLevelScore}/${nextLevelScore - currentLevelScore})`;
       } else {
         // Если достигнут максимальный уровень
         document.getElementById('levelProgressBar').style.width = '100%';
-        document.getElementById('levelProgressText').textContent = 
-          translations[currentLanguage].level_progress
-            .replace('{0}', currentLevel.name)
-            .replace('{1}', score - currentLevel.score)
-            .replace('{2}', 'MAX');
+        document.getElementById('levelProgressText').textContent = `${translations[currentLanguage].level}: ${currentLevel.name}`;
       }
       
       // Обновляем уровень в профиле
@@ -3543,8 +3536,23 @@ html_content = """
         console.log('Updated ads count display:', userData.ads_watched);
       }
       
-      // Задание без отката, всегда доступно
-      if (userData.ads_watched >= 10) {
+      // Проверяем, не истек ли кулдаун
+      const now = new Date();
+      const cooldownEnd = userData.ads_cooldown ? new Date(userData.ads_cooldown) : null;
+      
+      if (cooldownEnd && now < cooldownEnd) {
+        // Кнопка заблокирована из-за кулдауна
+        const adsTaskButton = document.getElementById('ads-task-button');
+        if (adsTaskButton) {
+          adsTaskButton.disabled = true;
+          adsTaskButton.textContent = `Осталось: ${Math.ceil((cooldownEnd - now) / 1000)}с`;
+          adsTaskButton.style.display = 'block';
+        }
+        const adsTaskStatus = document.getElementById('ads-task-status');
+        if (adsTaskStatus) {
+          adsTaskStatus.style.display = 'none';
+        }
+      } else if (userData.ads_watched >= 10) {
         // Задание доступно для получения награды
         const adsTaskButton = document.getElementById('ads-task-button');
         if (adsTaskButton) {
@@ -3710,6 +3718,16 @@ html_content = """
         return;
       }
       
+      // Проверяем кулдаун
+      const now = new Date();
+      const cooldownEnd = userData.ads_cooldown ? new Date(userData.ads_cooldown) : null;
+      
+      if (cooldownEnd && now < cooldownEnd) {
+        const remainingSeconds = Math.ceil((cooldownEnd - now) / 1000);
+        showNotification(`Подождите еще ${remainingSeconds} секунд`);
+        return;
+      }
+      
       // Блокируем кнопку просмотра рекламы на время показа
       const adsTaskButton = document.getElementById('ads-task-button');
       adsTaskButton.disabled = true;
@@ -3718,36 +3736,29 @@ html_content = """
       // Показываем уведомление о начале загрузки рекламы
       showNotification('Реклама загружается...');
       
-      // Блокируем кнопку на 40 секунд после просмотра
-      let secondsLeft = 40;
-      
-      const countdownInterval = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft <= 0) {
-          clearInterval(countdownInterval);
-          adsTaskButton.disabled = false;
-          adsTaskButton.textContent = userData.ads_watched >= 10 ? 
-            translations[currentLanguage].get_reward : 
-            translations[currentLanguage].start;
-        } else {
-          adsTaskButton.textContent = `${translations[currentLanguage].wait} ${secondsLeft}s`;
-        }
-      }, 1000);
-      
-      // Увеличиваем счетчик просмотренной рекламы
-      userData.ads_watched = (userData.ads_watched || 0) + 1;
-      console.log('Updated ads_watched locally:', userData.ads_watched);
-      
-      // Обновляем интерфейс
-      checkAdsTask();
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].notification_ad_watched);
-      
-      // Сохраняем данные
-      saveUserData().catch(error => {
-        console.error('Error saving user data after ad watch:', error);
-      });
+      // Запускаем таймер на 3 секунды
+      setTimeout(() => {
+        // Увеличиваем счетчик просмотренной рекламы
+        userData.ads_watched = (userData.ads_watched || 0) + 1;
+        console.log('Updated ads_watched locally:', userData.ads_watched);
+        
+        // Устанавливаем время блокировки рекламы (40 секунд)
+        userData.ads_cooldown = (new Date()).toISOString();
+        
+        // Обновляем интерфейс
+        checkAdsTask();
+        
+        // Показываем уведомление
+        showNotification(translations[currentLanguage].notification_ad_watched);
+        
+        // Сохраняем данные
+        saveUserData().catch(error => {
+          console.error('Error saving user data after ad watch:', error);
+        });
+        
+        // Разблокируем кнопку
+        adsTaskButton.disabled = false;
+      }, 3000);
       
       // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
       adsgramAd.show().then(() => {
@@ -3759,11 +3770,8 @@ html_content = """
         showNotification(translations[currentLanguage].notification_ad_error);
         
         // Разблокируем кнопку в случае ошибки
-        clearInterval(countdownInterval);
         adsTaskButton.disabled = false;
-        adsTaskButton.textContent = userData.ads_watched >= 10 ? 
-          translations[currentLanguage].get_reward : 
-          translations[currentLanguage].start;
+        adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
       });
     }
     
@@ -3943,9 +3951,12 @@ html_content = """
         const upgradeElement = document.createElement('div');
         upgradeElement.className = `upgrade-item ${isPurchased ? 'purchased' : ''}`;
         
+        // Используем правильный язык для описания
+        const description = currentLanguage === 'en' ? upgrade.description_en : upgrade.description_ru;
+        
         upgradeElement.innerHTML = `
           <div class="upgrade-image" style="background-image: url('${upgrade.image}')"></div>
-          <div class="upgrade-description">${upgrade.description}</div>
+          <div class="upgrade-description">${description}</div>
           <div class="upgrade-cost">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${upgrade.cost}</span>
@@ -4116,10 +4127,14 @@ html_content = """
           progress = `${progressValue}/${achievement.condition.value}`;
         }
         
+        // Используем правильный язык для названий и описаний
+        const name = currentLanguage === 'en' ? achievement.name_en : achievement.name_ru;
+        const description = currentLanguage === 'en' ? achievement.description_en : achievement.description_ru;
+        
         achievementElement.innerHTML = `
           <div class="achievement-icon">${isUnlocked ? '🏆' : '🔒'}</div>
-          <div class="achievement-name">${achievement.name}</div>
-          <div class="achievement-description">${achievement.description}</div>
+          <div class="achievement-name">${name}</div>
+          <div class="achievement-description">${description}</div>
           <div class="achievement-reward">
             <img src="/static/FemboyCoinsPink.png" alt="монетки">
             <span>${achievement.reward}</span>
@@ -4166,7 +4181,8 @@ html_content = """
           updateAchievements();
           
           // Показываем уведомление
-          showNotification(translations[currentLanguage].notification_achievement.replace('{0}', achievement.name));
+          const name = currentLanguage === 'en' ? achievement.name_en : achievement.name_ru;
+          showNotification(translations[currentLanguage].notification_achievement.replace('{0}', name));
         }
       });
     }
@@ -4270,21 +4286,18 @@ html_content = """
     // Обновление языка интерфейса
     function updateLanguageUI() {
       // Обновляем язык тела документа
-      document.body.className = currentLanguage === 'en' ? 'en' : '';
+      document.body.lang = currentLanguage;
+      if (currentLanguage === 'en') {
+        document.body.classList.add('en');
+      } else {
+        document.body.classList.remove('en');
+      }
       
-      // Обновляем все элементы с data-i18n
+      // Обновляем тексты элементов с атрибутом data-i18n
       document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         if (translations[currentLanguage][key]) {
-          // Для элементов с форматированием
-          if (element.getAttribute('data-i18n-args')) {
-            const args = JSON.parse(element.getAttribute('data-i18n-args'));
-            element.textContent = translations[currentLanguage][key].replace(/{(\d+)}/g, (match, index) => {
-              return args[index] || match;
-            });
-          } else {
-            element.textContent = translations[currentLanguage][key];
-          }
+          element.textContent = translations[currentLanguage][key];
         }
       });
       
@@ -4339,6 +4352,9 @@ html_content = """
       updateScoreDisplay();
       updateEnergyDisplay();
       updateLevel();
+      updateAchievements();
+      updateDailyBonus();
+      renderUpgrades();
     }
     
     // Функции для мини-игры "Поймай монетки"
@@ -4870,7 +4886,8 @@ async def get_user_data(user_id: str):
                 "active_skin": user_data["active_skin"],
                 "auto_clickers": user_data["auto_clickers"],
                 "language": user_data["language"],
-                "last_passive_income_update": user_data["last_passive_income_update"]
+                "last_passive_income_update": user_data["last_passive_income_update"],
+                "ads_cooldown": user_data["ads_cooldown"]
             }
             
             logger.info(f"Returning user data for {user_data['first_name']}")
@@ -4924,7 +4941,8 @@ async def save_user_data(request: Request):
                     "active_skin": user_data["active_skin"],
                     "auto_clickers": user_data["auto_clickers"],
                     "language": user_data["language"],
-                    "last_passive_income_update": user_data["last_passive_income_update"]
+                    "last_passive_income_update": user_data["last_passive_income_update"],
+                    "ads_cooldown": user_data["ads_cooldown"]
                 }
                 
                 logger.info(f"User saved successfully: {user_data['first_name']}")
