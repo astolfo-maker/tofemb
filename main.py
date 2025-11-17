@@ -277,11 +277,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_passive_income_update value to user data")
             
-            # Добавляем поле для времени последнего просмотра рекламы
-            if 'last_ad_time' not in user_data:
-                user_data['last_ad_time'] = 0
-                logger.info("Added default last_ad_time value to user data")
-            
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
             
@@ -413,8 +408,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
-            "last_ad_time": int(user_data.get('last_ad_time', 0))
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
         }
         
         def query():
@@ -687,9 +681,6 @@ async def adsgram_reward(request: Request):
         
         old_count = user_data['ads_watched']
         user_data['ads_watched'] += 1
-        
-        # Обновляем время последнего просмотра рекламы
-        user_data['last_ad_time'] = int(time.time())
         
         logger.info(f"Updated ads_watched for user {user_id}: {old_count} -> {user_data['ads_watched']}")
         
@@ -2704,7 +2695,6 @@ html_content = """
       last_energy_update: new Date().toISOString(),
       upgrades: [],
       ads_watched: 0,
-      last_ad_time: 0,
       achievements: [],
       daily_bonus: {
         last_claim: null,
@@ -2904,9 +2894,6 @@ html_content = """
             if (!userData.ads_watched) {
               userData.ads_watched = 0;
             }
-            if (!userData.last_ad_time) {
-              userData.last_ad_time = 0;
-            }
             if (!userData.achievements) {
               userData.achievements = [];
             }
@@ -2996,7 +2983,6 @@ html_content = """
           last_energy_update: new Date().toISOString(),
           upgrades: [],
           ads_watched: 0,
-          last_ad_time: 0,
           achievements: [],
           daily_bonus: {
             last_claim: null,
@@ -3067,7 +3053,6 @@ html_content = """
             const oldLastEnergyUpdate = userData.last_energy_update;
             const oldUpgrades = userData.upgrades;
             const oldAdsWatched = userData.ads_watched;
-            const oldLastAdTime = userData.last_ad_time;
             const oldAchievements = userData.achievements;
             const oldDailyBonus = userData.daily_bonus;
             const oldActiveBoosts = userData.active_boosts;
@@ -3089,7 +3074,6 @@ html_content = """
             userData.last_energy_update = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
             userData.ads_watched = oldAdsWatched;
-            userData.last_ad_time = oldLastAdTime;
             userData.achievements = oldAchievements;
             userData.daily_bonus = oldDailyBonus;
             userData.active_boosts = oldActiveBoosts;
@@ -3533,7 +3517,7 @@ html_content = """
       
       // Проверяем, не прошло ли 40 секунд с последнего просмотра рекламы
       const currentTime = Math.floor(Date.now() / 1000);
-      const timeSinceLastAd = currentTime - userData.last_ad_time;
+      const timeSinceLastAd = currentTime - (userData.lastAdTime || 0);
       const adButton = document.getElementById('ads-task-button');
       
       if (timeSinceLastAd < 40) {
@@ -3715,7 +3699,7 @@ html_content = """
       setTimeout(() => {
         // Увеличиваем счетчик просмотренной рекламы
         userData.ads_watched = (userData.ads_watched || 0) + 1;
-        userData.last_ad_time = Math.floor(Date.now() / 1000);
+        userData.lastAdTime = Math.floor(Date.now() / 1000);
         console.log('Updated ads_watched locally:', userData.ads_watched);
         
         // Обновляем интерфейс
@@ -4245,6 +4229,7 @@ html_content = """
             updateDailyBonus();
             
             // Показываем уведомление
+                        // Показываем уведомление
             showNotification(translations[currentLanguage].notification_bonus.replace('{0}', data.reward));
           } else {
             showNotification(data.message || 'Ошибка при получении бонуса');
@@ -5059,3 +5044,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
