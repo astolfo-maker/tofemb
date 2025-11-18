@@ -13,6 +13,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import re
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -229,6 +230,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
+            # Добавляем поле для последнего просмотра рекламы, если его нет
+            if 'last_ad_time' not in user_data:
+                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
+                logger.info("Added default last_ad_time value to user data")
+            
             # Добавляем поле для задания подписки на канал, если его нет
             if 'channel_task_completed' not in user_data:
                 user_data['channel_task_completed'] = False
@@ -369,6 +375,24 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error loading user: {e}")
         return None
 
+# Функция для преобразования camelCase в snake_case
+def camel_to_snake(name):
+    name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+# Функция для преобразования ключей словаря из camelCase в snake_case
+def convert_keys_to_snake_case(data):
+    if isinstance(data, dict):
+        new_dict = {}
+        for key, value in data.items():
+            new_key = camel_to_snake(key)
+            new_dict[new_key] = convert_keys_to_snake_case(value)
+        return new_dict
+    elif isinstance(data, list):
+        return [convert_keys_to_snake_case(item) for item in data]
+    else:
+        return data
+
 # Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     if supabase is None:
@@ -377,6 +401,10 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
+        
+        # Преобразуем ключи из camelCase в snake_case, если необходимо
+        if any(key[0].islower() and any(c.isupper() for c in key) for key in user_data.keys()):
+            user_data = convert_keys_to_snake_case(user_data)
         
         # Подготовка данных для вставки/обновления
         db_data = {
@@ -408,7 +436,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
+            "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
         }
         
         def query():
@@ -681,6 +710,9 @@ async def adsgram_reward(request: Request):
         
         old_count = user_data['ads_watched']
         user_data['ads_watched'] += 1
+        
+        # Обновляем время последнего просмотра рекламы
+        user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
         
         logger.info(f"Updated ads_watched for user {user_id}: {old_count} -> {user_data['ads_watched']}")
         
@@ -2347,23 +2379,23 @@ html_content = """
     <button id="channel-verify-button" class="task-modal-button-secondary" data-i18n="verify_subscription">Проверить подписку</button>
   </div>
 
-<!-- Модальное окно задания с рефералами -->
-<div id="referral-task-modal" class="task-modal">
-  <div class="task-modal-header">
-    <div class="task-modal-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
-    <button class="task-modal-close" id="referral-modal-close">×</button>
-  </div>
-  <div class="task-modal-content">
-    <div class="task-modal-description">
-      Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
-      Задание можно выполнять раз в 24 часа.
+  <!-- Модальное окно задания с рефералами -->
+  <div id="referral-task-modal" class="task-modal">
+    <div class="task-modal-header">
+      <div class="task-modal-title" data-i18n="invite_friends">Пригласить 3-х друзей</div>
+      <button class="task-modal-close" id="referral-modal-close">×</button>
     </div>
-    <!-- ИЗМЕНЕНО: возвращаем старое имя бота в ссылке -->
-    <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+    <div class="task-modal-content">
+      <div class="task-modal-description">
+        Отправьте эту ссылку 3 друзьям, чтобы получить 5000 монеток. 
+        Задание можно выполнять раз в 24 часа.
+      </div>
+      <!-- ИЗМЕНЕНО: возвращаем старое имя бота в ссылке -->
+      <div class="referral-link" id="referral-link">https://t.me/Fnmby_bot?startapp=123456</div>
+    </div>
+    <button id="referral-modal-button" class="task-modal-button" data-i18n="copy_link">Скопировать ссылку</button>
+    <button id="referral-share-button" class="task-modal-button-secondary" data-i18n="share_friends">Переслать друзьям</button>
   </div>
-  <button id="referral-modal-button" class="task-modal-button" data-i18n="copy_link">Скопировать ссылку</button>
-  <button id="referral-share-button" class="task-modal-button-secondary" data-i18n="share_friends">Переслать друзьям</button>
-</div>
 
   <!-- Кнопка улучшений -->
   <button id="upgrades-button" data-i18n="upgrades">
@@ -2552,7 +2584,7 @@ html_content = """
         "notification_ad_error": "Ошибка при показе рекламы",
         "notification_referral": "Вы были приглашены по реферальной ссылке!",
         "notification_task_cooldown": "Задание можно выполнять раз в 24 часа",
-                "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
+        "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
         "go_to_channel": "Перейти к каналу",
         "verify_subscription": "Проверить подписку",
         "catch_coins_name": "Поймай монетки",
@@ -2695,6 +2727,7 @@ html_content = """
       last_energy_update: new Date().toISOString(),
       upgrades: [],
       ads_watched: 0,
+      last_ad_time: new Date().toISOString(),
       achievements: [],
       daily_bonus: {
         last_claim: null,
@@ -2894,6 +2927,9 @@ html_content = """
             if (!userData.ads_watched) {
               userData.ads_watched = 0;
             }
+            if (!userData.last_ad_time) {
+              userData.last_ad_time = new Date().toISOString();
+            }
             if (!userData.achievements) {
               userData.achievements = [];
             }
@@ -2983,6 +3019,7 @@ html_content = """
           last_energy_update: new Date().toISOString(),
           upgrades: [],
           ads_watched: 0,
+          last_ad_time: new Date().toISOString(),
           achievements: [],
           daily_bonus: {
             last_claim: null,
@@ -3053,6 +3090,7 @@ html_content = """
             const oldLastEnergyUpdate = userData.last_energy_update;
             const oldUpgrades = userData.upgrades;
             const oldAdsWatched = userData.ads_watched;
+            const oldLastAdTime = userData.last_ad_time;
             const oldAchievements = userData.achievements;
             const oldDailyBonus = userData.daily_bonus;
             const oldActiveBoosts = userData.active_boosts;
@@ -3074,6 +3112,7 @@ html_content = """
             userData.last_energy_update = oldLastEnergyUpdate;
             userData.upgrades = oldUpgrades;
             userData.ads_watched = oldAdsWatched;
+            userData.last_ad_time = oldLastAdTime;
             userData.achievements = oldAchievements;
             userData.daily_bonus = oldDailyBonus;
             userData.active_boosts = oldActiveBoosts;
@@ -3508,6 +3547,11 @@ html_content = """
         userData.ads_watched = 0;
       }
       
+      // Убедимся, что last_ad_time существует
+      if (typeof userData.last_ad_time === 'undefined') {
+        userData.last_ad_time = new Date().toISOString();
+      }
+      
       // Обновляем счетчик просмотренной рекламы
       const adsCountElement = document.getElementById('ads-count-value');
       if (adsCountElement) {
@@ -3517,7 +3561,7 @@ html_content = """
       
       // Проверяем, не прошло ли 40 секунд с последнего просмотра рекламы
       const currentTime = Math.floor(Date.now() / 1000);
-      const timeSinceLastAd = currentTime - (userData.lastAdTime || 0);
+      const timeSinceLastAd = currentTime - (Math.floor(new Date(userData.last_ad_time).getTime() / 1000) || 0);
       const adButton = document.getElementById('ads-task-button');
       
       if (timeSinceLastAd < 40) {
@@ -3699,7 +3743,7 @@ html_content = """
       setTimeout(() => {
         // Увеличиваем счетчик просмотренной рекламы
         userData.ads_watched = (userData.ads_watched || 0) + 1;
-        userData.lastAdTime = Math.floor(Date.now() / 1000);
+        userData.last_ad_time = new Date().toISOString();
         console.log('Updated ads_watched locally:', userData.ads_watched);
         
         // Обновляем интерфейс
@@ -4228,7 +4272,7 @@ html_content = """
             updateLevel();
             updateDailyBonus();
             
-                        // Показываем уведомление
+            // Показываем уведомление
             showNotification(translations[currentLanguage].notification_bonus.replace('{0}', data.reward));
           } else {
             showNotification(data.message || 'Ошибка при получении бонуса');
@@ -4706,7 +4750,7 @@ html_content = """
         }
       });
       
-      // Обработчик для затемнения фона
+            // Обработчик для затемнения фона
       document.getElementById('task-modal-overlay').addEventListener('click', function() {
         closeWalletTaskModal();
         closeChannelTaskModal();
