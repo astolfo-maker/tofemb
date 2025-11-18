@@ -5146,8 +5146,3 @@ if __name__ == "__main__":
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-
-function initTonConnect()
-def get_top_users
-async function updateTopData()
-async function loadTop
