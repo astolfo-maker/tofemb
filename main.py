@@ -46,34 +46,34 @@ if not supabase_url or not supabase_key:
 
 # Определение уровней
 LEVELS = [
-    {"score": 0, "name": "Новичок"},
-    {"score": 100, "name": "Любитель"},
-    {"score": 500, "name": "Профи"},
-    {"score": 2000, "name": "Мастер"},
-    {"score": 5000, "name": "Эксперт по Фембоям"},
-    {"score": 10000, "name": "Фембой"},
-    {"score": 50000, "name": "Фурри-Фембой"},
-    {"score": 200000, "name": "Феликс"},
-    {"score": 500000, "name": "Астольфо"},
-    {"score": 1000000, "name": "Владелец фембоев"},
-    {"score": 5000000, "name": "Император фембоев"},
-    {"score": 10000000, "name": "Бог фембоев"}
+    {"score": 0, "name": "Новичок", "name_en": "Newbie"},
+    {"score": 100, "name": "Любитель", "name_en": "Amateur"},
+    {"score": 500, "name": "Профи", "name_en": "Pro"},
+    {"score": 2000, "name": "Мастер", "name_en": "Master"},
+    {"score": 5000, "name": "Эксперт по Фембоям", "name_en": "Femboy Expert"},
+    {"score": 10000, "name": "Фембой", "name_en": "Femboy"},
+    {"score": 50000, "name": "Фурри-Фембой", "name_en": "Furry Femboy"},
+    {"score": 200000, "name": "Феликс", "name_en": "Felix"},
+    {"score": 500000, "name": "Астольфо", "name_en": "Astolfo"},
+    {"score": 1000000, "name": "Владелец фембоев", "name_en": "Femboy Owner"},
+    {"score": 5000000, "name": "Император фембоев", "name_en": "Emperor of Femboys"},
+    {"score": 10000000, "name": "Бог фембоев", "name_en": "God of Femboys"}
 ]
 
 # Определение улучшений (сбалансированная стоимость)
 UPGRADES = [
-    {"id": "upgrade1", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
-    {"id": "upgrade2", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
-    {"id": "upgrade3", "description": "+5 за клик", "cost": 15000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
-    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
-    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 75000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
-    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
-    {"id": "upgrade7", "description": "+10 за клик", "cost": 300000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
-    {"id": "upgrade8", "description": "+15 за клик", "cost": 600000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
-    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 1200000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
-    {"id": "upgrade10", "description": "+25 за клик", "cost": 2500000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
-    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 5000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "description": "+100 за клик", "cost": 10000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade1", "description": "+1 за клик", "description_en": "+1 per click", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "description": "+2 за клик", "description_en": "+2 per click", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "description": "+5 за клик", "description_en": "+5 per click", "cost": 15000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "description": "+1 каждые 5 сек", "description_en": "+1 every 5 sec", "cost": 30000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "description": "+5 каждые 5 сек", "description_en": "+5 every 5 sec", "cost": 75000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "description": "+10 каждые 5 сек", "description_en": "+10 every 5 sec", "cost": 150000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "description": "+10 за клик", "description_en": "+10 per click", "cost": 300000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "description": "+15 за клик", "description_en": "+15 per click", "cost": 600000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "description": "+25 каждые 5 сек", "description_en": "+25 every 5 sec", "cost": 1200000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "description": "+25 за клик", "description_en": "+25 per click", "cost": 2500000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "description": "+50 каждые 5 сек", "description_en": "+50 every 5 sec", "cost": 5000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "description": "+100 за клик", "description_en": "+100 per click", "cost": 10000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
 # Определение заданий
@@ -81,12 +81,14 @@ NORMAL_TASKS = [
     {
         "id": "wallet_task",
         "title": "Подключить TON кошелек",
+        "title_en": "Connect TON wallet",
         "reward": 1000,
         "type": "normal"
     },
     {
         "id": "channel_subscription",
         "title": "Подписка на канал",
+        "title_en": "Subscribe to channel",
         "reward": 2000,
         "type": "normal"
     }
@@ -96,12 +98,14 @@ DAILY_TASKS = [
     {
         "id": "referral_task",
         "title": "Пригласить 3-х друзей",
+        "title_en": "Invite 3 friends",
         "reward": 5000,
         "type": "daily"
     },
     {
         "id": "ads_task",
         "title": "Просмотр рекламы",
+        "title_en": "Watch ads",
         "reward": 5000,
         "type": "daily",
         "no_reset": True
@@ -113,28 +117,36 @@ ACHIEVEMENTS = [
     {
         "id": "first_click",
         "name": "Первый клик",
+        "name_en": "First Click",
         "description": "Сделайте свой первый клик",
+        "description_en": "Make your first click",
         "reward": 100,
         "condition": {"type": "clicks", "value": 1}
     },
     {
         "id": "click_master",
         "name": "Мастер кликов",
+        "name_en": "Click Master",
         "description": "Сделайте 1000 кликов",
+        "description_en": "Make 1000 clicks",
         "reward": 5000,
         "condition": {"type": "clicks", "value": 1000}
     },
     {
         "id": "score_1000",
         "name": "Тысячник",
+        "name_en": "Thousandaire",
         "description": "Наберите 1000 очков",
+        "description_en": "Score 1000 points",
         "reward": 1000,
         "condition": {"type": "score", "value": 1000}
     },
     {
         "id": "daily_login",
         "name": "Ежедневный вход",
+        "name_en": "Daily Login",
         "description": "Входите в игру 7 дней подряд",
+        "description_en": "Log in for 7 days in a row",
         "reward": 3000,
         "condition": {"type": "daily_streak", "value": 7}
     }
@@ -145,7 +157,9 @@ MINIGAMES = [
     {
         "id": "catch_coins",
         "name": "Поймай монетки",
+        "name_en": "Catch Coins",
         "description": "Ловите падающие монетки!",
+        "description_en": "Catch falling coins!",
         "reward": 100,
         "duration": 30
     }
@@ -435,10 +449,15 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "skins": user_data.get('skins', []),
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
-            "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
-            "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
+            "language": user_data.get('language', 'ru')
         }
+        
+        # Добавляем поля, которые могут отсутствовать в таблице, только если они есть в данных
+        if 'last_ad_time' in user_data:
+            db_data["last_ad_time"] = user_data.get('last_ad_time')
+        
+        if 'last_passive_income_update' in user_data:
+            db_data["last_passive_income_update"] = user_data.get('last_passive_income_update')
         
         def query():
             # Используем upsert для атомарной вставки или обновления
@@ -2749,87 +2768,89 @@ html_content = """
     
     // Инициализация TonConnect
     let tonConnectUI;
+    let tonConnectModalUI; // Для модального окна
     
     // Инициализация Adsgram
     let adsgramAd;
     
     // Функция для инициализации TonConnect
-function initTonConnect() {
-  // Создаем контейнер для кнопки TonConnect, если его нет
-  if (!document.getElementById('ton-connect-button-container')) {
-    const container = document.createElement('div');
-    container.id = 'ton-connect-button-container';
-    container.style.display = 'none'; // Скрываем контейнер, он нужен только для TonConnect
-    document.body.appendChild(container);
-  }
-  
-  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-    buttonRootId: 'ton-connect-button-container', // Используем скрытый контейнер
-    actionsConfiguration: {
-      twaReturnUrl: 'https://t.me/Fnmby_bot'
-    },
-    uiPreferences: {
-      theme: 'LIGHT'
+    function initTonConnect() {
+      // Основной TonConnect для профиля
+      tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+        buttonRootId: 'ton-connect-button',
+        actionsConfiguration: {
+          twaReturnUrl: 'https://t.me/Fnmby_bot'
+        }
+      });
+      
+      // TonConnect для модального окна
+      tonConnectModalUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+        actionsConfiguration: {
+          twaReturnUrl: 'https://t.me/Fnmby_bot'
+        }
+      });
+      
+      // Обработка подключения кошелька
+      tonConnectUI.onStatusChange(wallet => {
+        if (wallet) {
+          // Кошелек подключен
+          const address = wallet.account.address;
+          const formattedAddress = formatWalletAddress(address);
+          
+          // Сохраняем адрес кошелька
+          userData.wallet_address = address;
+          userData.wallet_task_completed = true;
+          saveUserData();
+          
+          // Обновляем интерфейс
+          document.getElementById('wallet-address').textContent = formattedAddress;
+          
+          // Проверяем задание
+          checkWalletTask();
+          
+          // Показываем уведомление
+          showNotification(translations[currentLanguage].wallet_connected);
+        } else {
+          // Кошелек отключен
+          userData.wallet_address = "";
+          saveUserData();
+          
+          // Обновляем интерфейс
+          document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+          
+          // Показываем уведомление
+          showNotification(translations[currentLanguage].wallet_disconnected);
+        }
+      });
+      
+      // Обработка подключения кошелька для модального окна
+      tonConnectModalUI.onStatusChange(wallet => {
+        if (wallet) {
+          // Кошелек подключен
+          const address = wallet.account.address;
+          const formattedAddress = formatWalletAddress(address);
+          
+          // Сохраняем адрес кошелька
+          userData.wallet_address = address;
+          userData.wallet_task_completed = true;
+          saveUserData();
+          
+          // Обновляем интерфейс
+          document.getElementById('wallet-address').textContent = formattedAddress;
+          
+          // Закрываем модальное окно
+          closeWalletTaskModal();
+          
+          // Проверяем задание
+          checkWalletTask();
+          
+          // Показываем уведомление
+          showNotification(translations[currentLanguage].wallet_connected);
+        }
+      });
     }
-  });
-  
-  // Обработка подключения кошелька
-  tonConnectUI.onStatusChange(async (wallet) => {
-    console.log('Wallet status changed:', wallet);
-    
-    if (wallet) {
-      // Кошелек подключен
-      const address = wallet.account.address;
-      const formattedAddress = formatWalletAddress(address);
-      
-      // Сохраняем адрес кошелька
-      userData.wallet_address = address;
-      userData.wallet_task_completed = true;
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      document.getElementById('wallet-address').textContent = formattedAddress;
-      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-      
-      // Проверяем задание
-      checkWalletTask();
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].wallet_connected);
-    } else {
-      // Кошелек отключен
-      userData.wallet_address = "";
-      userData.wallet_task_completed = false;
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].wallet_disconnected);
-    }
-  });
-  
-  // Обработчик для кнопки TonConnect в профиле
-  document.getElementById('ton-connect-button').addEventListener('click', async function() {
-    if (userData.wallet_address) {
-      try {
-        await tonConnectUI.disconnect();
-      } catch (error) {
-        console.error('Error disconnecting wallet:', error);
-      }
-    } else {
-      try {
-        await tonConnectUI.connectWallet();
-      } catch (error) {
-        console.error('Error connecting wallet:', error);
-        showNotification('Ошибка подключения кошелька');
-      }
-    }
-  });
-}
     
     // Функция для инициализации Adsgram
     function initAdsgram() {
@@ -2987,6 +3008,9 @@ function initTonConnect() {
             if (!userData.language) {
               userData.language = 'ru';
             }
+            if (!userData.last_passive_income_update) {
+              userData.last_passive_income_update = new Date().toISOString();
+            }
             
             // Устанавливаем текущий язык
             currentLanguage = userData.language;
@@ -3007,7 +3031,6 @@ function initTonConnect() {
             // Обновляем данные кошелька
             if (userData.wallet_address) {
               document.getElementById('wallet-address').textContent = formatWalletAddress(userData.wallet_address);
-              document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
             }
             
             // Проверяем задания
@@ -3062,7 +3085,8 @@ function initTonConnect() {
           skins: [],
           active_skin: 'default',
           auto_clickers: 0,
-          language: 'ru'
+          language: 'ru',
+          last_passive_income_update: new Date().toISOString()
         };
         
         // Сохраняем нового пользователя на сервере
@@ -3130,6 +3154,7 @@ function initTonConnect() {
             const oldActiveSkin = userData.active_skin;
             const oldAutoClickers = userData.auto_clickers;
             const oldLanguage = userData.language;
+            const oldLastPassiveIncomeUpdate = userData.last_passive_income_update;
             
             userData = data.user;
             
@@ -3152,6 +3177,7 @@ function initTonConnect() {
             userData.active_skin = oldActiveSkin;
             userData.auto_clickers = oldAutoClickers;
             userData.language = oldLanguage;
+            userData.last_passive_income_update = oldLastPassiveIncomeUpdate;
             
             console.log('User data saved successfully');
             return true;
@@ -3178,40 +3204,27 @@ function initTonConnect() {
       }
     }
     
-   // Функция для обновления данных топа (и превью, и страницы топа если открыта)
-async function updateTopData() {
-  try {
-    console.log('Updating top data...');
-    const response = await fetch('/top');
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('Top data received:', data);
-    
-    if (data.users && data.users.length > 0) {
-      // Обновляем превью топа (первые 3)
-      updateTopPreview(data.users.slice(0, 3));
-      
-      // Если текущая страница - топ, обновляем и топ
-      if (document.getElementById('top').classList.contains('active')) {
-        renderTop(data.users);
+    // Функция для обновления данных топа (и превью, и страницы топа если открыта)
+    async function updateTopData() {
+      try {
+        const response = await fetch('/top');
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.users && data.users.length > 0) {
+            // Обновляем превью топа (первые 3)
+            updateTopPreview(data.users.slice(0, 3));
+            
+            // Если текущая страница - топ, обновляем и топ
+            if (document.getElementById('top').classList.contains('active')) {
+              renderTop(data.users);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error updating top data:', error);
       }
-    } else {
-      console.log('No users in top data');
-      // Показываем сообщение, что данных нет
-      const topPreview = document.getElementById('topPreview');
-      topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
     }
-  } catch (error) {
-    console.error('Error updating top data:', error);
-    // Показываем сообщение об ошибке
-    const topPreview = document.getElementById('topPreview');
-    topPreview.innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
-  }
-}
     
     // Переключение страниц по кнопкам меню
     const pages = {
@@ -3352,8 +3365,9 @@ async function updateTopData() {
           userData.wallet_address ? formatWalletAddress(userData.wallet_address) : translations[currentLanguage].connect_wallet;
         
         // Обновляем текст кнопки TonConnect
-        document.getElementById('ton-connect-button').textContent = 
-          userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
+        // Убираем ручное обновление текста, TonConnect управляет этим сам
+        // document.getElementById('ton-connect-button').textContent = 
+        //   userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
@@ -3361,35 +3375,32 @@ async function updateTopData() {
     }
 
     // Загрузка топа пользователей с сервера
-async function loadTop() {
-  const topList = document.getElementById('topList');
-  topList.innerHTML = '<p>Загрузка топа...</p>';
-  
-  try {
-    const response = await fetch('/top');
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    async function loadTop() {
+      const topList = document.getElementById('topList');
+      topList.innerHTML = '<p>Загрузка топа...</p>';
+      
+      try {
+        const response = await fetch('/top');
+        const data = await response.json();
+        
+        if (data.users && data.users.length > 0) {
+          renderTop(data.users);
+          updateTopPreview(data.users.slice(0, 3));
+        } else {
+          topList.innerHTML = '<p>Нет данных для отображения</p>';
+        }
+      } catch (error) {
+        console.error('Error loading top:', error);
+        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+      }
     }
-    
-    const data = await response.json();
-    
-    if (data.users && data.users.length > 0) {
-      renderTop(data.users);
-      updateTopPreview(data.users.slice(0, 3));
-    } else {
-      topList.innerHTML = '<p>Нет данных для отображения</p>';
-    }
-  } catch (error) {
-    console.error('Error loading top:', error);
-    topList.innerHTML = '<p>Ошибка загрузки топа. Пожалуйста, попробуйте позже.</p>';
-  }
-}
 
     // Обновление превью топа на кнопке
     function updateTopPreview(topUsers) {
       const topPreview = document.getElementById('topPreview');
       topPreview.innerHTML = '';
+      
+            '';
       
       topUsers.forEach((user, index) => {
         const item = document.createElement('div');
@@ -3400,41 +3411,33 @@ async function loadTop() {
     }
 
     // Отрисовка топа пользователей
-function renderTop(users) {
-  const topList = document.getElementById('topList');
-  topList.innerHTML = '';
-  
-  if (!users || users.length === 0) {
-    topList.innerHTML = '<p>Нет данных для отображения</p>';
-    return;
-  }
-  
-  // Получаем ID текущего пользователя
-  const currentUserId = user ? user.id.toString() : null;
-  
-  users.forEach((user, index) => {
-    const topItem = document.createElement('div');
-    topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
-    
-    // Обрабатываем возможное отсутствие фото
-    const photoUrl = user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`;
-    
-    topItem.innerHTML = `
-      <div class="top-rank">${index + 1}</div>
-      <img class="top-avatar" src="${photoUrl}" alt="${user.first_name}" onerror="this.src='https://t.me/i/userpic/320/${user.id}.jpg'">
-      <div class="top-info">
-        <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
-        <div class="top-score">
-          ${user.score}
-          <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
-          <span class="top-level">${user.level || 'Новичок'}</span>
-        </div>
-      </div>
-    `;
-    
-    topList.appendChild(topItem);
-  });
-}
+    function renderTop(users) {
+      const topList = document.getElementById('topList');
+      topList.innerHTML = '';
+      
+      // Получаем ID текущего пользователя
+      const currentUserId = user ? user.id.toString() : null;
+      
+      users.forEach((user, index) => {
+        const topItem = document.createElement('div');
+        topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
+        
+        topItem.innerHTML = `
+          <div class="top-rank">${index + 1}</div>
+          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`}" alt="${user.first_name}">
+          <div class="top-info">
+            <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
+            <div class="top-score">
+              ${user.score}
+              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
+              <span class="top-level">${user.level}</span>
+            </div>
+          </div>
+        `;
+        
+        topList.appendChild(topItem);
+      });
+    }
 
     // Обновление уровня игрока
     function updateLevel() {
@@ -4402,7 +4405,6 @@ function renderTop(users) {
       
       // Обновляем кнопки
       document.getElementById('backButton').textContent = translations[currentLanguage].back;
-      document.getElementById('ton-connect-button').textContent = userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
       
       // Обновляем тексты вкладок заданий
       document.querySelector('.task-tab:nth-child(1)').textContent = translations[currentLanguage].normal_tasks;
@@ -4417,7 +4419,7 @@ function renderTop(users) {
       renderUpgrades();
     }
     
-    // Функции для мини-игры "Поймай монетки"
+    // Функции для мини-игры
     function startMinigame(minigameId) {
       if (minigameId === 'catch_coins') {
         startCatchCoinsMinigame();
@@ -5145,3 +5147,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
