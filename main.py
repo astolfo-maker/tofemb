@@ -2552,7 +2552,7 @@ html_content = """
         "notification_ad_error": "Ошибка при показе рекламы",
         "notification_referral": "Вы были приглашены по реферальной ссылке!",
         "notification_task_cooldown": "Задание можно выполнять раз в 24 часа",
-        "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
+                "notification_minigame_reward": "Награда за мини-игру: {0} монеток",
         "go_to_channel": "Перейти к каналу",
         "verify_subscription": "Проверить подписку",
         "catch_coins_name": "Поймай монетки",
@@ -4228,7 +4228,6 @@ html_content = """
             updateLevel();
             updateDailyBonus();
             
-            // Показываем уведомление
                         // Показываем уведомление
             showNotification(translations[currentLanguage].notification_bonus.replace('{0}', data.reward));
           } else {
@@ -5044,5 +5043,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
