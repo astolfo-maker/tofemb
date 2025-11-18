@@ -2754,50 +2754,82 @@ html_content = """
     let adsgramAd;
     
     // Функция для инициализации TonConnect
-    function initTonConnect() {
-      tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-button',
-        actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Fnmby_bot'
-        }
-      });
-      
-      // Обработка подключения кошелька
-      tonConnectUI.onStatusChange(wallet => {
-        if (wallet) {
-          // Кошелек подключен
-          const address = wallet.account.address;
-          const formattedAddress = formatWalletAddress(address);
-          
-          // Сохраняем адрес кошелька
-          userData.wallet_address = address;
-          userData.wallet_task_completed = true;
-          saveUserData();
-          
-          // Обновляем интерфейс
-          document.getElementById('wallet-address').textContent = formattedAddress;
-          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-          
-          // Проверяем задание
-          checkWalletTask();
-          
-          // Показываем уведомление
-          showNotification(translations[currentLanguage].wallet_connected);
-        } else {
-          // Кошелек отключен
-          userData.wallet_address = "";
-          saveUserData();
-          
-          // Обновляем интерфейс
-          document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
-          
-          // Показываем уведомление
-          showNotification(translations[currentLanguage].wallet_disconnected);
-        }
-      });
+function initTonConnect() {
+  // Создаем контейнер для кнопки TonConnect, если его нет
+  if (!document.getElementById('ton-connect-button-container')) {
+    const container = document.createElement('div');
+    container.id = 'ton-connect-button-container';
+    container.style.display = 'none'; // Скрываем контейнер, он нужен только для TonConnect
+    document.body.appendChild(container);
+  }
+  
+  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-button-container', // Используем скрытый контейнер
+    actionsConfiguration: {
+      twaReturnUrl: 'https://t.me/Fnmby_bot'
+    },
+    uiPreferences: {
+      theme: 'LIGHT'
     }
+  });
+  
+  // Обработка подключения кошелька
+  tonConnectUI.onStatusChange(async (wallet) => {
+    console.log('Wallet status changed:', wallet);
+    
+    if (wallet) {
+      // Кошелек подключен
+      const address = wallet.account.address;
+      const formattedAddress = formatWalletAddress(address);
+      
+      // Сохраняем адрес кошелька
+      userData.wallet_address = address;
+      userData.wallet_task_completed = true;
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = formattedAddress;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+      
+      // Проверяем задание
+      checkWalletTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_connected);
+    } else {
+      // Кошелек отключен
+      userData.wallet_address = "";
+      userData.wallet_task_completed = false;
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_disconnected);
+    }
+  });
+  
+  // Обработчик для кнопки TonConnect в профиле
+  document.getElementById('ton-connect-button').addEventListener('click', async function() {
+    if (userData.wallet_address) {
+      try {
+        await tonConnectUI.disconnect();
+      } catch (error) {
+        console.error('Error disconnecting wallet:', error);
+      }
+    } else {
+      try {
+        await tonConnectUI.connectWallet();
+      } catch (error) {
+        console.error('Error connecting wallet:', error);
+        showNotification('Ошибка подключения кошелька');
+      }
+    }
+  });
+}
     
     // Функция для инициализации Adsgram
     function initAdsgram() {
@@ -3146,27 +3178,40 @@ html_content = """
       }
     }
     
-    // Функция для обновления данных топа (и превью, и страницы топа если открыта)
-    async function updateTopData() {
-      try {
-        const response = await fetch('/top');
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.users && data.users.length > 0) {
-            // Обновляем превью топа (первые 3)
-            updateTopPreview(data.users.slice(0, 3));
-            
-            // Если текущая страница - топ, обновляем и топ
-            if (document.getElementById('top').classList.contains('active')) {
-              renderTop(data.users);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error updating top data:', error);
-      }
+   // Функция для обновления данных топа (и превью, и страницы топа если открыта)
+async function updateTopData() {
+  try {
+    console.log('Updating top data...');
+    const response = await fetch('/top');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log('Top data received:', data);
+    
+    if (data.users && data.users.length > 0) {
+      // Обновляем превью топа (первые 3)
+      updateTopPreview(data.users.slice(0, 3));
+      
+      // Если текущая страница - топ, обновляем и топ
+      if (document.getElementById('top').classList.contains('active')) {
+        renderTop(data.users);
+      }
+    } else {
+      console.log('No users in top data');
+      // Показываем сообщение, что данных нет
+      const topPreview = document.getElementById('topPreview');
+      topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
+    }
+  } catch (error) {
+    console.error('Error updating top data:', error);
+    // Показываем сообщение об ошибке
+    const topPreview = document.getElementById('topPreview');
+    topPreview.innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+  }
+}
     
     // Переключение страниц по кнопкам меню
     const pages = {
@@ -3316,25 +3361,30 @@ html_content = """
     }
 
     // Загрузка топа пользователей с сервера
-    async function loadTop() {
-      const topList = document.getElementById('topList');
-      topList.innerHTML = '<p>Загрузка топа...</p>';
-      
-      try {
-        const response = await fetch('/top');
-        const data = await response.json();
-        
-        if (data.users && data.users.length > 0) {
-          renderTop(data.users);
-          updateTopPreview(data.users.slice(0, 3));
-        } else {
-          topList.innerHTML = '<p>Нет данных для отображения</p>';
-        }
-      } catch (error) {
-        console.error('Error loading top:', error);
-        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
-      }
+async function loadTop() {
+  const topList = document.getElementById('topList');
+  topList.innerHTML = '<p>Загрузка топа...</p>';
+  
+  try {
+    const response = await fetch('/top');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const data = await response.json();
+    
+    if (data.users && data.users.length > 0) {
+      renderTop(data.users);
+      updateTopPreview(data.users.slice(0, 3));
+    } else {
+      topList.innerHTML = '<p>Нет данных для отображения</p>';
+    }
+  } catch (error) {
+    console.error('Error loading top:', error);
+    topList.innerHTML = '<p>Ошибка загрузки топа. Пожалуйста, попробуйте позже.</p>';
+  }
+}
 
     // Обновление превью топа на кнопке
     function updateTopPreview(topUsers) {
@@ -3350,33 +3400,41 @@ html_content = """
     }
 
     // Отрисовка топа пользователей
-    function renderTop(users) {
-      const topList = document.getElementById('topList');
-      topList.innerHTML = '';
-      
-      // Получаем ID текущего пользователя
-      const currentUserId = user ? user.id.toString() : null;
-      
-      users.forEach((user, index) => {
-        const topItem = document.createElement('div');
-        topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
-        
-        topItem.innerHTML = `
-          <div class="top-rank">${index + 1}</div>
-          <img class="top-avatar" src="${user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`}" alt="${user.first_name}">
-          <div class="top-info">
-            <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
-            <div class="top-score">
-              ${user.score}
-              <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
-              <span class="top-level">${user.level}</span>
-            </div>
-          </div>
-        `;
-        
-        topList.appendChild(topItem);
-      });
-    }
+function renderTop(users) {
+  const topList = document.getElementById('topList');
+  topList.innerHTML = '';
+  
+  if (!users || users.length === 0) {
+    topList.innerHTML = '<p>Нет данных для отображения</p>';
+    return;
+  }
+  
+  // Получаем ID текущего пользователя
+  const currentUserId = user ? user.id.toString() : null;
+  
+  users.forEach((user, index) => {
+    const topItem = document.createElement('div');
+    topItem.className = `top-item ${user.id === currentUserId ? 'current-user' : ''}`;
+    
+    // Обрабатываем возможное отсутствие фото
+    const photoUrl = user.photo_url || `https://t.me/i/userpic/320/${user.id}.jpg`;
+    
+    topItem.innerHTML = `
+      <div class="top-rank">${index + 1}</div>
+      <img class="top-avatar" src="${photoUrl}" alt="${user.first_name}" onerror="this.src='https://t.me/i/userpic/320/${user.id}.jpg'">
+      <div class="top-info">
+        <div class="top-name">${user.first_name} ${user.last_name || ''}</div>
+        <div class="top-score">
+          ${user.score}
+          <img class="top-coin" src="/static/FemboyCoinsPink.png" alt="монетки">
+          <span class="top-level">${user.level || 'Новичок'}</span>
+        </div>
+      </div>
+    `;
+    
+    topList.appendChild(topItem);
+  });
+}
 
     // Обновление уровня игрока
     function updateLevel() {
@@ -5087,3 +5145,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+function initTonConnect()
+def get_top_users
+async function updateTopData()
+async function loadTop
