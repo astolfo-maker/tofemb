@@ -474,6 +474,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         logger.error(f"Error saving user: {e}")
         return False
 
+# Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -487,7 +488,7 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
         
         response = execute_supabase_query(query)
         
-        if response and response.data:
+        if response.data:
             logger.info(f"Found {len(response.data)} users")
             return response.data
         else:
@@ -2772,57 +2773,46 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
-    // Функция для инициализации TonConnect
     function initTonConnect() {
-      // Основной TonConnect для профиля
-      tonConnectUI = new TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-button',
-        actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Fnmby_bot'
-        }
-      });
-      
-      // TonConnect для модального окна
-      tonConnectModalUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-        actionsConfiguration: {
-          twaReturnUrl: 'https://t.me/Fnmby_bot'
-        }
-      });
-      
-      // Обработка подключения кошелька
-      tonConnectUI.onStatusChange(wallet => {
-        if (wallet) {
-          // Кошелек подключен
-          const address = wallet.account.address;
-          const formattedAddress = formatWalletAddress(address);
-          
-          // Сохраняем адрес кошелька
-          userData.wallet_address = address;
-          userData.wallet_task_completed = true;
-          saveUserData();
-          
-          // Обновляем интерфейс
-          document.getElementById('wallet-address').textContent = formattedAddress;
-          
-          // Проверяем задание
-          checkWalletTask();
-          
-          // Показываем уведомление
-          showNotification(translations[currentLanguage].wallet_connected);
-        } else {
-          // Кошелек отключен
-          userData.wallet_address = "";
-          saveUserData();
-          
-          // Обновляем интерфейс
-          document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-          
-          // Показываем уведомление
-          showNotification(translations[currentLanguage].wallet_disconnected);
-        }
-      });
+  console.log('Initializing TonConnect...');
+  try {
+    tonConnectUI = new TonConnectUI({
+      manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+      actionsConfiguration: {
+        twaReturnUrl: 'https://t.me/Fnmby_bot'
+      }
+    });
+    console.log('TonConnect initialized successfully');
+    
+    tonConnectUI.onStatusChange(wallet => {
+      console.log('Wallet status changed:', wallet);
+      if (wallet) {
+        const address = wallet.account.address;
+        const formattedAddress = formatWalletAddress(address);
+        
+        userData.wallet_address = address;
+        userData.wallet_task_completed = true;
+        saveUserData();
+        
+        document.getElementById('wallet-address').textContent = formattedAddress;
+        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+        
+        checkWalletTask();
+        showNotification(translations[currentLanguage].wallet_connected);
+      } else {
+        userData.wallet_address = "";
+        saveUserData();
+        
+        document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
+        
+        showNotification(translations[currentLanguage].wallet_disconnected);
+      }
+    });
+  } catch (error) {
+    console.error('Error initializing TonConnect:', error);
+  }
+}
       
       // Обработка подключения кошелька для модального окна
       tonConnectModalUI.onStatusChange(wallet => {
@@ -2915,31 +2905,42 @@ html_content = """
       }
     }
     
-    // Функция для обновления энергии
     function updateEnergy() {
-      const now = new Date();
-      const lastUpdate = new Date(userData.last_energy_update);
-      const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
-      
-      // Восстанавливаем энергию (1 единица в секунду)
-      if (timeDiff > 0) {
-        userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
-        userData.last_energy_update = now.toISOString();
-        
-        // Обновляем отображение энергии
-        updateEnergyDisplay();
-      }
-    }
+  console.log('Updating energy...');
+  const now = new Date();
+  let lastUpdate = userData.last_energy_update ? new Date(userData.last_energy_update) : now;
+  if (isNaN(lastUpdate.getTime())) {
+    console.warn('Invalid last_energy_update, using current time');
+    lastUpdate = now;
+    userData.last_energy_update = now.toISOString();
+  }
+  const timeDiff = Math.floor((now - lastUpdate) / 1000);
+  console.log(`Time diff: ${timeDiff} seconds`);
+  
+  if (timeDiff > 0) {
+    userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
+    userData.last_energy_update = now.toISOString();
+    updateEnergyDisplay();
+    console.log(`Energy updated: ${userData.energy}/${MAX_ENERGY}`);
+  }
+}
     
-    // Функция для обновления отображения энергии
-    function updateEnergyDisplay() {
-      const energyProgress = document.getElementById('energyProgress');
-      const energyText = document.getElementById('energyText');
-      
-      const energyPercent = (userData.energy / MAX_ENERGY) * 100;
-      energyProgress.style.width = `${energyPercent}%`;
-      energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}</span>`;
-    }
+   function updateEnergyDisplay() {
+  console.log('Updating energy display...');
+  const energyProgress = document.getElementById('energyProgress');
+  const energyText = document.getElementById('energyText');
+  
+  if (!energyProgress || !energyText) {
+    console.error('Energy display elements not found');
+    return;
+  }
+  
+  const energyPercent = (userData.energy / MAX_ENERGY) * 100;
+  energyProgress.style.width = `${energyPercent}%`;
+  const energyTextContent = `${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}`;
+  console.log('Energy text content:', energyTextContent);
+  energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${energyTextContent}</span>`;
+}
     
     // Функция для загрузки данных пользователя с сервера
     async function loadUserData() {
@@ -3109,91 +3110,92 @@ html_content = """
       }
     }
     
-    // Функция для сохранения данных пользователя на сервере
-    async function saveUserData() {
-      if (!user) return;
+   async function saveUserData() {
+  if (!user) return;
+  
+  try {
+    const dataToSend = {...userData};
+    
+    // Убедимся, что last_ad_time существует
+    if (!dataToSend.last_ad_time) {
+      dataToSend.last_ad_time = new Date().toISOString();
+    }
+    
+    console.log('Saving user data:', dataToSend);
+    
+    const response = await fetch('/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(dataToSend)
+    });
+    
+    console.log('Save response status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Save response:', data);
       
-      try {
-        // Создаем объект для отправки на сервер, сохраняя все текущие данные
-        const dataToSend = {...userData};
+      if (data.user) {
+        // Восстанавливаем важные значения
+        const oldScore = userData.score;
+        const oldTotalClicks = userData.total_clicks;
+        const oldReferrals = userData.referrals;
+        const oldWalletTaskCompleted = userData.wallet_task_completed;
+        const oldChannelTaskCompleted = userData.channel_task_completed;
+        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
+        const oldEnergy = userData.energy;
+        const oldLastEnergyUpdate = userData.last_energy_update;
+        const oldUpgrades = userData.upgrades;
+        const oldAdsWatched = userData.ads_watched;
+        const oldLastAdTime = userData.last_ad_time;
+        const oldAchievements = userData.achievements;
+        const oldDailyBonus = userData.daily_bonus;
+        const oldActiveBoosts = userData.active_boosts;
+        const oldSkins = userData.skins;
+        const oldActiveSkin = userData.active_skin;
+        const oldAutoClickers = userData.auto_clickers;
+        const oldLanguage = userData.language;
         
-        console.log('Saving user data:', dataToSend);
+        userData = data.user;
         
-        const response = await fetch('/user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(dataToSend)
-        });
+        // Восстанавливаем важные значения
+        userData.score = oldScore;
+        userData.total_clicks = oldTotalClicks;
+        userData.referrals = oldReferrals;
+        userData.wallet_task_completed = oldWalletTaskCompleted;
+        userData.channel_task_completed = oldChannelTaskCompleted;
+        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
+        userData.energy = oldEnergy;
+        userData.last_energy_update = oldLastEnergyUpdate;
+        userData.upgrades = oldUpgrades;
+        userData.ads_watched = oldAdsWatched;
+        userData.last_ad_time = oldLastAdTime;
+        userData.achievements = oldAchievements;
+        userData.daily_bonus = oldDailyBonus;
+        userData.active_boosts = oldActiveBoosts;
+        userData.skins = oldSkins;
+        userData.active_skin = oldActiveSkin;
+        userData.auto_clickers = oldAutoClickers;
+        userData.language = oldLanguage;
         
-        console.log('Save response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Save response:', data);
-          
-          if (data.user) {
-            // Обновляем userData, сохраняя текущие значения
-            const oldScore = userData.score;
-            const oldTotalClicks = userData.total_clicks;
-            const oldReferrals = userData.referrals;
-            const oldWalletTaskCompleted = userData.wallet_task_completed;
-            const oldChannelTaskCompleted = userData.channel_task_completed;
-            const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
-            const oldEnergy = userData.energy;
-            const oldLastEnergyUpdate = userData.last_energy_update;
-            const oldUpgrades = userData.upgrades;
-            const oldAdsWatched = userData.ads_watched;
-            const oldLastAdTime = userData.last_ad_time;
-            const oldAchievements = userData.achievements;
-            const oldDailyBonus = userData.daily_bonus;
-            const oldActiveBoosts = userData.active_boosts;
-            const oldSkins = userData.skins;
-            const oldActiveSkin = userData.active_skin;
-            const oldAutoClickers = userData.auto_clickers;
-            const oldLanguage = userData.language;
-            const oldLastPassiveIncomeUpdate = userData.last_passive_income_update;
-            
-            userData = data.user;
-            
-            // Восстанавливаем важные значения, которые могли быть изменены
-            userData.score = oldScore;
-            userData.total_clicks = oldTotalClicks;
-            userData.referrals = oldReferrals;
-            userData.wallet_task_completed = oldWalletTaskCompleted;
-            userData.channel_task_completed = oldChannelTaskCompleted;
-            userData.last_referral_task_completion = oldLastReferralTaskCompletion;
-            userData.energy = oldEnergy;
-            userData.last_energy_update = oldLastEnergyUpdate;
-            userData.upgrades = oldUpgrades;
-            userData.ads_watched = oldAdsWatched;
-            userData.last_ad_time = oldLastAdTime;
-            userData.achievements = oldAchievements;
-            userData.daily_bonus = oldDailyBonus;
-            userData.active_boosts = oldActiveBoosts;
-            userData.skins = oldSkins;
-            userData.active_skin = oldActiveSkin;
-            userData.auto_clickers = oldAutoClickers;
-            userData.language = oldLanguage;
-            userData.last_passive_income_update = oldLastPassiveIncomeUpdate;
-            
-            console.log('User data saved successfully');
-            return true;
-          } else {
-            console.error('No user data in response');
-            return false;
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('Error saving user data:', response.status, response.statusText, errorText);
-          return false;
-        }
-      } catch (error) {
-        console.error('Error saving user data:', error);
+        console.log('User data saved successfully');
+        return true;
+      } else {
+        console.error('No user data in response');
         return false;
       }
+    } else {
+      const errorText = await response.text();
+      console.error('Error saving user data:', response.status, response.statusText, errorText);
+      return false;
     }
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    return false;
+  }
+}
     
     // Функция для обновления отображения счета
     function updateScoreDisplay() {
@@ -3203,25 +3205,30 @@ html_content = """
       }
     }
     
-   async function updateTopData() {
+    async function updateTopData() {
   try {
+    console.log('Updating top data...');
     const response = await fetch('/top');
-    
-    if (!response.ok) {
-      throw new Error(`Server responded with status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.users && data.users.length > 0) {
-      updateTopPreview(data.users.slice(0, 3));
-      
-      if (document.getElementById('top').classList.contains('active')) {
-        renderTop(data.users);
+    console.log('Top response status:', response.status);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Top data received:', data);
+      if (data.users && data.users.length > 0) {
+        updateTopPreview(data.users.slice(0, 3));
+        if (document.getElementById('top').classList.contains('active')) {
+          renderTop(data.users);
+        }
+      } else {
+        console.log('No users in top data');
+        document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Нет данных</div>';
       }
+    } else {
+      console.error('Error response from top endpoint:', response.statusText);
+      document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
     }
   } catch (error) {
     console.error('Error updating top data:', error);
+    document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
   }
 }
     
@@ -3229,6 +3236,7 @@ html_content = """
     const pages = {
       profile: document.getElementById('profile'),
       clicker: document.getElementById('clicker'),
+      updateEnergy
       tasks: document.getElementById('tasks'),
       top: document.getElementById('top'),
       achievements: document.getElementById('achievements'),
@@ -3373,31 +3381,26 @@ html_content = """
       }, 300); // Уменьшаем задержку до 300мс
     }
 
-   async function loadTop() {
-  const topList = document.getElementById('topList');
-  topList.innerHTML = '<p>Загрузка топа...</p>';
-  
-  try {
-    const response = await fetch('/top');
-    
-    // Добавляем проверку статуса ответа
-    if (!response.ok) {
-      throw new Error(`Server responded with status: ${response.status}`);
+    // Загрузка топа пользователей с сервера
+    async function loadTop() {
+      const topList = document.getElementById('topList');
+      topList.innerHTML = '<p>Загрузка топа...</p>';
+      
+      try {
+        const response = await fetch('/top');
+        const data = await response.json();
+        
+        if (data.users && data.users.length > 0) {
+          renderTop(data.users);
+          updateTopPreview(data.users.slice(0, 3));
+        } else {
+          topList.innerHTML = '<p>Нет данных для отображения</p>';
+        }
+      } catch (error) {
+        console.error('Error loading top:', error);
+        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+      }
     }
-    
-    const data = await response.json();
-    
-    if (data.users && data.users.length > 0) {
-      renderTop(data.users);
-      updateTopPreview(data.users.slice(0, 3));
-    } else {
-      topList.innerHTML = '<p>Нет данных для отображения</p>';
-    }
-  } catch (error) {
-    console.error('Error loading top:', error);
-    topList.innerHTML = '<p>Ошибка загрузки топа</p>';
-  }
-}
 
     // Обновление превью топа на кнопке
     function updateTopPreview(topUsers) {
@@ -5016,61 +5019,57 @@ async def get_user_data(user_id: str):
 
 @app.post("/user")
 async def save_user_data(request: Request):
-    """Сохранение данных пользователя на сервере"""
     try:
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
-        # Сохраняем в базу данных
-        success = save_user(data)
+        # Подготовка данных для вставки/обновления
+        db_data = {
+            "user_id": str(data.get('id', '')),
+            "first_name": data.get('first_name', ''),
+            "last_name": data.get('last_name', ''),
+            "username": data.get('username', ''),
+            "photo_url": data.get('photo_url', ''),
+            "score": int(data.get('score', 0)),
+            "total_clicks": int(data.get('total_clicks', 0)),
+            "level": get_level_by_score(int(data.get('score', 0))),
+            "wallet_address": data.get('wallet_address', ''),
+            "wallet_task_completed": bool(data.get('wallet_task_completed', False)),
+            "channel_task_completed": bool(data.get('channel_task_completed', False)),
+            "referrals": data.get('referrals', []),
+            "last_referral_task_completion": data.get('last_referral_task_completion'),
+            "energy": int(data.get('energy', MAX_ENERGY)),
+            "last_energy_update": data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
+            "upgrades": data.get('upgrades', []),
+            "ads_watched": int(data.get('ads_watched', 0)),
+            "achievements": data.get('achievements', []),
+            "daily_bonus": data.get('daily_bonus', {
+                'last_claim': None,
+                'streak': 0,
+                'claimed_days': []
+            }),
+            "active_boosts": data.get('active_boosts', []),
+            "skins": data.get('skins', []),
+            "active_skin": data.get('active_skin', 'default'),
+            "auto_clickers": int(data.get('auto_clickers', 0)),
+            "language": data.get('language', 'ru'),
+            "last_passive_income_update": data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
+            "last_ad_time": data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
+        }
         
-        if success:
-            # Получаем обновленные данные
-            user_id = str(data.get('id'))
-            user_data = load_user(user_id)
-            
-            if user_data:
-                # Преобразуем данные для фронтенда
-                response_data = {
-                    "id": user_data["user_id"],
-                    "first_name": user_data["first_name"],
-                    "last_name": user_data["last_name"],
-                    "username": user_data["username"],
-                    "photo_url": user_data["photo_url"],
-                    "score": user_data["score"],
-                    "total_clicks": user_data["total_clicks"],
-                    "level": user_data["level"],
-                    "wallet_address": user_data["wallet_address"],
-                    "wallet_task_completed": user_data["wallet_task_completed"],
-                    "channel_task_completed": user_data["channel_task_completed"],
-                    "referrals": user_data["referrals"],
-                    "last_referral_task_completion": user_data["last_referral_task_completion"],
-                    "energy": user_data["energy"],
-                    "last_energy_update": user_data["last_energy_update"],
-                    "upgrades": user_data["upgrades"],
-                    "ads_watched": user_data["ads_watched"],
-                    "achievements": user_data["achievements"],
-                    "daily_bonus": user_data["daily_bonus"],
-                    "active_boosts": user_data["active_boosts"],
-                    "skins": user_data["skins"],
-                    "active_skin": user_data["active_skin"],
-                    "auto_clickers": user_data["auto_clickers"],
-                    "language": user_data["language"],
-                    "last_passive_income_update": user_data["last_passive_income_update"],
-                    "last_ad_time": user_data["last_ad_time"]
-                }
-                
-                logger.info(f"User saved successfully: {user_data['first_name']}")
-                return JSONResponse(content={"status": "success", "user": response_data})
-            else:
-                logger.info(f"Failed to retrieve saved user")
-                return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
-        else:
-            logger.info(f"Failed to save user")
-            return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
+        def query():
+            return supabase.table("users").upsert(
+                db_data, 
+                on_conflict="user_id"
+            ).execute()
+        
+        response = execute_supabase_query(query)
+        
+        logger.info(f"Save operation completed with data: {response.data}")
+        return response.data is not None
     except Exception as e:
         logger.error(f"Error in POST /user: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+        return False
 
 @app.post("/referral")
 async def handle_referral(request: Request):
