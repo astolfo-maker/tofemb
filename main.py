@@ -474,7 +474,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         logger.error(f"Error saving user: {e}")
         return False
 
-# Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -488,7 +487,7 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
         
         response = execute_supabase_query(query)
         
-        if response.data:
+        if response and response.data:
             logger.info(f"Found {len(response.data)} users")
             return response.data
         else:
@@ -2776,7 +2775,7 @@ html_content = """
     // Функция для инициализации TonConnect
     function initTonConnect() {
       // Основной TonConnect для профиля
-      tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+      tonConnectUI = new TonConnectUI({
         manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button',
         actionsConfiguration: {
@@ -3204,27 +3203,27 @@ html_content = """
       }
     }
     
-    // Функция для обновления данных топа (и превью, и страницы топа если открыта)
-    async function updateTopData() {
-      try {
-        const response = await fetch('/top');
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.users && data.users.length > 0) {
-            // Обновляем превью топа (первые 3)
-            updateTopPreview(data.users.slice(0, 3));
-            
-            // Если текущая страница - топ, обновляем и топ
-            if (document.getElementById('top').classList.contains('active')) {
-              renderTop(data.users);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error updating top data:', error);
+   async function updateTopData() {
+  try {
+    const response = await fetch('/top');
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.users && data.users.length > 0) {
+      updateTopPreview(data.users.slice(0, 3));
+      
+      if (document.getElementById('top').classList.contains('active')) {
+        renderTop(data.users);
       }
     }
+  } catch (error) {
+    console.error('Error updating top data:', error);
+  }
+}
     
     // Переключение страниц по кнопкам меню
     const pages = {
@@ -3374,26 +3373,31 @@ html_content = """
       }, 300); // Уменьшаем задержку до 300мс
     }
 
-    // Загрузка топа пользователей с сервера
-    async function loadTop() {
-      const topList = document.getElementById('topList');
-      topList.innerHTML = '<p>Загрузка топа...</p>';
-      
-      try {
-        const response = await fetch('/top');
-        const data = await response.json();
-        
-        if (data.users && data.users.length > 0) {
-          renderTop(data.users);
-          updateTopPreview(data.users.slice(0, 3));
-        } else {
-          topList.innerHTML = '<p>Нет данных для отображения</p>';
-        }
-      } catch (error) {
-        console.error('Error loading top:', error);
-        topList.innerHTML = '<p>Ошибка загрузки топа</p>';
-      }
+   async function loadTop() {
+  const topList = document.getElementById('topList');
+  topList.innerHTML = '<p>Загрузка топа...</p>';
+  
+  try {
+    const response = await fetch('/top');
+    
+    // Добавляем проверку статуса ответа
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
     }
+    
+    const data = await response.json();
+    
+    if (data.users && data.users.length > 0) {
+      renderTop(data.users);
+      updateTopPreview(data.users.slice(0, 3));
+    } else {
+      topList.innerHTML = '<p>Нет данных для отображения</p>';
+    }
+  } catch (error) {
+    console.error('Error loading top:', error);
+    topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+  }
+}
 
     // Обновление превью топа на кнопке
     function updateTopPreview(topUsers) {
