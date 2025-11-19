@@ -1,7 +1,4 @@
-Плевет, я делаю тг-мини приложение. Исправь то что не работает подключение кошелька, т.е. при нажатии кнопки "connect Wallet in Telegram"(Это уже в всплывающем окне TON Connect) не происходит абсолютно ничего.
-А так же теперь не грузит топ(Ошибка при загрузке топа)
-И энергия чота обновляется только после обновления страницы(Типа тупо на месте замирает)
-вот код на данный момент:
+
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
