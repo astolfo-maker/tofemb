@@ -2917,158 +2917,186 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
       energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}</span>`;
     }
     
-    // Функция для загрузки данных пользователя с сервера (ИСПРАВЛЕНО)
-async function loadUserData() {
-  if (!user || !user.id) {
-    console.error('User or user.id is not defined');
-    return;
-  }
-  
-  try {
-    console.log(`Loading user with ID: ${user.id}`);
-    const response = await fetch(`/user/${user.id}`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.user) {
-        userData = data.user;
+    // Функция для загрузки данных пользователя с сервера
+    async function loadUserData() {
+      if (!user) return;
+      
+      try {
+        const response = await fetch(`/user/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            userData = data.user;
+            // Убедимся, что все поля присутствуют
+            if (!userData.referrals) {
+              userData.referrals = [];
+            }
+            if (!userData.wallet_address) {
+              userData.wallet_address = "";
+            }
+            if (userData.wallet_task_completed === undefined) {
+              userData.wallet_task_completed = false;
+            }
+            if (userData.channel_task_completed === undefined) {
+              userData.channel_task_completed = false;
+            }
+            if (!userData.last_referral_task_completion) {
+              userData.last_referral_task_completion = null;
+            }
+            if (!userData.energy) {
+              userData.energy = MAX_ENERGY;
+            }
+            if (!userData.last_energy_update) {
+              userData.last_energy_update = new Date().toISOString();
+            }
+            if (!userData.upgrades) {
+              userData.upgrades = [];
+            }
+            if (!userData.ads_watched) {
+              userData.ads_watched = 0;
+            }
+            if (!userData.last_ad_time) {
+              userData.last_ad_time = new Date().toISOString();
+            }
+            if (!userData.achievements) {
+              userData.achievements = [];
+            }
+            if (!userData.daily_bonus) {
+              userData.daily_bonus = {
+                last_claim: null,
+                streak: 0,
+                claimed_days: []
+              };
+            }
+            if (!userData.active_boosts) {
+              userData.active_boosts = [];
+            }
+            if (!userData.skins) {
+              userData.skins = [];
+            }
+            if (!userData.active_skin) {
+              userData.active_skin = 'default';
+            }
+            if (!userData.auto_clickers) {
+              userData.auto_clickers = 0;
+            }
+            if (!userData.language) {
+              userData.language = 'ru';
+            }
+            
+            // Устанавливаем текущий язык
+            currentLanguage = userData.language;
+            updateLanguageUI();
+            
+            // Обновляем энергию при загрузке
+            updateEnergy();
+            
+            // Обновляем бонусы
+            updateBonuses();
+            
+            // Обновляем скин персонажа
+            updateCharacterSkin();
+            
+            updateScoreDisplay();
+            updateLevel();
+            
+            // Обновляем данные кошелька
+            if (userData.wallet_address) {
+              document.getElementById('wallet-address').textContent = formatWalletAddress(userData.wallet_address);
+              document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+            }
+            
+            // Проверяем задания
+            checkWalletTask();
+            checkChannelTask();
+            checkReferralTask();
+            checkAdsTask();
+            
+            // Обновляем достижения
+            updateAchievements();
+            
+            // Обновляем ежедневные бонусы
+            updateDailyBonus();
+            
+            // Проверяем активные бусты
+            checkActiveBoosts();
+            
+            // Запускаем автокликеры
+            startAutoClickers();
+            
+            return;
+          }
+        }
         
-        // Убедимся, что все поля присутствуют
-        if (!userData.referrals) userData.referrals = [];
-        if (!userData.wallet_address) userData.wallet_address = "";
-        if (userData.wallet_task_completed === undefined) userData.wallet_task_completed = false;
-        if (userData.channel_task_completed === undefined) userData.channel_task_completed = false;
-        if (!userData.last_referral_task_completion) userData.last_referral_task_completion = null;
-        if (!userData.energy) userData.energy = MAX_ENERGY;
-        if (!userData.last_energy_update) userData.last_energy_update = new Date().toISOString();
-        if (!userData.upgrades) userData.upgrades = [];
-        if (!userData.ads_watched) userData.ads_watched = 0;
-        if (!userData.achievements) userData.achievements = [];
-        if (!userData.daily_bonus) {
-          userData.daily_bonus = {
+        // Если данных нет, создаем нового пользователя
+        userData = {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name || '',
+          username: user.username || '',
+          photo_url: user.photo_url || '',
+          score: 0,
+          total_clicks: 0,
+          level: "Новичок",
+          wallet_address: "",
+          wallet_task_completed: false,
+          channel_task_completed: false,
+          referrals: [],
+          last_referral_task_completion: null,
+          energy: MAX_ENERGY,
+          last_energy_update: new Date().toISOString(),
+          upgrades: [],
+          ads_watched: 0,
+          last_ad_time: new Date().toISOString(),
+          achievements: [],
+          daily_bonus: {
             last_claim: null,
             streak: 0,
             claimed_days: []
-          };
-        }
-        if (!userData.active_boosts) userData.active_boosts = [];
-        if (!userData.skins) userData.skins = [];
-        if (!userData.active_skin) userData.active_skin = 'default';
-        if (!userData.auto_clickers) userData.auto_clickers = 0;
-        if (!userData.language) userData.language = 'ru';
+          },
+          active_boosts: [],
+          skins: [],
+          active_skin: 'default',
+          auto_clickers: 0,
+          language: 'ru'
+        };
         
-        // Устанавливаем текущий язык
-        currentLanguage = userData.language;
-        updateLanguageUI();
-        
-        // Обновляем энергию при загрузке
-        updateEnergy();
-        
-        // Обновляем бонусы
-        updateBonuses();
-        
-        // Обновляем скин персонажа
-        updateCharacterSkin();
-        
-        // Обновляем счет и уровень (ВАЖНО!)
-        updateScoreDisplay();
-        updateLevel();
-        
-        // Обновляем данные кошелька
-        if (userData.wallet_address) {
-          document.getElementById('wallet-address').textContent = formatWalletAddress(userData.wallet_address);
-          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-        }
-        
-        // Проверяем задания
+        // Сохраняем нового пользователя на сервере
+        await saveUserData();
+        // После сохранения обновляем состояние заданий
         checkWalletTask();
         checkChannelTask();
         checkReferralTask();
         checkAdsTask();
-        
-        // Обновляем достижения
         updateAchievements();
-        
-        // Обновляем ежедневные бонусы
         updateDailyBonus();
-        
-        // Проверяем активные бусты
-        checkActiveBoosts();
-        
-        // Запускаем автокликеры
-        startAutoClickers();
-        
-        return;
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        // Даже при ошибке, обновляем состояние заданий на основе локальных данных
+        checkWalletTask();
+        checkChannelTask();
+        checkReferralTask();
+        checkAdsTask();
+        updateAchievements();
+        updateDailyBonus();
       }
     }
     
-    // Если данных нет, создаем нового пользователя
-    userData = {
-      id: user.id,
-      first_name: user.first_name,
-      last_name: user.last_name || '',
-      username: user.username || '',
-      photo_url: user.photo_url || '',
-      score: 0,
-      total_clicks: 0,
-      level: "Новичок",
-      wallet_address: "",
-      wallet_task_completed: false,
-      channel_task_completed: false,
-      referrals: [],
-      last_referral_task_completion: null,
-      energy: MAX_ENERGY,
-      last_energy_update: new Date().toISOString(),
-      upgrades: [],
-      ads_watched: 0,
-      achievements: [],
-      daily_bonus: {
-        last_claim: null,
-        streak: 0,
-        claimed_days: []
-      },
-      active_boosts: [],
-      skins: [],
-      active_skin: 'default',
-      auto_clickers: 0,
-      language: 'ru'
-    };
-    
-    // Сохраняем нового пользователя на сервере
-    await saveUserData();
-    // После сохранения обновляем состояние заданий
-    checkWalletTask();
-    checkChannelTask();
-    checkReferralTask();
-    checkAdsTask();
-    updateAchievements();
-    updateDailyBonus();
-  } catch (error) {
-    console.error('Error loading user data:', error);
-    // Даже при ошибке, обновляем состояние заданий на основе локальных данных
-    checkWalletTask();
-    checkChannelTask();
-    checkReferralTask();
-    checkAdsTask();
-    updateAchievements();
-    updateDailyBonus();
-  }
-}
-    
-   // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
+    // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
 async function saveUserData() {
-  if (!user || !user.id) {
-    console.error('User or user.id is not defined');
-    return false;
-  }
+  if (!user) return;
   
   try {
-    // Создаем объект для отправки на сервер
-    const dataToSend = {
-      ...userData,
-      id: user.id.toString(), // Убедимся, что ID есть и он строка
-      user_id: user.id.toString()
-    };
+    // Создаем объект для отправки на сервер, сохраняя все текущие данные
+    const dataToSend = {...userData};
+    
+    // Убедимся, что ID пользователя установлен
+    if (!dataToSend.id && user.id) {
+      dataToSend.id = user.id;
+    }
+    if (!dataToSend.user_id && user.id) {
+      dataToSend.user_id = user.id;
+    }
     
     console.log('Saving user data:', dataToSend);
     
@@ -3087,15 +3115,45 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Обновляем только те данные, которые не должны меняться при сохранении
-        const savedData = data.user;
+        // Обновляем userData, сохраняя текущие значения
+        const oldScore = userData.score;
+        const oldTotalClicks = userData.total_clicks;
+        const oldReferrals = userData.referrals;
+        const oldWalletTaskCompleted = userData.wallet_task_completed;
+        const oldChannelTaskCompleted = userData.channel_task_completed;
+        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
+        const oldEnergy = userData.energy;
+        const oldLastEnergyUpdate = userData.last_energy_update;
+        const oldUpgrades = userData.upgrades;
+        const oldAdsWatched = userData.ads_watched;
+        const oldAchievements = userData.achievements;
+        const oldDailyBonus = userData.daily_bonus;
+        const oldActiveBoosts = userData.active_boosts;
+        const oldSkins = userData.skins;
+        const oldActiveSkin = userData.active_skin;
+        const oldAutoClickers = userData.auto_clickers;
+        const oldLanguage = userData.language;
         
-        // Сохраняем важные поля, которые могли измениться
-        userData.id = savedData.id || userData.id;
-        userData.first_name = savedData.first_name || userData.first_name;
-        userData.last_name = savedData.last_name || userData.last_name;
-        userData.username = savedData.username || userData.username;
-        userData.photo_url = savedData.photo_url || userData.photo_url;
+        userData = data.user;
+        
+        // Восстанавливаем важные значения, которые могли быть изменены
+        userData.score = oldScore;
+        userData.total_clicks = oldTotalClicks;
+        userData.referrals = oldReferrals;
+        userData.wallet_task_completed = oldWalletTaskCompleted;
+        userData.channel_task_completed = oldChannelTaskCompleted;
+        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
+        userData.energy = oldEnergy;
+        userData.last_energy_update = oldLastEnergyUpdate;
+        userData.upgrades = oldUpgrades;
+        userData.ads_watched = oldAdsWatched;
+        userData.achievements = oldAchievements;
+        userData.daily_bonus = oldDailyBonus;
+        userData.active_boosts = oldActiveBoosts;
+        userData.skins = oldSkins;
+        userData.active_skin = oldActiveSkin;
+        userData.auto_clickers = oldAutoClickers;
+        userData.language = oldLanguage;
         
         console.log('User data saved successfully');
         return true;
@@ -3114,7 +3172,7 @@ async function saveUserData() {
   }
 }
     
-// Обновление данных топа (ИСПРАВЛЕНО)
+ // Обновление данных топа (ИСПРАВЛЕНО)
 async function updateTopData() {
   try {
     const response = await fetch('/top');
@@ -3129,11 +3187,12 @@ async function updateTopData() {
       // Проверяем, существует ли элемент topPreview перед обновлением
       const topPreview = document.getElementById('topPreview');
       if (topPreview) {
+        // Обновляем превью топа (первые 3)
         updateTopPreview(data.users.slice(0, 3));
       }
       
       // Если текущая страница - топ, обновляем и топ
-      if (document.getElementById('top') && document.getElementById('top').classList.contains('active')) {
+      if (document.getElementById('top').classList.contains('active')) {
         renderTop(data.users);
       }
     } else {
@@ -3330,7 +3389,7 @@ async function loadTop() {
   }
 }
 
-  // Обновление превью топа на кнопке (ИСПРАВЛЕНО)
+    // Обновление превью топа на кнопке (ИСПРАВЛЕНО)
 function updateTopPreview(topUsers) {
   const topPreview = document.getElementById('topPreview');
   if (!topPreview) {
@@ -4548,48 +4607,46 @@ function updateTopPreview(topUsers) {
     const imgNormal = "/static/Photo_femb_static.jpg";
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
-   function incrementScore() {
-  // Проверяем, достаточно ли энергии
-  if (userData.energy <= 0) {
-    showNoEnergyNotification();
-    return;
-  }
-  
-  // Тратим энергию
-  userData.energy--;
-  
-  // Рассчитываем бонус за клик
-  const clickBonus = calculateClickBonus();
-  
-  // Проверяем активные бусты
-  let scoreMultiplier = 1;
-  userData.active_boosts.forEach(boost => {
-    if (boost.type === 'score_multiplier') {
-      scoreMultiplier *= boost.multiplier;
+    function incrementScore() {
+      // Проверяем, достаточно ли энергии
+      if (userData.energy <= 0) {
+        showNoEnergyNotification();
+        return;
+      }
+      
+      // Тратим энергию
+      userData.energy--;
+      
+      // Рассчитываем бонус за клик
+      const clickBonus = calculateClickBonus();
+      
+      // Проверяем активные бусты
+      let scoreMultiplier = 1;
+      userData.active_boosts.forEach(boost => {
+        if (boost.type === 'score_multiplier') {
+          scoreMultiplier *= boost.multiplier;
+        }
+      });
+      
+      // Увеличиваем счет с учетом бонуса и бустов
+      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
+      userData.score += scoreIncrease;
+      userData.total_clicks++;
+      
+      // Создаем эффект молнии
+      createLightning();
+      
+      // Обновляем отображение
+      updateScoreDisplay();
+      updateEnergyDisplay();
+      updateLevel();
+      
+      // Сохраняем данные на сервере после каждого клика
+      saveUserData();
+      
+      // Проверяем достижения
+      checkNewAchievements();
     }
-  });
-  
-  // Увеличиваем счет с учетом бонуса и бустов
-  const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
-  userData.score += scoreIncrease;
-  userData.total_clicks++;
-  
-  // Создаем эффект молнии
-  createLightning();
-  
-  // Обновляем отображение
-  updateScoreDisplay();
-  updateEnergyDisplay();
-  updateLevel();
-  
-  // Сохраняем данные на сервере после каждого клика
-  saveUserData().catch(error => {
-    console.error('Error saving user data after click:', error);
-  });
-  
-  // Проверяем достижения
-  checkNewAchievements();
-}
 
     function pressVisualOn() {
       circle.classList.add('pressed');
@@ -5089,6 +5146,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
