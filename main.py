@@ -3171,6 +3171,17 @@ async function saveUserData() {
     return false;
   }
 }
+
+
+ // Функция для обновления отображения счета
+    function updateScoreDisplay() {
+      const scoreDisplay = document.getElementById('score');
+      if(scoreDisplay.firstChild) {
+        scoreDisplay.firstChild.textContent = `${translations[currentLanguage].score}: ` + userData.score;
+      }
+    }
+
+
     
  // Обновление данных топа (ИСПРАВЛЕНО)
 async function updateTopData() {
@@ -5146,7 +5157,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
 
 
 
