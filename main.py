@@ -2754,58 +2754,49 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
-  // Функция для инициализации TonConnect
+ // Функция для инициализации TonConnect (ИСПРАВЛЕНО)
 function initTonConnect() {
-  console.log('Initializing TonConnect...');
-  try {
-    tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-      manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-      buttonRootId: 'ton-connect-button',
-      actionsConfiguration: {
-        twaReturnUrl: 'https://t.me/Fnmby_bot'
-      }
-    });
-    
-    console.log('TonConnect initialized successfully');
-    
-    // Обработка подключения кошелька
-    tonConnectUI.onStatusChange(wallet => {
-      console.log('TonConnect status changed:', wallet);
-      if (wallet) {
-        // Кошелек подключен
-        const address = wallet.account.address;
-        const formattedAddress = formatWalletAddress(address);
-        
-        // Сохраняем адрес кошелька
-        userData.wallet_address = address;
-        userData.wallet_task_completed = true;
-        saveUserData();
-        
-        // Обновляем интерфейс
-        document.getElementById('wallet-address').textContent = formattedAddress;
-        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-        
-        // Проверяем задание
-        checkWalletTask();
-        
-        // Показываем уведомление
-        showNotification(translations[currentLanguage].wallet_connected);
-      } else {
-        // Кошелек отключен
-        userData.wallet_address = "";
-        saveUserData();
-        
-        // Обновляем интерфейс
-        document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
-        
-        // Показываем уведомление
-        showNotification(translations[currentLanguage].wallet_disconnected);
-      }
-    });
-  } catch (error) {
-    console.error('Error initializing TonConnect:', error);
-  }
+  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+    actionsConfiguration: {
+      twaReturnUrl: 'https://t.me/Fnmby_bot'
+    }
+  });
+  
+  // Обработка подключения кошелька
+  tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+      // Кошелек подключен
+      const address = wallet.account.address;
+      const formattedAddress = formatWalletAddress(address);
+      
+      // Сохраняем адрес кошелька
+      userData.wallet_address = address;
+      userData.wallet_task_completed = true;
+      saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = formattedAddress;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+      
+      // Проверяем задание
+      checkWalletTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_connected);
+    } else {
+      // Кошелек отключен
+      userData.wallet_address = "";
+      saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_disconnected);
+    }
+  });
 }
 
 // Обработчик для кнопки TonConnect в профиле
@@ -3174,19 +3165,16 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
       }
     }
     
-   // Функция для обновления данных топа (и превью, и страницы топа если открыта)
+  // Обновление данных топа (ИСПРАВЛЕНО)
 async function updateTopData() {
   try {
-    console.log('Updating top data...');
     const response = await fetch('/top');
-    console.log('Update top response status:', response.status);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Ошибка сервера: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Update top data:', data);
     
     if (data.users && data.users.length > 0) {
       // Обновляем превью топа (первые 3)
@@ -3196,9 +3184,13 @@ async function updateTopData() {
       if (document.getElementById('top').classList.contains('active')) {
         renderTop(data.users);
       }
+    } else {
+      console.warn('No users data received');
+      document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Нет данных</div>';
     }
   } catch (error) {
     console.error('Error updating top data:', error);
+    document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
   }
 }
     
@@ -3349,21 +3341,19 @@ async function updateTopData() {
       }, 300); // Уменьшаем задержку до 300мс
     }
 
+// Загрузка топа пользователей с сервера (ИСПРАВЛЕНО)
 async function loadTop() {
   const topList = document.getElementById('topList');
   topList.innerHTML = '<p>Загрузка топа...</p>';
   
   try {
-    console.log('Fetching top users...');
     const response = await fetch('/top');
-    console.log('Top response status:', response.status);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Ошибка сервера: ${response.status}`);
     }
     
     const data = await response.json();
-    console.log('Top response data:', data);
     
     if (data.users && data.users.length > 0) {
       renderTop(data.users);
@@ -3373,7 +3363,7 @@ async function loadTop() {
     }
   } catch (error) {
     console.error('Error loading top:', error);
-    topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+    topList.innerHTML = `<p>Ошибка загрузки топа: ${error.message}</p>`;
   }
 }
 
@@ -5129,4 +5119,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
 
