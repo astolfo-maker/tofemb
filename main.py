@@ -1,3 +1,7 @@
+Плевет, я делаю тг-мини приложение. Исправь то что не работает подключение кошелька, т.е. при нажатии кнопки "connect Wallet in Telegram"(Это уже в всплывающем окне TON Connect) не происходит абсолютно ничего.
+А так же теперь не грузит топ(Ошибка при загрузке топа)
+И энергия чота обновляется только после обновления страницы(Типа тупо на месте замирает)
+вот код на данный момент:
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -46,34 +50,34 @@ if not supabase_url or not supabase_key:
 
 # Определение уровней
 LEVELS = [
-    {"score": 0, "name": "Новичок", "name_en": "Newbie"},
-    {"score": 100, "name": "Любитель", "name_en": "Amateur"},
-    {"score": 500, "name": "Профи", "name_en": "Pro"},
-    {"score": 2000, "name": "Мастер", "name_en": "Master"},
-    {"score": 5000, "name": "Эксперт по Фембоям", "name_en": "Femboy Expert"},
-    {"score": 10000, "name": "Фембой", "name_en": "Femboy"},
-    {"score": 50000, "name": "Фурри-Фембой", "name_en": "Furry Femboy"},
-    {"score": 200000, "name": "Феликс", "name_en": "Felix"},
-    {"score": 500000, "name": "Астольфо", "name_en": "Astolfo"},
-    {"score": 1000000, "name": "Владелец фембоев", "name_en": "Femboy Owner"},
-    {"score": 5000000, "name": "Император фембоев", "name_en": "Emperor of Femboys"},
-    {"score": 10000000, "name": "Бог фембоев", "name_en": "God of Femboys"}
+    {"score": 0, "name": "Новичок"},
+    {"score": 100, "name": "Любитель"},
+    {"score": 500, "name": "Профи"},
+    {"score": 2000, "name": "Мастер"},
+    {"score": 5000, "name": "Эксперт по Фембоям"},
+    {"score": 10000, "name": "Фембой"},
+    {"score": 50000, "name": "Фурри-Фембой"},
+    {"score": 200000, "name": "Феликс"},
+    {"score": 500000, "name": "Астольфо"},
+    {"score": 1000000, "name": "Владелец фембоев"},
+    {"score": 5000000, "name": "Император фембоев"},
+    {"score": 10000000, "name": "Бог фембоев"}
 ]
 
 # Определение улучшений (сбалансированная стоимость)
 UPGRADES = [
-    {"id": "upgrade1", "description": "+1 за клик", "description_en": "+1 per click", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
-    {"id": "upgrade2", "description": "+2 за клик", "description_en": "+2 per click", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
-    {"id": "upgrade3", "description": "+5 за клик", "description_en": "+5 per click", "cost": 15000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
-    {"id": "upgrade4", "description": "+1 каждые 5 сек", "description_en": "+1 every 5 sec", "cost": 30000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
-    {"id": "upgrade5", "description": "+5 каждые 5 сек", "description_en": "+5 every 5 sec", "cost": 75000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
-    {"id": "upgrade6", "description": "+10 каждые 5 сек", "description_en": "+10 every 5 sec", "cost": 150000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
-    {"id": "upgrade7", "description": "+10 за клик", "description_en": "+10 per click", "cost": 300000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
-    {"id": "upgrade8", "description": "+15 за клик", "description_en": "+15 per click", "cost": 600000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
-    {"id": "upgrade9", "description": "+25 каждые 5 сек", "description_en": "+25 every 5 sec", "cost": 1200000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
-    {"id": "upgrade10", "description": "+25 за клик", "description_en": "+25 per click", "cost": 2500000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
-    {"id": "upgrade11", "description": "+50 каждые 5 сек", "description_en": "+50 every 5 sec", "cost": 5000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
-    {"id": "upgrade12", "description": "+100 за клик", "description_en": "+100 per click", "cost": 10000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
+    {"id": "upgrade1", "description": "+1 за клик", "cost": 1000, "effect": {"clickBonus": 1}, "image": "/static/upgrade1.png"},
+    {"id": "upgrade2", "description": "+2 за клик", "cost": 5000, "effect": {"clickBonus": 2}, "image": "/static/upgrade2.png"},
+    {"id": "upgrade3", "description": "+5 за клик", "cost": 15000, "effect": {"clickBonus": 5}, "image": "/static/upgrade3.png"},
+    {"id": "upgrade4", "description": "+1 каждые 5 сек", "cost": 30000, "effect": {"passiveIncome": 1}, "image": "/static/upgrade4.png"},
+    {"id": "upgrade5", "description": "+5 каждые 5 сек", "cost": 75000, "effect": {"passiveIncome": 5}, "image": "/static/upgrade5.png"},
+    {"id": "upgrade6", "description": "+10 каждые 5 сек", "cost": 150000, "effect": {"passiveIncome": 10}, "image": "/static/upgrade6.png"},
+    {"id": "upgrade7", "description": "+10 за клик", "cost": 300000, "effect": {"clickBonus": 10}, "image": "/static/upgrade7.png"},
+    {"id": "upgrade8", "description": "+15 за клик", "cost": 600000, "effect": {"clickBonus": 15}, "image": "/static/upgrade8.png"},
+    {"id": "upgrade9", "description": "+25 каждые 5 сек", "cost": 1200000, "effect": {"passiveIncome": 25}, "image": "/static/upgrade9.png"},
+    {"id": "upgrade10", "description": "+25 за клик", "cost": 2500000, "effect": {"clickBonus": 25}, "image": "/static/upgrade10.png"},
+    {"id": "upgrade11", "description": "+50 каждые 5 сек", "cost": 5000000, "effect": {"passiveIncome": 50}, "image": "/static/upgrade11.png"},
+    {"id": "upgrade12", "description": "+100 за клик", "cost": 10000000, "effect": {"clickBonus": 100}, "image": "/static/upgrade12.png"}
 ]
 
 # Определение заданий
@@ -81,14 +85,12 @@ NORMAL_TASKS = [
     {
         "id": "wallet_task",
         "title": "Подключить TON кошелек",
-        "title_en": "Connect TON wallet",
         "reward": 1000,
         "type": "normal"
     },
     {
         "id": "channel_subscription",
         "title": "Подписка на канал",
-        "title_en": "Subscribe to channel",
         "reward": 2000,
         "type": "normal"
     }
@@ -98,14 +100,12 @@ DAILY_TASKS = [
     {
         "id": "referral_task",
         "title": "Пригласить 3-х друзей",
-        "title_en": "Invite 3 friends",
         "reward": 5000,
         "type": "daily"
     },
     {
         "id": "ads_task",
         "title": "Просмотр рекламы",
-        "title_en": "Watch ads",
         "reward": 5000,
         "type": "daily",
         "no_reset": True
@@ -117,36 +117,28 @@ ACHIEVEMENTS = [
     {
         "id": "first_click",
         "name": "Первый клик",
-        "name_en": "First Click",
         "description": "Сделайте свой первый клик",
-        "description_en": "Make your first click",
         "reward": 100,
         "condition": {"type": "clicks", "value": 1}
     },
     {
         "id": "click_master",
         "name": "Мастер кликов",
-        "name_en": "Click Master",
         "description": "Сделайте 1000 кликов",
-        "description_en": "Make 1000 clicks",
         "reward": 5000,
         "condition": {"type": "clicks", "value": 1000}
     },
     {
         "id": "score_1000",
         "name": "Тысячник",
-        "name_en": "Thousandaire",
         "description": "Наберите 1000 очков",
-        "description_en": "Score 1000 points",
         "reward": 1000,
         "condition": {"type": "score", "value": 1000}
     },
     {
         "id": "daily_login",
         "name": "Ежедневный вход",
-        "name_en": "Daily Login",
         "description": "Входите в игру 7 дней подряд",
-        "description_en": "Log in for 7 days in a row",
         "reward": 3000,
         "condition": {"type": "daily_streak", "value": 7}
     }
@@ -157,9 +149,7 @@ MINIGAMES = [
     {
         "id": "catch_coins",
         "name": "Поймай монетки",
-        "name_en": "Catch Coins",
         "description": "Ловите падающие монетки!",
-        "description_en": "Catch falling coins!",
         "reward": 100,
         "duration": 30
     }
@@ -449,15 +439,10 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "skins": user_data.get('skins', []),
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
-            "language": user_data.get('language', 'ru')
+            "language": user_data.get('language', 'ru'),
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
+            "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
         }
-        
-        # Добавляем поля, которые могут отсутствовать в таблице, только если они есть в данных
-        if 'last_ad_time' in user_data:
-            db_data["last_ad_time"] = user_data.get('last_ad_time')
-        
-        if 'last_passive_income_update' in user_data:
-            db_data["last_passive_income_update"] = user_data.get('last_passive_income_update')
         
         def query():
             # Используем upsert для атомарной вставки или обновления
@@ -497,6 +482,7 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error getting top users: {e}")
         return []
+
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     if supabase is None:
@@ -2767,57 +2753,22 @@ html_content = """
     
     // Инициализация TonConnect
     let tonConnectUI;
-    let tonConnectModalUI; // Для модального окна
     
     // Инициализация Adsgram
     let adsgramAd;
     
-   function initTonConnect() {
-  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-    manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-    buttonRootId: 'ton-connect-button',
-    actionsConfiguration: {
-      twaReturnUrl: 'https://t.me/Fnmby_bot/app'
-    }
-  });
-  
-  // Обработка подключения кошелька
-  tonConnectUI.onStatusChange(wallet => {
-    if (wallet) {
-      // Кошелек подключен
-      const address = wallet.account.address;
-      const formattedAddress = formatWalletAddress(address);
+    // Функция для инициализации TonConnect
+    function initTonConnect() {
+      tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+        buttonRootId: 'ton-connect-button',
+        actionsConfiguration: {
+          twaReturnUrl: 'https://t.me/Fnmby_bot'
+        }
+      });
       
-      // Сохраняем адрес кошелька
-      userData.wallet_address = address;
-      userData.wallet_task_completed = true;
-      saveUserData();
-      
-      // Обновляем интерфейс
-      document.getElementById('wallet-address').textContent = formattedAddress;
-      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-      
-      // Проверяем задание
-      checkWalletTask();
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].wallet_connected);
-    } else {
-      // Кошелек отключен
-      userData.wallet_address = "";
-      saveUserData();
-      
-      // Обновляем интерфейс
-      document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].wallet_disconnected);
-    }
-  });
-}
-      // Обработка подключения кошелька для модального окна
-      tonConnectModalUI.onStatusChange(wallet => {
+      // Обработка подключения кошелька
+      tonConnectUI.onStatusChange(wallet => {
         if (wallet) {
           // Кошелек подключен
           const address = wallet.account.address;
@@ -2830,15 +2781,24 @@ html_content = """
           
           // Обновляем интерфейс
           document.getElementById('wallet-address').textContent = formattedAddress;
-          
-          // Закрываем модальное окно
-          closeWalletTaskModal();
+          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
           
           // Проверяем задание
           checkWalletTask();
           
           // Показываем уведомление
           showNotification(translations[currentLanguage].wallet_connected);
+        } else {
+          // Кошелек отключен
+          userData.wallet_address = "";
+          saveUserData();
+          
+          // Обновляем интерфейс
+          document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+          document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
+          
+          // Показываем уведомление
+          showNotification(translations[currentLanguage].wallet_disconnected);
         }
       });
     }
@@ -2907,42 +2867,31 @@ html_content = """
       }
     }
     
-   function updateEnergy() {
-  const now = new Date();
-  const lastUpdate = new Date(userData.last_energy_update);
-  const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
-  
-  // Восстанавливаем энергию (1 единица в секунду)
-  if (timeDiff > 0) {
-    userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
-    userData.last_energy_update = now.toISOString();
+    // Функция для обновления энергии
+    function updateEnergy() {
+      const now = new Date();
+      const lastUpdate = new Date(userData.last_energy_update);
+      const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
+      
+      // Восстанавливаем энергию (1 единица в секунду)
+      if (timeDiff > 0) {
+        userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
+        userData.last_energy_update = now.toISOString();
+        
+        // Обновляем отображение энергии
+        updateEnergyDisplay();
+      }
+    }
     
-    // Обновляем отображение энергии
-    updateEnergyDisplay();
-    
-    // Сохраняем данные пользователя
-    saveUserData().catch(error => {
-      console.error('Error saving user data after energy update:', error);
-    });
-  }
-
-    
-   function updateEnergyDisplay() {
-  console.log('Updating energy display...');
-  const energyProgress = document.getElementById('energyProgress');
-  const energyText = document.getElementById('energyText');
-  
-  if (!energyProgress || !energyText) {
-    console.error('Energy display elements not found');
-    return;
-  }
-  
-  const energyPercent = (userData.energy / MAX_ENERGY) * 100;
-  energyProgress.style.width = `${energyPercent}%`;
-  const energyTextContent = `${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}`;
-  console.log('Energy text content:', energyTextContent);
-  energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${energyTextContent}</span>`;
-}
+    // Функция для обновления отображения энергии
+    function updateEnergyDisplay() {
+      const energyProgress = document.getElementById('energyProgress');
+      const energyText = document.getElementById('energyText');
+      
+      const energyPercent = (userData.energy / MAX_ENERGY) * 100;
+      energyProgress.style.width = `${energyPercent}%`;
+      energyText.innerHTML = `<span id="energyIcon">⚡</span><span>${translations[currentLanguage].energy}: ${userData.energy}/${MAX_ENERGY}</span>`;
+    }
     
     // Функция для загрузки данных пользователя с сервера
     async function loadUserData() {
@@ -3010,9 +2959,6 @@ html_content = """
             if (!userData.language) {
               userData.language = 'ru';
             }
-            if (!userData.last_passive_income_update) {
-              userData.last_passive_income_update = new Date().toISOString();
-            }
             
             // Устанавливаем текущий язык
             currentLanguage = userData.language;
@@ -3033,6 +2979,7 @@ html_content = """
             // Обновляем данные кошелька
             if (userData.wallet_address) {
               document.getElementById('wallet-address').textContent = formatWalletAddress(userData.wallet_address);
+              document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
             }
             
             // Проверяем задания
@@ -3087,8 +3034,7 @@ html_content = """
           skins: [],
           active_skin: 'default',
           auto_clickers: 0,
-          language: 'ru',
-          last_passive_income_update: new Date().toISOString()
+          language: 'ru'
         };
         
         // Сохраняем нового пользователя на сервере
@@ -3112,92 +3058,89 @@ html_content = """
       }
     }
     
-   async function saveUserData() {
-  if (!user) return;
-  
-  try {
-    const dataToSend = {...userData};
-    
-    // Убедимся, что last_ad_time существует
-    if (!dataToSend.last_ad_time) {
-      dataToSend.last_ad_time = new Date().toISOString();
-    }
-    
-    console.log('Saving user data:', dataToSend);
-    
-    const response = await fetch('/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(dataToSend)
-    });
-    
-    console.log('Save response status:', response.status);
-    
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Save response:', data);
+    // Функция для сохранения данных пользователя на сервере
+    async function saveUserData() {
+      if (!user) return;
       
-      if (data.user) {
-        // Восстанавливаем важные значения
-        const oldScore = userData.score;
-        const oldTotalClicks = userData.total_clicks;
-        const oldReferrals = userData.referrals;
-        const oldWalletTaskCompleted = userData.wallet_task_completed;
-        const oldChannelTaskCompleted = userData.channel_task_completed;
-        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
-        const oldEnergy = userData.energy;
-        const oldLastEnergyUpdate = userData.last_energy_update;
-        const oldUpgrades = userData.upgrades;
-        const oldAdsWatched = userData.ads_watched;
-        const oldLastAdTime = userData.last_ad_time;
-        const oldAchievements = userData.achievements;
-        const oldDailyBonus = userData.daily_bonus;
-        const oldActiveBoosts = userData.active_boosts;
-        const oldSkins = userData.skins;
-        const oldActiveSkin = userData.active_skin;
-        const oldAutoClickers = userData.auto_clickers;
-        const oldLanguage = userData.language;
+      try {
+        // Создаем объект для отправки на сервер, сохраняя все текущие данные
+        const dataToSend = {...userData};
         
-        userData = data.user;
+        console.log('Saving user data:', dataToSend);
         
-        // Восстанавливаем важные значения
-        userData.score = oldScore;
-        userData.total_clicks = oldTotalClicks;
-        userData.referrals = oldReferrals;
-        userData.wallet_task_completed = oldWalletTaskCompleted;
-        userData.channel_task_completed = oldChannelTaskCompleted;
-        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
-        userData.energy = oldEnergy;
-        userData.last_energy_update = oldLastEnergyUpdate;
-        userData.upgrades = oldUpgrades;
-        userData.ads_watched = oldAdsWatched;
-        userData.last_ad_time = oldLastAdTime;
-        userData.achievements = oldAchievements;
-        userData.daily_bonus = oldDailyBonus;
-        userData.active_boosts = oldActiveBoosts;
-        userData.skins = oldSkins;
-        userData.active_skin = oldActiveSkin;
-        userData.auto_clickers = oldAutoClickers;
-        userData.language = oldLanguage;
+        const response = await fetch('/user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dataToSend)
+        });
         
-        console.log('User data saved successfully');
-        return true;
-      } else {
-        console.error('No user data in response');
+        console.log('Save response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Save response:', data);
+          
+          if (data.user) {
+            // Обновляем userData, сохраняя текущие значения
+            const oldScore = userData.score;
+            const oldTotalClicks = userData.total_clicks;
+            const oldReferrals = userData.referrals;
+            const oldWalletTaskCompleted = userData.wallet_task_completed;
+            const oldChannelTaskCompleted = userData.channel_task_completed;
+            const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
+            const oldEnergy = userData.energy;
+            const oldLastEnergyUpdate = userData.last_energy_update;
+            const oldUpgrades = userData.upgrades;
+            const oldAdsWatched = userData.ads_watched;
+            const oldLastAdTime = userData.last_ad_time;
+            const oldAchievements = userData.achievements;
+            const oldDailyBonus = userData.daily_bonus;
+            const oldActiveBoosts = userData.active_boosts;
+            const oldSkins = userData.skins;
+            const oldActiveSkin = userData.active_skin;
+            const oldAutoClickers = userData.auto_clickers;
+            const oldLanguage = userData.language;
+            
+            userData = data.user;
+            
+            // Восстанавливаем важные значения, которые могли быть изменены
+            userData.score = oldScore;
+            userData.total_clicks = oldTotalClicks;
+            userData.referrals = oldReferrals;
+            userData.wallet_task_completed = oldWalletTaskCompleted;
+            userData.channel_task_completed = oldChannelTaskCompleted;
+            userData.last_referral_task_completion = oldLastReferralTaskCompletion;
+            userData.energy = oldEnergy;
+            userData.last_energy_update = oldLastEnergyUpdate;
+            userData.upgrades = oldUpgrades;
+            userData.ads_watched = oldAdsWatched;
+            userData.last_ad_time = oldLastAdTime;
+            userData.achievements = oldAchievements;
+            userData.daily_bonus = oldDailyBonus;
+            userData.active_boosts = oldActiveBoosts;
+            userData.skins = oldSkins;
+            userData.active_skin = oldActiveSkin;
+            userData.auto_clickers = oldAutoClickers;
+            userData.language = oldLanguage;
+            
+            console.log('User data saved successfully');
+            return true;
+          } else {
+            console.error('No user data in response');
+            return false;
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('Error saving user data:', response.status, response.statusText, errorText);
+          return false;
+        }
+      } catch (error) {
+        console.error('Error saving user data:', error);
         return false;
       }
-    } else {
-      const errorText = await response.text();
-      console.error('Error saving user data:', response.status, response.statusText, errorText);
-      return false;
     }
-  } catch (error) {
-    console.error('Error saving user data:', error);
-    return false;
-  }
-}
     
     // Функция для обновления отображения счета
     function updateScoreDisplay() {
@@ -3207,52 +3150,32 @@ html_content = """
       }
     }
     
+    // Функция для обновления данных топа (и превью, и страницы топа если открыта)
     async function updateTopData() {
-  try {
-    const response = await fetch('/top');
-    if (response.ok) {
-      const data = await response.json();
-      
-      if (data.users && data.users.length > 0) {
-        // Обновляем превью топа (первые 3)
-        updateTopPreview(data.users.slice(0, 3));
-        
-        // Если текущая страница - топ, обновляем и топ
-        if (document.getElementById('top').classList.contains('active')) {
-          renderTop(data.users);
+      try {
+        const response = await fetch('/top');
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.users && data.users.length > 0) {
+            // Обновляем превью топа (первые 3)
+            updateTopPreview(data.users.slice(0, 3));
+            
+            // Если текущая страница - топ, обновляем и топ
+            if (document.getElementById('top').classList.contains('active')) {
+              renderTop(data.users);
+            }
+          }
         }
-      } else {
-        // Если нет пользователей, показываем сообщение
-        const topPreview = document.getElementById('topPreview');
-        topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
-        
-        if (document.getElementById('top').classList.contains('active')) {
-          const topList = document.getElementById('topList');
-          topList.innerHTML = '<p>Нет данных для отображения</p>';
-        }
+      } catch (error) {
+        console.error('Error updating top data:', error);
       }
-    } else {
-      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  } catch (error) {
-    console.error('Error updating top data:', error);
-    
-    // Показываем сообщение об ошибке
-    const topPreview = document.getElementById('topPreview');
-    topPreview.innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
-    
-    if (document.getElementById('top').classList.contains('active')) {
-      const topList = document.getElementById('topList');
-      topList.innerHTML = '<p>Ошибка загрузки топа</p>';
-    }
-  }
-}
     
     // Переключение страниц по кнопкам меню
     const pages = {
       profile: document.getElementById('profile'),
       clicker: document.getElementById('clicker'),
-      updateEnergy
       tasks: document.getElementById('tasks'),
       top: document.getElementById('top'),
       achievements: document.getElementById('achievements'),
@@ -3388,9 +3311,8 @@ html_content = """
           userData.wallet_address ? formatWalletAddress(userData.wallet_address) : translations[currentLanguage].connect_wallet;
         
         // Обновляем текст кнопки TonConnect
-        // Убираем ручное обновление текста, TonConnect управляет этим сам
-        // document.getElementById('ton-connect-button').textContent = 
-        //   userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
+        document.getElementById('ton-connect-button').textContent = 
+          userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
         
         // Скрываем индикатор загрузки
         loadingIndicator.style.display = 'none';
@@ -3422,8 +3344,6 @@ html_content = """
     function updateTopPreview(topUsers) {
       const topPreview = document.getElementById('topPreview');
       topPreview.innerHTML = '';
-      
-            '';
       
       topUsers.forEach((user, index) => {
         const item = document.createElement('div');
@@ -4428,6 +4348,7 @@ html_content = """
       
       // Обновляем кнопки
       document.getElementById('backButton').textContent = translations[currentLanguage].back;
+      document.getElementById('ton-connect-button').textContent = userData.wallet_address ? translations[currentLanguage].disconnect_wallet : translations[currentLanguage].connect_wallet;
       
       // Обновляем тексты вкладок заданий
       document.querySelector('.task-tab:nth-child(1)').textContent = translations[currentLanguage].normal_tasks;
@@ -4442,7 +4363,7 @@ html_content = """
       renderUpgrades();
     }
     
-    // Функции для мини-игры
+    // Функции для мини-игры "Поймай монетки"
     function startMinigame(minigameId) {
       if (minigameId === 'catch_coins') {
         startCatchCoinsMinigame();
@@ -5035,57 +4956,61 @@ async def get_user_data(user_id: str):
 
 @app.post("/user")
 async def save_user_data(request: Request):
+    """Сохранение данных пользователя на сервере"""
     try:
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
-        # Подготовка данных для вставки/обновления
-        db_data = {
-            "user_id": str(data.get('id', '')),
-            "first_name": data.get('first_name', ''),
-            "last_name": data.get('last_name', ''),
-            "username": data.get('username', ''),
-            "photo_url": data.get('photo_url', ''),
-            "score": int(data.get('score', 0)),
-            "total_clicks": int(data.get('total_clicks', 0)),
-            "level": get_level_by_score(int(data.get('score', 0))),
-            "wallet_address": data.get('wallet_address', ''),
-            "wallet_task_completed": bool(data.get('wallet_task_completed', False)),
-            "channel_task_completed": bool(data.get('channel_task_completed', False)),
-            "referrals": data.get('referrals', []),
-            "last_referral_task_completion": data.get('last_referral_task_completion'),
-            "energy": int(data.get('energy', MAX_ENERGY)),
-            "last_energy_update": data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
-            "upgrades": data.get('upgrades', []),
-            "ads_watched": int(data.get('ads_watched', 0)),
-            "achievements": data.get('achievements', []),
-            "daily_bonus": data.get('daily_bonus', {
-                'last_claim': None,
-                'streak': 0,
-                'claimed_days': []
-            }),
-            "active_boosts": data.get('active_boosts', []),
-            "skins": data.get('skins', []),
-            "active_skin": data.get('active_skin', 'default'),
-            "auto_clickers": int(data.get('auto_clickers', 0)),
-            "language": data.get('language', 'ru'),
-            "last_passive_income_update": data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
-            "last_ad_time": data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
-        }
+        # Сохраняем в базу данных
+        success = save_user(data)
         
-        def query():
-            return supabase.table("users").upsert(
-                db_data, 
-                on_conflict="user_id"
-            ).execute()
-        
-        response = execute_supabase_query(query)
-        
-        logger.info(f"Save operation completed with data: {response.data}")
-        return response.data is not None
+        if success:
+            # Получаем обновленные данные
+            user_id = str(data.get('id'))
+            user_data = load_user(user_id)
+            
+            if user_data:
+                # Преобразуем данные для фронтенда
+                response_data = {
+                    "id": user_data["user_id"],
+                    "first_name": user_data["first_name"],
+                    "last_name": user_data["last_name"],
+                    "username": user_data["username"],
+                    "photo_url": user_data["photo_url"],
+                    "score": user_data["score"],
+                    "total_clicks": user_data["total_clicks"],
+                    "level": user_data["level"],
+                    "wallet_address": user_data["wallet_address"],
+                    "wallet_task_completed": user_data["wallet_task_completed"],
+                    "channel_task_completed": user_data["channel_task_completed"],
+                    "referrals": user_data["referrals"],
+                    "last_referral_task_completion": user_data["last_referral_task_completion"],
+                    "energy": user_data["energy"],
+                    "last_energy_update": user_data["last_energy_update"],
+                    "upgrades": user_data["upgrades"],
+                    "ads_watched": user_data["ads_watched"],
+                    "achievements": user_data["achievements"],
+                    "daily_bonus": user_data["daily_bonus"],
+                    "active_boosts": user_data["active_boosts"],
+                    "skins": user_data["skins"],
+                    "active_skin": user_data["active_skin"],
+                    "auto_clickers": user_data["auto_clickers"],
+                    "language": user_data["language"],
+                    "last_passive_income_update": user_data["last_passive_income_update"],
+                    "last_ad_time": user_data["last_ad_time"]
+                }
+                
+                logger.info(f"User saved successfully: {user_data['first_name']}")
+                return JSONResponse(content={"status": "success", "user": response_data})
+            else:
+                logger.info(f"Failed to retrieve saved user")
+                return JSONResponse(content={"status": "error", "message": "Failed to retrieve saved user"}, status_code=500)
+        else:
+            logger.info(f"Failed to save user")
+            return JSONResponse(content={"status": "error", "message": "Failed to save user"}, status_code=500)
     except Exception as e:
         logger.error(f"Error in POST /user: {e}")
-        return False
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/referral")
 async def handle_referral(request: Request):
@@ -5167,3 +5092,7 @@ if __name__ == "__main__":
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
+
+
+     
+        
