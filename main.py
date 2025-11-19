@@ -497,7 +497,6 @@ def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error getting top users: {e}")
         return []
-
 # Функция для добавления реферала
 def add_referral(referrer_id: str, referred_id: str) -> bool:
     if supabase is None:
@@ -2773,47 +2772,50 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
-    function initTonConnect() {
-  console.log('Initializing TonConnect...');
-  try {
-    tonConnectUI = new TonConnectUI({
-      manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
-      actionsConfiguration: {
-        twaReturnUrl: 'https://t.me/Fnmby_bot'
-      }
-    });
-    console.log('TonConnect initialized successfully');
-    
-    tonConnectUI.onStatusChange(wallet => {
-      console.log('Wallet status changed:', wallet);
-      if (wallet) {
-        const address = wallet.account.address;
-        const formattedAddress = formatWalletAddress(address);
-        
-        userData.wallet_address = address;
-        userData.wallet_task_completed = true;
-        saveUserData();
-        
-        document.getElementById('wallet-address').textContent = formattedAddress;
-        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
-        
-        checkWalletTask();
-        showNotification(translations[currentLanguage].wallet_connected);
-      } else {
-        userData.wallet_address = "";
-        saveUserData();
-        
-        document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
-        document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
-        
-        showNotification(translations[currentLanguage].wallet_disconnected);
-      }
-    });
-  } catch (error) {
-    console.error('Error initializing TonConnect:', error);
-  }
-}
+   function initTonConnect() {
+  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-button',
+    actionsConfiguration: {
+      twaReturnUrl: 'https://t.me/Fnmby_bot/app'
+    }
+  });
+  
+  // Обработка подключения кошелька
+  tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+      // Кошелек подключен
+      const address = wallet.account.address;
+      const formattedAddress = formatWalletAddress(address);
       
+      // Сохраняем адрес кошелька
+      userData.wallet_address = address;
+      userData.wallet_task_completed = true;
+      saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = formattedAddress;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].disconnect_wallet;
+      
+      // Проверяем задание
+      checkWalletTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_connected);
+    } else {
+      // Кошелек отключен
+      userData.wallet_address = "";
+      saveUserData();
+      
+      // Обновляем интерфейс
+      document.getElementById('wallet-address').textContent = translations[currentLanguage].connect_wallet;
+      document.getElementById('ton-connect-button').textContent = translations[currentLanguage].connect_wallet;
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].wallet_disconnected);
+    }
+  });
+}
       // Обработка подключения кошелька для модального окна
       tonConnectModalUI.onStatusChange(wallet => {
         if (wallet) {
@@ -2905,25 +2907,25 @@ html_content = """
       }
     }
     
-    function updateEnergy() {
-  console.log('Updating energy...');
+   function updateEnergy() {
   const now = new Date();
-  let lastUpdate = userData.last_energy_update ? new Date(userData.last_energy_update) : now;
-  if (isNaN(lastUpdate.getTime())) {
-    console.warn('Invalid last_energy_update, using current time');
-    lastUpdate = now;
-    userData.last_energy_update = now.toISOString();
-  }
-  const timeDiff = Math.floor((now - lastUpdate) / 1000);
-  console.log(`Time diff: ${timeDiff} seconds`);
+  const lastUpdate = new Date(userData.last_energy_update);
+  const timeDiff = Math.floor((now - lastUpdate) / 1000); // разница в секундах
   
+  // Восстанавливаем энергию (1 единица в секунду)
   if (timeDiff > 0) {
     userData.energy = Math.min(MAX_ENERGY, userData.energy + timeDiff);
     userData.last_energy_update = now.toISOString();
+    
+    // Обновляем отображение энергии
     updateEnergyDisplay();
-    console.log(`Energy updated: ${userData.energy}/${MAX_ENERGY}`);
+    
+    // Сохраняем данные пользователя
+    saveUserData().catch(error => {
+      console.error('Error saving user data after energy update:', error);
+    });
   }
-}
+
     
    function updateEnergyDisplay() {
   console.log('Updating energy display...');
@@ -3207,28 +3209,42 @@ html_content = """
     
     async function updateTopData() {
   try {
-    console.log('Updating top data...');
     const response = await fetch('/top');
-    console.log('Top response status:', response.status);
     if (response.ok) {
       const data = await response.json();
-      console.log('Top data received:', data);
+      
       if (data.users && data.users.length > 0) {
+        // Обновляем превью топа (первые 3)
         updateTopPreview(data.users.slice(0, 3));
+        
+        // Если текущая страница - топ, обновляем и топ
         if (document.getElementById('top').classList.contains('active')) {
           renderTop(data.users);
         }
       } else {
-        console.log('No users in top data');
-        document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Нет данных</div>';
+        // Если нет пользователей, показываем сообщение
+        const topPreview = document.getElementById('topPreview');
+        topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
+        
+        if (document.getElementById('top').classList.contains('active')) {
+          const topList = document.getElementById('topList');
+          topList.innerHTML = '<p>Нет данных для отображения</p>';
+        }
       }
     } else {
-      console.error('Error response from top endpoint:', response.statusText);
-      document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
   } catch (error) {
     console.error('Error updating top data:', error);
-    document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+    
+    // Показываем сообщение об ошибке
+    const topPreview = document.getElementById('topPreview');
+    topPreview.innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+    
+    if (document.getElementById('top').classList.contains('active')) {
+      const topList = document.getElementById('topList');
+      topList.innerHTML = '<p>Ошибка загрузки топа</p>';
+    }
   }
 }
     
