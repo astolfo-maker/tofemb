@@ -2754,10 +2754,19 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
- // Функция для инициализации TonConnect (ИСПРАВЛЕНО)
+// Функция для инициализации TonConnect (ИСПРАВЛЕНО)
 function initTonConnect() {
+  // Создаем контейнер для кнопки TonConnect, если его нет
+  if (!document.getElementById('tonconnect-container')) {
+    const container = document.createElement('div');
+    container.id = 'tonconnect-container';
+    container.style.display = 'none';
+    document.body.appendChild(container);
+  }
+  
   tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     manifestUrl: 'https://tofemb.onrender.com/tonconnect-manifest.json',
+    buttonRootId: 'tonconnect-container',
     actionsConfiguration: {
       twaReturnUrl: 'https://t.me/Fnmby_bot'
     }
@@ -3073,99 +3082,97 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
       }
     }
     
-    // Функция для сохранения данных пользователя на сервере
-    async function saveUserData() {
-      if (!user) return;
+    // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
+async function saveUserData() {
+  if (!user) return;
+  
+  try {
+    // Создаем объект для отправки на сервер, сохраняя все текущие данные
+    const dataToSend = {...userData};
+    
+    // Убедимся, что ID пользователя установлен
+    if (!dataToSend.id && user.id) {
+      dataToSend.id = user.id;
+    }
+    if (!dataToSend.user_id && user.id) {
+      dataToSend.user_id = user.id;
+    }
+    
+    console.log('Saving user data:', dataToSend);
+    
+    const response = await fetch('/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(dataToSend)
+    });
+    
+    console.log('Save response status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Save response:', data);
       
-      try {
-        // Создаем объект для отправки на сервер, сохраняя все текущие данные
-        const dataToSend = {...userData};
+      if (data.user) {
+        // Обновляем userData, сохраняя текущие значения
+        const oldScore = userData.score;
+        const oldTotalClicks = userData.total_clicks;
+        const oldReferrals = userData.referrals;
+        const oldWalletTaskCompleted = userData.wallet_task_completed;
+        const oldChannelTaskCompleted = userData.channel_task_completed;
+        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
+        const oldEnergy = userData.energy;
+        const oldLastEnergyUpdate = userData.last_energy_update;
+        const oldUpgrades = userData.upgrades;
+        const oldAdsWatched = userData.ads_watched;
+        const oldAchievements = userData.achievements;
+        const oldDailyBonus = userData.daily_bonus;
+        const oldActiveBoosts = userData.active_boosts;
+        const oldSkins = userData.skins;
+        const oldActiveSkin = userData.active_skin;
+        const oldAutoClickers = userData.auto_clickers;
+        const oldLanguage = userData.language;
         
-        console.log('Saving user data:', dataToSend);
+        userData = data.user;
         
-        const response = await fetch('/user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(dataToSend)
-        });
+        // Восстанавливаем важные значения, которые могли быть изменены
+        userData.score = oldScore;
+        userData.total_clicks = oldTotalClicks;
+        userData.referrals = oldReferrals;
+        userData.wallet_task_completed = oldWalletTaskCompleted;
+        userData.channel_task_completed = oldChannelTaskCompleted;
+        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
+        userData.energy = oldEnergy;
+        userData.last_energy_update = oldLastEnergyUpdate;
+        userData.upgrades = oldUpgrades;
+        userData.ads_watched = oldAdsWatched;
+        userData.achievements = oldAchievements;
+        userData.daily_bonus = oldDailyBonus;
+        userData.active_boosts = oldActiveBoosts;
+        userData.skins = oldSkins;
+        userData.active_skin = oldActiveSkin;
+        userData.auto_clickers = oldAutoClickers;
+        userData.language = oldLanguage;
         
-        console.log('Save response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Save response:', data);
-          
-          if (data.user) {
-            // Обновляем userData, сохраняя текущие значения
-            const oldScore = userData.score;
-            const oldTotalClicks = userData.total_clicks;
-            const oldReferrals = userData.referrals;
-            const oldWalletTaskCompleted = userData.wallet_task_completed;
-            const oldChannelTaskCompleted = userData.channel_task_completed;
-            const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
-            const oldEnergy = userData.energy;
-            const oldLastEnergyUpdate = userData.last_energy_update;
-            const oldUpgrades = userData.upgrades;
-            const oldAdsWatched = userData.ads_watched;
-            const oldLastAdTime = userData.last_ad_time;
-            const oldAchievements = userData.achievements;
-            const oldDailyBonus = userData.daily_bonus;
-            const oldActiveBoosts = userData.active_boosts;
-            const oldSkins = userData.skins;
-            const oldActiveSkin = userData.active_skin;
-            const oldAutoClickers = userData.auto_clickers;
-            const oldLanguage = userData.language;
-            
-            userData = data.user;
-            
-            // Восстанавливаем важные значения, которые могли быть изменены
-            userData.score = oldScore;
-            userData.total_clicks = oldTotalClicks;
-            userData.referrals = oldReferrals;
-            userData.wallet_task_completed = oldWalletTaskCompleted;
-            userData.channel_task_completed = oldChannelTaskCompleted;
-            userData.last_referral_task_completion = oldLastReferralTaskCompletion;
-            userData.energy = oldEnergy;
-            userData.last_energy_update = oldLastEnergyUpdate;
-            userData.upgrades = oldUpgrades;
-            userData.ads_watched = oldAdsWatched;
-            userData.last_ad_time = oldLastAdTime;
-            userData.achievements = oldAchievements;
-            userData.daily_bonus = oldDailyBonus;
-            userData.active_boosts = oldActiveBoosts;
-            userData.skins = oldSkins;
-            userData.active_skin = oldActiveSkin;
-            userData.auto_clickers = oldAutoClickers;
-            userData.language = oldLanguage;
-            
-            console.log('User data saved successfully');
-            return true;
-          } else {
-            console.error('No user data in response');
-            return false;
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('Error saving user data:', response.status, response.statusText, errorText);
-          return false;
-        }
-      } catch (error) {
-        console.error('Error saving user data:', error);
+        console.log('User data saved successfully');
+        return true;
+      } else {
+        console.error('No user data in response');
         return false;
       }
+    } else {
+      const errorText = await response.text();
+      console.error('Error saving user data:', response.status, response.statusText, errorText);
+      return false;
     }
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    return false;
+  }
+}
     
-    // Функция для обновления отображения счета
-    function updateScoreDisplay() {
-      const scoreDisplay = document.getElementById('score');
-      if(scoreDisplay.firstChild) {
-        scoreDisplay.firstChild.textContent = `${translations[currentLanguage].score}: ` + userData.score;
-      }
-    }
-    
-  // Обновление данных топа (ИСПРАВЛЕНО)
+ // Обновление данных топа (ИСПРАВЛЕНО)
 async function updateTopData() {
   try {
     const response = await fetch('/top');
@@ -3177,8 +3184,12 @@ async function updateTopData() {
     const data = await response.json();
     
     if (data.users && data.users.length > 0) {
-      // Обновляем превью топа (первые 3)
-      updateTopPreview(data.users.slice(0, 3));
+      // Проверяем, существует ли элемент topPreview перед обновлением
+      const topPreview = document.getElementById('topPreview');
+      if (topPreview) {
+        // Обновляем превью топа (первые 3)
+        updateTopPreview(data.users.slice(0, 3));
+      }
       
       // Если текущая страница - топ, обновляем и топ
       if (document.getElementById('top').classList.contains('active')) {
@@ -3186,11 +3197,17 @@ async function updateTopData() {
       }
     } else {
       console.warn('No users data received');
-      document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Нет данных</div>';
+      const topPreview = document.getElementById('topPreview');
+      if (topPreview) {
+        topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
+      }
     }
   } catch (error) {
     console.error('Error updating top data:', error);
-    document.getElementById('topPreview').innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+    const topPreview = document.getElementById('topPreview');
+    if (topPreview) {
+      topPreview.innerHTML = '<div class="top-preview-item">Ошибка загрузки</div>';
+    }
   }
 }
     
@@ -3344,6 +3361,11 @@ async function updateTopData() {
 // Загрузка топа пользователей с сервера (ИСПРАВЛЕНО)
 async function loadTop() {
   const topList = document.getElementById('topList');
+  if (!topList) {
+    console.error('Top list element not found');
+    return;
+  }
+  
   topList.innerHTML = '<p>Загрузка топа...</p>';
   
   try {
@@ -3367,18 +3389,23 @@ async function loadTop() {
   }
 }
 
-    // Обновление превью топа на кнопке
-    function updateTopPreview(topUsers) {
-      const topPreview = document.getElementById('topPreview');
-      topPreview.innerHTML = '';
-      
-      topUsers.forEach((user, index) => {
-        const item = document.createElement('div');
-        item.className = 'top-preview-item';
-        item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score}`;
-        topPreview.appendChild(item);
-      });
-    }
+    // Обновление превью топа на кнопке (ИСПРАВЛЕНО)
+function updateTopPreview(topUsers) {
+  const topPreview = document.getElementById('topPreview');
+  if (!topPreview) {
+    console.warn('Top preview element not found');
+    return;
+  }
+  
+  topPreview.innerHTML = '';
+  
+  topUsers.forEach((user, index) => {
+    const item = document.createElement('div');
+    item.className = 'top-preview-item';
+    item.textContent = `${index + 1}. ${user.first_name} ${user.last_name || ''} - ${user.score}`;
+    topPreview.appendChild(item);
+  });
+}
 
     // Отрисовка топа пользователей
     function renderTop(users) {
