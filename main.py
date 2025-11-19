@@ -3400,7 +3400,7 @@ async function loadTop() {
   }
 }
 
-    // Обновление превью топа на кнопке (ИСПРАВЛЕНО)
+   // Замените текущую функцию updateTopPreview на эту:
 function updateTopPreview(topUsers) {
   const topPreview = document.getElementById('topPreview');
   if (!topPreview) {
@@ -3409,6 +3409,11 @@ function updateTopPreview(topUsers) {
   }
   
   topPreview.innerHTML = '';
+  
+  if (!topUsers || topUsers.length === 0) {
+    topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
+    return;
+  }
   
   topUsers.forEach((user, index) => {
     const item = document.createElement('div');
@@ -5157,7 +5162,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
 
