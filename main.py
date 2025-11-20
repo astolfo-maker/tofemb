@@ -2828,25 +2828,25 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
 });
     
     // Функция для инициализации Adsgram
-    function initAdsgram() {
-      // Используем ваш UnitID: int-16829
-      adsgramAd = window.Adsgram.init({ 
-        blockId: 'int-16829',
-        debug: true,
-        onReward: () => {
-          // Реклама успешно просмотрена
-          console.log('Ad watched successfully');
-        },
-        onError: (error) => {
-          // Ошибка при показе рекламы
-          console.error('Ad error:', error);
-        },
-        onSkip: () => {
-          // Реклама пропущена
-          console.log('Ad skipped');
-        }
-      });
+function initAdsgram() {
+  // Используем ваш UnitID: int-16829
+  adsgramAd = window.Adsgram.init({ 
+    blockId: 'int-16829',
+    debug: false, // ИЗМЕНЕНО: было true, стало false
+    onReward: () => {
+      // Реклама успешно просмотрена
+      console.log('Ad watched successfully');
+    },
+    onError: (error) => {
+      // Ошибка при показе рекламы
+      console.error('Ad error:', error);
+    },
+    onSkip: () => {
+      // Реклама пропущена
+      console.log('Ad skipped');
     }
+  });
+}
     
     // Форматирование адреса кошелька
     function formatWalletAddress(address) {
@@ -3082,12 +3082,12 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
       }
     }
     
-    // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
+   // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
 async function saveUserData() {
   if (!user) return;
   
   try {
-    // Создаем объект для отправки на сервер, сохраняя все текущие данные
+    // Создаем объект для отправки на сервер
     const dataToSend = {...userData};
     
     // Убедимся, что ID пользователя установлен
@@ -3115,46 +3115,8 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Обновляем userData, сохраняя текущие значения
-        const oldScore = userData.score;
-        const oldTotalClicks = userData.total_clicks;
-        const oldReferrals = userData.referrals;
-        const oldWalletTaskCompleted = userData.wallet_task_completed;
-        const oldChannelTaskCompleted = userData.channel_task_completed;
-        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
-        const oldEnergy = userData.energy;
-        const oldLastEnergyUpdate = userData.last_energy_update;
-        const oldUpgrades = userData.upgrades;
-        const oldAdsWatched = userData.ads_watched;
-        const oldAchievements = userData.achievements;
-        const oldDailyBonus = userData.daily_bonus;
-        const oldActiveBoosts = userData.active_boosts;
-        const oldSkins = userData.skins;
-        const oldActiveSkin = userData.active_skin;
-        const oldAutoClickers = userData.auto_clickers;
-        const oldLanguage = userData.language;
-        
+        // Просто обновляем данные пользователя без перезаписи локальных изменений
         userData = data.user;
-        
-        // Восстанавливаем важные значения, которые могли быть изменены
-        userData.score = oldScore;
-        userData.total_clicks = oldTotalClicks;
-        userData.referrals = oldReferrals;
-        userData.wallet_task_completed = oldWalletTaskCompleted;
-        userData.channel_task_completed = oldChannelTaskCompleted;
-        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
-        userData.energy = oldEnergy;
-        userData.last_energy_update = oldLastEnergyUpdate;
-        userData.upgrades = oldUpgrades;
-        userData.ads_watched = oldAdsWatched;
-        userData.achievements = oldAchievements;
-        userData.daily_bonus = oldDailyBonus;
-        userData.active_boosts = oldActiveBoosts;
-        userData.skins = oldSkins;
-        userData.active_skin = oldActiveSkin;
-        userData.auto_clickers = oldAutoClickers;
-        userData.language = oldLanguage;
-        
         console.log('User data saved successfully');
         return true;
       } else {
@@ -5162,4 +5124,11 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
+
+
+
 
