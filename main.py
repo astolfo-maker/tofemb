@@ -230,11 +230,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
-            # Добавляем поле для последнего просмотра рекламы, если его нет
-            if 'last_ad_time' not in user_data:
-                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
-                logger.info("Added default last_ad_time value to user data")
-            
             # Добавляем поле для задания подписки на канал, если его нет
             if 'channel_task_completed' not in user_data:
                 user_data['channel_task_completed'] = False
@@ -253,11 +248,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                     'claimed_days': []
                 }
                 logger.info("Added default daily_bonus value to user data")
-            
-            # Добавляем поля для активных бустов
-            if 'active_boosts' not in user_data:
-                user_data['active_boosts'] = []
-                logger.info("Added default active_boosts value to user data")
             
             # Добавляем поля для скинов
             if 'skins' not in user_data:
@@ -282,6 +272,16 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'last_passive_income_update' not in user_data:
                 user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_passive_income_update value to user data")
+            
+            # Добавляем поле для последнего просмотра рекламы
+            if 'last_ad_time' not in user_data:
+                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
+                logger.info("Added default last_ad_time value to user data")
+            
+            # Добавляем поле для активных бустов (только в памяти, не в БД)
+            if 'active_boosts' not in user_data:
+                user_data['active_boosts'] = []
+                logger.info("Added default active_boosts value to user data")
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -402,6 +402,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
         # Подготовка данных для вставки/обновления
+        # Используем только те поля, которые существуют в базе данных
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -415,9 +416,9 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
             "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
             "referrals": user_data.get('referrals', []),
-            "last_referral_task_completion": user_data.get('last_referral_task_completion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
             "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
+            "last_referral_task_completion": user_data.get('last_referral_task_completion'),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
@@ -426,10 +427,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
                 'streak': 0,
                 'claimed_days': []
             }),
-            "active_boosts": user_data.get('active_boosts', []),
-            "skins": user_data.get('skins', []),
-            "active_skin": user_data.get('active_skin', 'default'),
-            "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
             "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
             "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
@@ -3085,23 +3082,33 @@ async function saveUserData() {
   if (!user) return;
   
   try {
-    // Создаем глубокую копию данных для отправки
-    const dataToSend = JSON.parse(JSON.stringify(userData));
+    // Создаем объект для отправки на сервер, исключая поля, которых нет в БД
+    const dataToSend = {
+      id: userData.id,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      username: userData.username,
+      photo_url: userData.photo_url,
+      score: userData.score,
+      total_clicks: userData.total_clicks,
+      level: userData.level,
+      wallet_address: userData.wallet_address,
+      wallet_task_completed: userData.wallet_task_completed,
+      channel_task_completed: userData.channel_task_completed,
+      referrals: userData.referrals,
+      energy: userData.energy,
+      last_energy_update: userData.last_energy_update,
+      last_referral_task_completion: userData.last_referral_task_completion,
+      upgrades: userData.upgrades,
+      ads_watched: userData.ads_watched,
+      achievements: userData.achievements,
+      daily_bonus: userData.daily_bonus,
+      language: userData.language,
+      last_passive_income_update: userData.last_passive_income_update,
+      last_ad_time: userData.last_ad_time
+    };
     
-    // Убедимся, что ID пользователя установлен
-    if (!dataToSend.id && user.id) {
-      dataToSend.id = user.id;
-    }
-    if (!dataToSend.user_id && user.id) {
-      dataToSend.user_id = user.id;
-    }
-    
-    console.log('Saving user data:', {
-      id: dataToSend.id,
-      wallet_task_completed: dataToSend.wallet_task_completed,
-      channel_task_completed: dataToSend.channel_task_completed,
-      score: dataToSend.score
-    });
+    console.log('Saving user data:', dataToSend);
     
     const response = await fetch('/user', {
       method: 'POST',
@@ -3118,8 +3125,20 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Обновляем локальные данные только после успешного сохранения
+        // Обновляем локальные данные, сохраняя поля, которых нет в БД
+        const oldActiveBoosts = userData.active_boosts;
+        const oldSkins = userData.skins;
+        const oldActiveSkin = userData.active_skin;
+        const oldAutoClickers = userData.auto_clickers;
+        
         userData = data.user;
+        
+        // Восстанавливаем поля, которых нет в БД
+        userData.active_boosts = oldActiveBoosts || [];
+        userData.skins = oldSkins || [];
+        userData.active_skin = oldActiveSkin || 'default';
+        userData.auto_clickers = oldAutoClickers || 0;
+        
         console.log('User data saved successfully');
         return true;
       } else {
@@ -3136,7 +3155,6 @@ async function saveUserData() {
     return false;
   }
 }
-
  // Функция для обновления отображения счета
     function updateScoreDisplay() {
       const scoreDisplay = document.getElementById('score');
@@ -5168,6 +5186,3 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
-
-
-    
