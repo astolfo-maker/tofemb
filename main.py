@@ -201,7 +201,6 @@ def execute_supabase_query(func):
         logger.warning(f"Supabase query failed: {str(e)}, retrying...")
         raise
 
-# Функция для загрузки данных пользователя
 def load_user(user_id: str) -> Optional[Dict[str, Any]]:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -231,10 +230,17 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
-            # Добавляем поле для последнего просмотра рекламы, если его нет
+            # Правильная обработка last_ad_time
             if 'last_ad_time' not in user_data:
                 user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_ad_time value to user data")
+            else:
+                # Преобразуем в строку, если это объект datetime
+                if not isinstance(user_data['last_ad_time'], str):
+                    if hasattr(user_data['last_ad_time'], 'isoformat'):
+                        user_data['last_ad_time'] = user_data['last_ad_time'].isoformat()
+                    else:
+                        user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
             
             # Добавляем поле для задания подписки на канал, если его нет
             if 'channel_task_completed' not in user_data:
@@ -402,7 +408,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
-        # Подготовка данных для вставки/обновления (без преобразования camelCase в snake_case)
+        # Подготовка данных для вставки/обновления
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -432,17 +438,28 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
-            "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
         }
+        
+        # Правильная обработка last_ad_time
+        last_ad_time = user_data.get('last_ad_time')
+        if last_ad_time:
+            if isinstance(last_ad_time, str):
+                db_data["last_ad_time"] = last_ad_time
+            elif hasattr(last_ad_time, 'isoformat'):
+                db_data["last_ad_time"] = last_ad_time.isoformat()
+            else:
+                db_data["last_ad_time"] = datetime.now(timezone.utc).isoformat()
+        else:
+            db_data["last_ad_time"] = datetime.now(timezone.utc).isoformat()
         
         # Логируем ключевые поля перед сохранением
         logger.info(f"Before save to DB:")
         logger.info(f"  wallet_task_completed: {db_data['wallet_task_completed']} (type: {type(db_data['wallet_task_completed'])})")
         logger.info(f"  channel_task_completed: {db_data['channel_task_completed']} (type: {type(db_data['channel_task_completed'])})")
+        logger.info(f"  score: {db_data['score']}")
         
         def query():
-            # Используем upsert для атомарной вставки или обновления
             return supabase.table("users").upsert(
                 db_data, 
                 on_conflict="user_id"
@@ -450,8 +467,12 @@ def save_user(user_data: Dict[str, Any]) -> bool:
         
         response = execute_supabase_query(query)
         
-        logger.info(f"Save operation completed with data: {response.data}")
-        return response.data is not None
+        if response.data:
+            logger.info(f"Save operation completed successfully")
+            return True
+        else:
+            logger.error(f"Save operation failed: {response}")
+            return False
     except Exception as e:
         logger.error(f"Error saving user: {e}")
         return False
@@ -3082,8 +3103,7 @@ function initAdsgram() {
       }
     }
     
-  // Функция для сохранения данных пользователя на сервере
-async function saveUserData() {
+ async function saveUserData() {
   if (!user) return;
   
   try {
@@ -3096,6 +3116,17 @@ async function saveUserData() {
     }
     if (!dataToSend.user_id && user.id) {
       dataToSend.user_id = user.id;
+    }
+    
+    // Правильная обработка last_ad_time
+    if (dataToSend.last_ad_time && typeof dataToSend.last_ad_time !== 'string') {
+      if (dataToSend.last_ad_time instanceof Date) {
+        dataToSend.last_ad_time = dataToSend.last_ad_time.toISOString();
+      } else {
+        dataToSend.last_ad_time = new Date().toISOString();
+      }
+    } else if (!dataToSend.last_ad_time) {
+      dataToSend.last_ad_time = new Date().toISOString();
     }
     
     console.log('Saving user data:', {
