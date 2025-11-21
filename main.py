@@ -401,7 +401,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
-        # Подготовка данных для вставки/обновления (без преобразования camelCase в snake_case)
+        # Подготовка данных для вставки/обновления
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -454,7 +454,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     except Exception as e:
         logger.error(f"Error saving user: {e}")
         return False
-
+        
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     if supabase is None:
@@ -2753,7 +2753,6 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
-// Функция для инициализации TonConnect (ИСПРАВЛЕНО)
 function initTonConnect() {
   // Создаем контейнер для кнопки TonConnect, если его нет
   if (!document.getElementById('tonconnect-container')) {
@@ -3148,8 +3147,7 @@ async function saveUserData() {
 
 
     
- // Обновление данных топа (ИСПРАВЛЕНО)
-async function updateTopData() {
+ async function updateTopData() {
   try {
     const response = await fetch('/top');
     
@@ -3365,8 +3363,7 @@ async function loadTop() {
   }
 }
 
-   // Замените текущую функцию updateTopPreview на эту:
-function updateTopPreview(topUsers) {
+   function updateTopPreview(topUsers) {
   const topPreview = document.getElementById('topPreview');
   if (!topPreview) {
     console.warn('Top preview element not found');
@@ -3786,60 +3783,59 @@ async function claimChannelTaskReward() {
       showNotification(translations[currentLanguage].notification_reward.replace('{0}', '5000'));
     }
     
-    // Функция для просмотра рекламы через Adsgram
-    function watchAds() {
-      console.log('Watching ads');
-      
-      if (!adsgramAd) {
-        console.error('Adsgram ad not initialized');
-        showNotification('Реклама не загружена');
-        return;
-      }
-      
-      // Блокируем кнопку просмотра рекламы на время показа
-      const adsTaskButton = document.getElementById('ads-task-button');
-      adsTaskButton.disabled = true;
-      adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
-      
-      // Показываем уведомление о начале загрузки рекламы
-      showNotification('Реклама загружается...');
-      
-      // Запускаем таймер на 3 секунды
-      setTimeout(() => {
-        // Увеличиваем счетчик просмотренной рекламы
-        userData.ads_watched = (userData.ads_watched || 0) + 1;
-        userData.last_ad_time = new Date().toISOString();
-        console.log('Updated ads_watched locally:', userData.ads_watched);
-        
-        // Обновляем интерфейс
-        checkAdsTask();
-        
-        // Показываем уведомление
-        showNotification(translations[currentLanguage].notification_ad_watched);
-        
-        // Сохраняем данные
-        saveUserData().catch(error => {
-          console.error('Error saving user data after ad watch:', error);
-        });
-        
-        // Разблокируем кнопку
-        adsTaskButton.disabled = false;
-      }, 3000);
-      
-      // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
-      adsgramAd.show().then(() => {
-        // Реклама успешно показана
-        console.log('Ad shown successfully');
-      }).catch((error) => {
-        // Ошибка при показе рекламы
-        console.error('Error showing ad:', error);
-        showNotification(translations[currentLanguage].notification_ad_error);
-        
-        // Разблокируем кнопку в случае ошибки
-        adsTaskButton.disabled = false;
-        adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
-      });
-    }
+   function watchAds() {
+  console.log('Watching ads');
+  
+  if (!adsgramAd) {
+    console.error('Adsgram ad not initialized');
+    showNotification('Реклама не загружена');
+    return;
+  }
+  
+  // Блокируем кнопку просмотра рекламы на время показа
+  const adsTaskButton = document.getElementById('ads-task-button');
+  adsTaskButton.disabled = true;
+  adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
+  
+  // Показываем уведомление о начале загрузки рекламы
+  showNotification('Реклама загружается...');
+  
+  // Запускаем таймер на 3 секунды
+  setTimeout(() => {
+    // Увеличиваем счетчик просмотренной рекламы
+    userData.ads_watched = (userData.ads_watched || 0) + 1;
+    userData.last_ad_time = new Date().toISOString();
+    console.log('Updated ads_watched locally:', userData.ads_watched);
+    
+    // Обновляем интерфейс
+    checkAdsTask();
+    
+    // Показываем уведомление
+    showNotification(translations[currentLanguage].notification_ad_watched);
+    
+    // Сохраняем данные
+    saveUserData().catch(error => {
+      console.error('Error saving user data after ad watch:', error);
+    });
+    
+    // Разблокируем кнопку
+    adsTaskButton.disabled = false;
+  }, 3000);
+  
+  // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
+  adsgramAd.show().then(() => {
+    // Реклама успешно показана
+    console.log('Ad shown successfully');
+  }).catch((error) => {
+    // Ошибка при показе рекламы
+    console.error('Error showing ad:', error);
+    showNotification(translations[currentLanguage].notification_ad_error);
+    
+    // Разблокируем кнопку в случае ошибки
+    adsTaskButton.disabled = false;
+    adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
+  });
+}
     
     // Копирование реферальной ссылки
     function copyReferralLink() {
@@ -4614,46 +4610,57 @@ async function claimChannelTaskReward() {
     const imgNormal = "/static/Photo_femb_static.jpg";
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
-    function incrementScore() {
-      // Проверяем, достаточно ли энергии
-      if (userData.energy <= 0) {
-        showNoEnergyNotification();
-        return;
-      }
-      
-      // Тратим энергию
-      userData.energy--;
-      
-      // Рассчитываем бонус за клик
-      const clickBonus = calculateClickBonus();
-      
-      // Проверяем активные бусты
-      let scoreMultiplier = 1;
-      userData.active_boosts.forEach(boost => {
-        if (boost.type === 'score_multiplier') {
-          scoreMultiplier *= boost.multiplier;
-        }
-      });
-      
-      // Увеличиваем счет с учетом бонуса и бустов
-      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
-      userData.score += scoreIncrease;
-      userData.total_clicks++;
-      
-      // Создаем эффект молнии
-      createLightning();
-      
-      // Обновляем отображение
-      updateScoreDisplay();
-      updateEnergyDisplay();
-      updateLevel();
-      
-      // Сохраняем данные на сервере после каждого клика
-      saveUserData();
-      
-      // Проверяем достижения
-      checkNewAchievements();
+   let isProcessingClick = false;
+
+function incrementScore() {
+  // Проверяем, достаточно ли энергии
+  if (userData.energy <= 0) {
+    showNoEnergyNotification();
+    return;
+  }
+  
+  // Защита от множественных одновременных кликов
+  if (isProcessingClick) {
+    return;
+  }
+  
+  isProcessingClick = true;
+  
+  // Тратим энергию
+  userData.energy--;
+  
+  // Рассчитываем бонус за клик
+  const clickBonus = calculateClickBonus();
+  
+  // Проверяем активные бусты
+  let scoreMultiplier = 1;
+  userData.active_boosts.forEach(boost => {
+    if (boost.type === 'score_multiplier') {
+      scoreMultiplier *= boost.multiplier;
     }
+  });
+  
+  // Увеличиваем счет с учетом бонуса и бустов
+  const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
+  userData.score += scoreIncrease;
+  userData.total_clicks++;
+  
+  // Создаем эффект молнии
+  createLightning();
+  
+  // Обновляем отображение
+  updateScoreDisplay();
+  updateEnergyDisplay();
+  updateLevel();
+  
+  // Сохраняем данные на сервере после каждого клика
+  saveUserData().finally(() => {
+    isProcessingClick = false;
+  });
+  
+  // Проверяем достижения
+  checkNewAchievements();
+}
 
     function pressVisualOn() {
       circle.classList.add('pressed');
@@ -5159,3 +5166,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
+
+    
