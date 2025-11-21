@@ -1,3 +1,4 @@
+
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -230,6 +231,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
+            # Добавляем поле для последнего просмотра рекламы, если его нет
+            if 'last_ad_time' not in user_data:
+                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
+                logger.info("Added default last_ad_time value to user data")
+            
             # Добавляем поле для задания подписки на канал, если его нет
             if 'channel_task_completed' not in user_data:
                 user_data['channel_task_completed'] = False
@@ -248,6 +254,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                     'claimed_days': []
                 }
                 logger.info("Added default daily_bonus value to user data")
+            
+            # Добавляем поля для активных бустов
+            if 'active_boosts' not in user_data:
+                user_data['active_boosts'] = []
+                logger.info("Added default active_boosts value to user data")
             
             # Добавляем поля для скинов
             if 'skins' not in user_data:
@@ -272,16 +283,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'last_passive_income_update' not in user_data:
                 user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_passive_income_update value to user data")
-            
-            # Добавляем поле для последнего просмотра рекламы
-            if 'last_ad_time' not in user_data:
-                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
-                logger.info("Added default last_ad_time value to user data")
-            
-            # Добавляем поле для активных бустов (только в памяти, не в БД)
-            if 'active_boosts' not in user_data:
-                user_data['active_boosts'] = []
-                logger.info("Added default active_boosts value to user data")
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -393,6 +394,7 @@ def convert_keys_to_snake_case(data):
     else:
         return data
 
+# Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -401,8 +403,11 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
+        # Преобразуем ключи из camelCase в snake_case, если необходимо
+        if any(key[0].islower() and any(c.isupper() for c in key) for key in user_data.keys()):
+            user_data = convert_keys_to_snake_case(user_data)
+        
         # Подготовка данных для вставки/обновления
-        # Используем только те поля, которые существуют в базе данных
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -416,9 +421,9 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
             "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
             "referrals": user_data.get('referrals', []),
+            "last_referral_task_completion": user_data.get('last_referral_task_completion'),
             "energy": int(user_data.get('energy', MAX_ENERGY)),
             "last_energy_update": user_data.get('last_energy_update', datetime.now(timezone.utc).isoformat()),
-            "last_referral_task_completion": user_data.get('last_referral_task_completion'),
             "upgrades": user_data.get('upgrades', []),
             "ads_watched": int(user_data.get('ads_watched', 0)),
             "achievements": user_data.get('achievements', []),
@@ -427,15 +432,14 @@ def save_user(user_data: Dict[str, Any]) -> bool:
                 'streak': 0,
                 'claimed_days': []
             }),
+            "active_boosts": user_data.get('active_boosts', []),
+            "skins": user_data.get('skins', []),
+            "active_skin": user_data.get('active_skin', 'default'),
+            "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
             "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
             "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
         }
-        
-        # Логируем ключевые поля перед сохранением
-        logger.info(f"Before save to DB:")
-        logger.info(f"  wallet_task_completed: {db_data['wallet_task_completed']} (type: {type(db_data['wallet_task_completed'])})")
-        logger.info(f"  channel_task_completed: {db_data['channel_task_completed']} (type: {type(db_data['channel_task_completed'])})")
         
         def query():
             # Используем upsert для атомарной вставки или обновления
@@ -451,7 +455,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     except Exception as e:
         logger.error(f"Error saving user: {e}")
         return False
-        
+
 # Функция для получения топа пользователей
 def get_top_users(limit: int = 100) -> List[Dict[str, Any]]:
     if supabase is None:
@@ -2750,6 +2754,7 @@ html_content = """
     // Инициализация Adsgram
     let adsgramAd;
     
+// Функция для инициализации TonConnect (ИСПРАВЛЕНО)
 function initTonConnect() {
   // Создаем контейнер для кнопки TonConnect, если его нет
   if (!document.getElementById('tonconnect-container')) {
@@ -2823,25 +2828,25 @@ document.getElementById('wallet-modal-button').addEventListener('click', functio
 });
     
     // Функция для инициализации Adsgram
-function initAdsgram() {
-  // Используем ваш UnitID: int-16829
-  adsgramAd = window.Adsgram.init({ 
-    blockId: 'int-16829',
-    debug: false, // ИЗМЕНЕНО: было true, стало false
-    onReward: () => {
-      // Реклама успешно просмотрена
-      console.log('Ad watched successfully');
-    },
-    onError: (error) => {
-      // Ошибка при показе рекламы
-      console.error('Ad error:', error);
-    },
-    onSkip: () => {
-      // Реклама пропущена
-      console.log('Ad skipped');
+    function initAdsgram() {
+      // Используем ваш UnitID: int-16829
+      adsgramAd = window.Adsgram.init({ 
+        blockId: 'int-16829',
+        debug: true,
+        onReward: () => {
+          // Реклама успешно просмотрена
+          console.log('Ad watched successfully');
+        },
+        onError: (error) => {
+          // Ошибка при показе рекламы
+          console.error('Ad error:', error);
+        },
+        onSkip: () => {
+          // Реклама пропущена
+          console.log('Ad skipped');
+        }
+      });
     }
-  });
-}
     
     // Форматирование адреса кошелька
     function formatWalletAddress(address) {
@@ -3077,36 +3082,21 @@ function initAdsgram() {
       }
     }
     
-  // Функция для сохранения данных пользователя на сервере
+    // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
 async function saveUserData() {
   if (!user) return;
   
   try {
-    // Создаем объект для отправки на сервер, исключая поля, которых нет в БД
-    const dataToSend = {
-      id: userData.id,
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      username: userData.username,
-      photo_url: userData.photo_url,
-      score: userData.score,
-      total_clicks: userData.total_clicks,
-      level: userData.level,
-      wallet_address: userData.wallet_address,
-      wallet_task_completed: userData.wallet_task_completed,
-      channel_task_completed: userData.channel_task_completed,
-      referrals: userData.referrals,
-      energy: userData.energy,
-      last_energy_update: userData.last_energy_update,
-      last_referral_task_completion: userData.last_referral_task_completion,
-      upgrades: userData.upgrades,
-      ads_watched: userData.ads_watched,
-      achievements: userData.achievements,
-      daily_bonus: userData.daily_bonus,
-      language: userData.language,
-      last_passive_income_update: userData.last_passive_income_update,
-      last_ad_time: userData.last_ad_time
-    };
+    // Создаем объект для отправки на сервер, сохраняя все текущие данные
+    const dataToSend = {...userData};
+    
+    // Убедимся, что ID пользователя установлен
+    if (!dataToSend.id && user.id) {
+      dataToSend.id = user.id;
+    }
+    if (!dataToSend.user_id && user.id) {
+      dataToSend.user_id = user.id;
+    }
     
     console.log('Saving user data:', dataToSend);
     
@@ -3125,19 +3115,45 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Обновляем локальные данные, сохраняя поля, которых нет в БД
+        // Обновляем userData, сохраняя текущие значения
+        const oldScore = userData.score;
+        const oldTotalClicks = userData.total_clicks;
+        const oldReferrals = userData.referrals;
+        const oldWalletTaskCompleted = userData.wallet_task_completed;
+        const oldChannelTaskCompleted = userData.channel_task_completed;
+        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
+        const oldEnergy = userData.energy;
+        const oldLastEnergyUpdate = userData.last_energy_update;
+        const oldUpgrades = userData.upgrades;
+        const oldAdsWatched = userData.ads_watched;
+        const oldAchievements = userData.achievements;
+        const oldDailyBonus = userData.daily_bonus;
         const oldActiveBoosts = userData.active_boosts;
         const oldSkins = userData.skins;
         const oldActiveSkin = userData.active_skin;
         const oldAutoClickers = userData.auto_clickers;
+        const oldLanguage = userData.language;
         
         userData = data.user;
         
-        // Восстанавливаем поля, которых нет в БД
-        userData.active_boosts = oldActiveBoosts || [];
-        userData.skins = oldSkins || [];
-        userData.active_skin = oldActiveSkin || 'default';
-        userData.auto_clickers = oldAutoClickers || 0;
+        // Восстанавливаем важные значения, которые могли быть изменены
+        userData.score = oldScore;
+        userData.total_clicks = oldTotalClicks;
+        userData.referrals = oldReferrals;
+        userData.wallet_task_completed = oldWalletTaskCompleted;
+        userData.channel_task_completed = oldChannelTaskCompleted;
+        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
+        userData.energy = oldEnergy;
+        userData.last_energy_update = oldLastEnergyUpdate;
+        userData.upgrades = oldUpgrades;
+        userData.ads_watched = oldAdsWatched;
+        userData.achievements = oldAchievements;
+        userData.daily_bonus = oldDailyBonus;
+        userData.active_boosts = oldActiveBoosts;
+        userData.skins = oldSkins;
+        userData.active_skin = oldActiveSkin;
+        userData.auto_clickers = oldAutoClickers;
+        userData.language = oldLanguage;
         
         console.log('User data saved successfully');
         return true;
@@ -3155,6 +3171,8 @@ async function saveUserData() {
     return false;
   }
 }
+
+
  // Функция для обновления отображения счета
     function updateScoreDisplay() {
       const scoreDisplay = document.getElementById('score');
@@ -3165,7 +3183,8 @@ async function saveUserData() {
 
 
     
- async function updateTopData() {
+ // Обновление данных топа (ИСПРАВЛЕНО)
+async function updateTopData() {
   try {
     const response = await fetch('/top');
     
@@ -3381,7 +3400,8 @@ async function loadTop() {
   }
 }
 
-   function updateTopPreview(topUsers) {
+    // Обновление превью топа на кнопке (ИСПРАВЛЕНО)
+function updateTopPreview(topUsers) {
   const topPreview = document.getElementById('topPreview');
   if (!topPreview) {
     console.warn('Top preview element not found');
@@ -3389,11 +3409,6 @@ async function loadTop() {
   }
   
   topPreview.innerHTML = '';
-  
-  if (!topUsers || topUsers.length === 0) {
-    topPreview.innerHTML = '<div class="top-preview-item">Нет данных</div>';
-    return;
-  }
   
   topUsers.forEach((user, index) => {
     const item = document.createElement('div');
@@ -3678,71 +3693,45 @@ async function loadTop() {
       setTimeout(updateReferralTimer, 1000);
     }
     
-   // Получение награды за задание с кошельком
-async function claimWalletTaskReward() {
-  console.log('Claiming wallet task reward');
-  
-  if (!userData.wallet_address || userData.wallet_task_completed) {
-    console.log('Cannot claim: wallet not connected or task already completed');
-    return;
-  }
-  
-  // Добавляем награду
-  userData.score += 1000;
-  userData.wallet_task_completed = true;
-  
-  console.log('Saving wallet task completion...');
-  
-  // Сохраняем данные и ждем завершения
-  const saved = await saveUserData();
-  
-  if (saved) {
-    console.log('Wallet task saved successfully');
-    // Обновляем интерфейс только после успешного сохранения
-    updateScoreDisplay();
-    updateLevel();
-    checkWalletTask();
+    // Получение награды за задание с кошельком
+    async function claimWalletTaskReward() {
+      if (!userData.wallet_address || userData.wallet_task_completed) return;
+      
+      // Добавляем награду
+      userData.score += 1000;
+      userData.wallet_task_completed = true;
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      checkWalletTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].notification_reward.replace('{0}', '1000'));
+    }
     
-    // Показываем уведомление
-    showNotification(translations[currentLanguage].notification_reward.replace('{0}', '1000'));
-  } else {
-    console.error('Failed to save wallet task');
-    showNotification('Ошибка сохранения данных');
-  }
-}
-
-// Получение награды за задание с подпиской на канал
-async function claimChannelTaskReward() {
-  console.log('Claiming channel task reward');
-  
-  if (userData.channel_task_completed) {
-    console.log('Cannot claim: task already completed');
-    return;
-  }
-  
-  // Добавляем награду
-  userData.score += 2000;
-  userData.channel_task_completed = true;
-  
-  console.log('Saving channel task completion...');
-  
-  // Сохраняем данные и ждем завершения
-  const saved = await saveUserData();
-  
-  if (saved) {
-    console.log('Channel task saved successfully');
-    // Обновляем интерфейс только после успешного сохранения
-    updateScoreDisplay();
-    updateLevel();
-    checkChannelTask();
-    
-    // Показываем уведомление
-    showNotification(translations[currentLanguage].notification_reward.replace('{0}', '2000'));
-  } else {
-    console.error('Failed to save channel task');
-    showNotification('Ошибка сохранения данных');
-  }
-}
+    // Получение награды за задание с подпиской на канал
+    async function claimChannelTaskReward() {
+      if (userData.channel_task_completed) return;
+      
+      // Добавляем награду
+      userData.score += 2000;
+      userData.channel_task_completed = true;
+      
+      // Сохраняем данные
+      await saveUserData();
+      
+      // Обновляем интерфейс
+      updateScoreDisplay();
+      updateLevel();
+      checkChannelTask();
+      
+      // Показываем уведомление
+      showNotification(translations[currentLanguage].notification_reward.replace('{0}', '2000'));
+    }
     
     // Получение награды за задание с рефералами
     async function claimReferralTaskReward() {
@@ -3801,59 +3790,60 @@ async function claimChannelTaskReward() {
       showNotification(translations[currentLanguage].notification_reward.replace('{0}', '5000'));
     }
     
-   function watchAds() {
-  console.log('Watching ads');
-  
-  if (!adsgramAd) {
-    console.error('Adsgram ad not initialized');
-    showNotification('Реклама не загружена');
-    return;
-  }
-  
-  // Блокируем кнопку просмотра рекламы на время показа
-  const adsTaskButton = document.getElementById('ads-task-button');
-  adsTaskButton.disabled = true;
-  adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
-  
-  // Показываем уведомление о начале загрузки рекламы
-  showNotification('Реклама загружается...');
-  
-  // Запускаем таймер на 3 секунды
-  setTimeout(() => {
-    // Увеличиваем счетчик просмотренной рекламы
-    userData.ads_watched = (userData.ads_watched || 0) + 1;
-    userData.last_ad_time = new Date().toISOString();
-    console.log('Updated ads_watched locally:', userData.ads_watched);
-    
-    // Обновляем интерфейс
-    checkAdsTask();
-    
-    // Показываем уведомление
-    showNotification(translations[currentLanguage].notification_ad_watched);
-    
-    // Сохраняем данные
-    saveUserData().catch(error => {
-      console.error('Error saving user data after ad watch:', error);
-    });
-    
-    // Разблокируем кнопку
-    adsTaskButton.disabled = false;
-  }, 3000);
-  
-  // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
-  adsgramAd.show().then(() => {
-    // Реклама успешно показана
-    console.log('Ad shown successfully');
-  }).catch((error) => {
-    // Ошибка при показе рекламы
-    console.error('Error showing ad:', error);
-    showNotification(translations[currentLanguage].notification_ad_error);
-    
-    // Разблокируем кнопку в случае ошибки
-    adsTaskButton.disabled = false;
-    adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
-  });
-}
+    // Функция для просмотра рекламы через Adsgram
+    function watchAds() {
+      console.log('Watching ads');
+      
+      if (!adsgramAd) {
+        console.error('Adsgram ad not initialized');
+        showNotification('Реклама не загружена');
+        return;
+      }
+      
+      // Блокируем кнопку просмотра рекламы на время показа
+      const adsTaskButton = document.getElementById('ads-task-button');
+      adsTaskButton.disabled = true;
+      adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
+      
+      // Показываем уведомление о начале загрузки рекламы
+      showNotification('Реклама загружается...');
+      
+      // Запускаем таймер на 3 секунды
+      setTimeout(() => {
+        // Увеличиваем счетчик просмотренной рекламы
+        userData.ads_watched = (userData.ads_watched || 0) + 1;
+        userData.last_ad_time = new Date().toISOString();
+        console.log('Updated ads_watched locally:', userData.ads_watched);
+        
+        // Обновляем интерфейс
+        checkAdsTask();
+        
+        // Показываем уведомление
+        showNotification(translations[currentLanguage].notification_ad_watched);
+        
+        // Сохраняем данные
+        saveUserData().catch(error => {
+          console.error('Error saving user data after ad watch:', error);
+        });
+        
+        // Разблокируем кнопку
+        adsTaskButton.disabled = false;
+      }, 3000);
+      
+      // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
+      adsgramAd.show().then(() => {
+        // Реклама успешно показана
+        console.log('Ad shown successfully');
+      }).catch((error) => {
+        // Ошибка при показе рекламы
+        console.error('Error showing ad:', error);
+        showNotification(translations[currentLanguage].notification_ad_error);
+        
+        // Разблокируем кнопку в случае ошибки
+        adsTaskButton.disabled = false;
+        adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
+      });
+    }
     
     // Копирование реферальной ссылки
     function copyReferralLink() {
@@ -4628,57 +4618,46 @@ async function claimChannelTaskReward() {
     const imgNormal = "/static/Photo_femb_static.jpg";
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
-   let isProcessingClick = false;
-
-function incrementScore() {
-  // Проверяем, достаточно ли энергии
-  if (userData.energy <= 0) {
-    showNoEnergyNotification();
-    return;
-  }
-  
-  // Защита от множественных одновременных кликов
-  if (isProcessingClick) {
-    return;
-  }
-  
-  isProcessingClick = true;
-  
-  // Тратим энергию
-  userData.energy--;
-  
-  // Рассчитываем бонус за клик
-  const clickBonus = calculateClickBonus();
-  
-  // Проверяем активные бусты
-  let scoreMultiplier = 1;
-  userData.active_boosts.forEach(boost => {
-    if (boost.type === 'score_multiplier') {
-      scoreMultiplier *= boost.multiplier;
+    function incrementScore() {
+      // Проверяем, достаточно ли энергии
+      if (userData.energy <= 0) {
+        showNoEnergyNotification();
+        return;
+      }
+      
+      // Тратим энергию
+      userData.energy--;
+      
+      // Рассчитываем бонус за клик
+      const clickBonus = calculateClickBonus();
+      
+      // Проверяем активные бусты
+      let scoreMultiplier = 1;
+      userData.active_boosts.forEach(boost => {
+        if (boost.type === 'score_multiplier') {
+          scoreMultiplier *= boost.multiplier;
+        }
+      });
+      
+      // Увеличиваем счет с учетом бонуса и бустов
+      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
+      userData.score += scoreIncrease;
+      userData.total_clicks++;
+      
+      // Создаем эффект молнии
+      createLightning();
+      
+      // Обновляем отображение
+      updateScoreDisplay();
+      updateEnergyDisplay();
+      updateLevel();
+      
+      // Сохраняем данные на сервере после каждого клика
+      saveUserData();
+      
+      // Проверяем достижения
+      checkNewAchievements();
     }
-  });
-  
-  // Увеличиваем счет с учетом бонуса и бустов
-  const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
-  userData.score += scoreIncrease;
-  userData.total_clicks++;
-  
-  // Создаем эффект молнии
-  createLightning();
-  
-  // Обновляем отображение
-  updateScoreDisplay();
-  updateEnergyDisplay();
-  updateLevel();
-  
-  // Сохраняем данные на сервере после каждого клика
-  saveUserData().finally(() => {
-    isProcessingClick = false;
-  });
-  
-  // Проверяем достижения
-  checkNewAchievements();
-}
 
     function pressVisualOn() {
       circle.classList.add('pressed');
@@ -5047,12 +5026,6 @@ async def save_user_data(request: Request):
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
-        # Логируем ключевые поля
-        logger.info(f"Saving data for user {data.get('id')}:")
-        logger.info(f"  wallet_task_completed: {data.get('wallet_task_completed')}")
-        logger.info(f"  channel_task_completed: {data.get('channel_task_completed')}")
-        logger.info(f"  score: {data.get('score')}")
-        
         # Сохраняем в базу данных
         success = save_user(data)
         
@@ -5184,5 +5157,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
