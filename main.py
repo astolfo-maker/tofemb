@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -231,6 +230,11 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
                 user_data['ads_watched'] = 0
                 logger.info("Added default ads_watched value to user data")
             
+            # Добавляем поле для последнего просмотра рекламы, если его нет
+            if 'last_ad_time' not in user_data:
+                user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
+                logger.info("Added default last_ad_time value to user data")
+            
             # Добавляем поле для задания подписки на канал, если его нет
             if 'channel_task_completed' not in user_data:
                 user_data['channel_task_completed'] = False
@@ -278,8 +282,6 @@ def load_user(user_id: str) -> Optional[Dict[str, Any]]:
             if 'last_passive_income_update' not in user_data:
                 user_data['last_passive_income_update'] = datetime.now(timezone.utc).isoformat()
                 logger.info("Added default last_passive_income_update value to user data")
-            
-            # УБРАЛИ БЛОК ДОБАВЛЕНИЯ last_ad_time
             
             # Обновляем уровень на основе очков
             user_data['level'] = get_level_by_score(user_data.get('score', 0))
@@ -391,7 +393,6 @@ def convert_keys_to_snake_case(data):
     else:
         return data
 
-# Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -400,7 +401,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
-        # Подготовка данных для вставки/обновления
+        # Подготовка данных для вставки/обновления (без преобразования camelCase в snake_case)
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -430,8 +431,8 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "active_skin": user_data.get('active_skin', 'default'),
             "auto_clickers": int(user_data.get('auto_clickers', 0)),
             "language": user_data.get('language', 'ru'),
-            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat())
-            # УБРАЛИ ПОЛЕ last_ad_time
+            "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
+            "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
         }
         
         # Логируем ключевые поля перед сохранением
@@ -710,8 +711,8 @@ async def adsgram_reward(request: Request):
         old_count = user_data['ads_watched']
         user_data['ads_watched'] += 1
         
-        # УБРАЛИ ОБНОВЛЕНИЕ ПОЛЯ last_ad_time
-        # user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
+        # Обновляем время последнего просмотра рекламы
+        user_data['last_ad_time'] = datetime.now(timezone.utc).isoformat()
         
         logger.info(f"Updated ads_watched for user {user_id}: {old_count} -> {user_data['ads_watched']}")
         
@@ -3080,15 +3081,28 @@ function initAdsgram() {
       }
     }
     
- // В функции saveUserData добавляем обработку ошибок
+  // Функция для сохранения данных пользователя на сервере
 async function saveUserData() {
   if (!user) return;
   
   try {
-    // Создаем объект для отправки на сервер, сохраняя все текущие данные
-    const dataToSend = {...userData};
+    // Создаем глубокую копию данных для отправки
+    const dataToSend = JSON.parse(JSON.stringify(userData));
     
-    console.log('Saving user data:', dataToSend);
+    // Убедимся, что ID пользователя установлен
+    if (!dataToSend.id && user.id) {
+      dataToSend.id = user.id;
+    }
+    if (!dataToSend.user_id && user.id) {
+      dataToSend.user_id = user.id;
+    }
+    
+    console.log('Saving user data:', {
+      id: dataToSend.id,
+      wallet_task_completed: dataToSend.wallet_task_completed,
+      channel_task_completed: dataToSend.channel_task_completed,
+      score: dataToSend.score
+    });
     
     const response = await fetch('/user', {
       method: 'POST',
@@ -3105,46 +3119,8 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Обновляем userData, сохраняя текущие значения
-        const oldScore = userData.score;
-        const oldTotalClicks = userData.total_clicks;
-        const oldReferrals = userData.referrals;
-        const oldWalletTaskCompleted = userData.wallet_task_completed;
-        const oldChannelTaskCompleted = userData.channel_task_completed;
-        const oldLastReferralTaskCompletion = userData.last_referral_task_completion;
-        const oldEnergy = userData.energy;
-        const oldLastEnergyUpdate = userData.last_energy_update;
-        const oldUpgrades = userData.upgrades;
-        const oldAdsWatched = userData.ads_watched;
-        const oldAchievements = userData.achievements;
-        const oldDailyBonus = userData.daily_bonus;
-        const oldActiveBoosts = userData.active_boosts;
-        const oldSkins = userData.skins;
-        const oldActiveSkin = userData.active_skin;
-        const oldAutoClickers = userData.auto_clickers;
-        const oldLanguage = userData.language;
-        
+        // Обновляем локальные данные только после успешного сохранения
         userData = data.user;
-        
-        // Восстанавливаем важные значения, которые могли быть изменены
-        userData.score = oldScore;
-        userData.total_clicks = oldTotalClicks;
-        userData.referrals = oldReferrals;
-        userData.wallet_task_completed = oldWalletTaskCompleted;
-        userData.channel_task_completed = oldChannelTaskCompleted;
-        userData.last_referral_task_completion = oldLastReferralTaskCompletion;
-        userData.energy = oldEnergy;
-        userData.last_energy_update = oldLastEnergyUpdate;
-        userData.upgrades = oldUpgrades;
-        userData.ads_watched = oldAdsWatched;
-        userData.achievements = oldAchievements;
-        userData.daily_bonus = oldDailyBonus;
-        userData.active_boosts = oldActiveBoosts;
-        userData.skins = oldSkins;
-        userData.active_skin = oldActiveSkin;
-        userData.auto_clickers = oldAutoClickers;
-        userData.language = oldLanguage;
-        
         console.log('User data saved successfully');
         return true;
       } else {
@@ -3601,54 +3577,59 @@ function updateTopPreview(topUsers) {
       }
     }
     
-   function checkAdsTask() {
-  console.log('Checking ads task, current ads_watched:', userData.ads_watched);
-  
-  // Убедимся, что ads_watched существует
-  if (typeof userData.ads_watched === 'undefined') {
-    userData.ads_watched = 0;
-  }
-  
-  // Обновляем счетчик просмотренной рекламы
-  const adsCountElement = document.getElementById('ads-count-value');
-  if (adsCountElement) {
-    adsCountElement.textContent = userData.ads_watched;
-    console.log('Updated ads count display:', userData.ads_watched);
-  }
-  
-  // Проверяем, не прошло ли 40 секунд с последнего просмотра рекламы
-  const currentTime = Math.floor(Date.now() / 1000);
-  // Используем lastAdTime с клиента (не сохраняется на сервере)
-  const timeSinceLastAd = currentTime - (userData.lastAdTime || 0);
-  const adButton = document.getElementById('ads-task-button');
-  
-  if (timeSinceLastAd < 40) {
-    // Кнопка заблокирована, показываем обратный отсчет
-    const timeLeft = 40 - timeSinceLastAd;
-    adButton.disabled = true;
-    adButton.textContent = `${timeLeft}с`;
-  } else if (userData.ads_watched >= 10) {
-    // Задание доступно для получения награды
-    adButton.textContent = translations[currentLanguage].get_reward;
-    adButton.disabled = false;
-    adButton.style.display = 'block';
-    
-    const adsTaskStatus = document.getElementById('ads-task-status');
-    if (adsTaskStatus) {
-      adsTaskStatus.style.display = 'none';
+    // Проверка задания с рекламой
+    function checkAdsTask() {
+      console.log('Checking ads task, current ads_watched:', userData.ads_watched);
+      
+      // Убедимся, что ads_watched существует
+      if (typeof userData.ads_watched === 'undefined') {
+        userData.ads_watched = 0;
+      }
+      
+      // Убедимся, что last_ad_time существует
+      if (typeof userData.last_ad_time === 'undefined') {
+        userData.last_ad_time = new Date().toISOString();
+      }
+      
+      // Обновляем счетчик просмотренной рекламы
+      const adsCountElement = document.getElementById('ads-count-value');
+      if (adsCountElement) {
+        adsCountElement.textContent = userData.ads_watched;
+        console.log('Updated ads count display:', userData.ads_watched);
+      }
+      
+      // Проверяем, не прошло ли 40 секунд с последнего просмотра рекламы
+      const currentTime = Math.floor(Date.now() / 1000);
+      const timeSinceLastAd = currentTime - (Math.floor(new Date(userData.last_ad_time).getTime() / 1000) || 0);
+      const adButton = document.getElementById('ads-task-button');
+      
+      if (timeSinceLastAd < 40) {
+        // Кнопка заблокирована, показываем обратный отсчет
+        const timeLeft = 40 - timeSinceLastAd;
+        adButton.disabled = true;
+        adButton.textContent = `${timeLeft}с`;
+      } else if (userData.ads_watched >= 10) {
+        // Задание доступно для получения награды
+        adButton.textContent = translations[currentLanguage].get_reward;
+        adButton.disabled = false;
+        adButton.style.display = 'block';
+        
+        const adsTaskStatus = document.getElementById('ads-task-status');
+        if (adsTaskStatus) {
+          adsTaskStatus.style.display = 'none';
+        }
+      } else {
+        // Задание не выполнено
+        adButton.textContent = translations[currentLanguage].start;
+        adButton.disabled = false;
+        adButton.style.display = 'block';
+        
+        const adsTaskStatus = document.getElementById('ads-task-status');
+        if (adsTaskStatus) {
+          adsTaskStatus.style.display = 'none';
+        }
+      }
     }
-  } else {
-    // Задание не выполнено
-    adButton.textContent = translations[currentLanguage].start;
-    adButton.disabled = false;
-    adButton.style.display = 'block';
-    
-    const adsTaskStatus = document.getElementById('ads-task-status');
-    if (adsTaskStatus) {
-      adsTaskStatus.style.display = 'none';
-    }
-  }
-}
     
     // Обновление таймера реферального задания
     function updateReferralTimer() {
@@ -3805,61 +3786,60 @@ async function claimChannelTaskReward() {
       showNotification(translations[currentLanguage].notification_reward.replace('{0}', '5000'));
     }
     
-    // В функции watchAds оставляем обновление lastAdTime
-function watchAds() {
-  console.log('Watching ads');
-  
-  if (!adsgramAd) {
-    console.error('Adsgram ad not initialized');
-    showNotification('Реклама не загружена');
-    return;
-  }
-  
-  // Блокируем кнопку просмотра рекламы на время показа
-  const adsTaskButton = document.getElementById('ads-task-button');
-  adsTaskButton.disabled = true;
-  adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
-  
-  // Показываем уведомление о начале загрузки рекламы
-  showNotification('Реклама загружается...');
-  
-  // Запускаем таймер на 3 секунды
-  setTimeout(() => {
-    // Увеличиваем счетчик просмотренной рекламы
-    userData.ads_watched = (userData.ads_watched || 0) + 1;
-    // Обновляем время последнего просмотра рекламы (только на клиенте)
-    userData.lastAdTime = Math.floor(Date.now() / 1000);
-    console.log('Updated ads_watched locally:', userData.ads_watched);
-    
-    // Обновляем интерфейс
-    checkAdsTask();
-    
-    // Показываем уведомление
-    showNotification(translations[currentLanguage].notification_ad_watched);
-    
-    // Сохраняем данные (только счетчик рекламы, без lastAdTime)
-    saveUserData().catch(error => {
-      console.error('Error saving user data after ad watch:', error);
-    });
-    
-    // Разблокируем кнопку
-    adsTaskButton.disabled = false;
-  }, 3000);
-  
-  // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
-  adsgramAd.show().then(() => {
-    // Реклама успешно показана
-    console.log('Ad shown successfully');
-  }).catch((error) => {
-    // Ошибка при показе рекламы
-    console.error('Error showing ad:', error);
-    showNotification(translations[currentLanguage].notification_ad_error);
-    
-    // Разблокируем кнопку в случае ошибки
-    adsTaskButton.disabled = false;
-    adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
-  });
-}
+    // Функция для просмотра рекламы через Adsgram
+    function watchAds() {
+      console.log('Watching ads');
+      
+      if (!adsgramAd) {
+        console.error('Adsgram ad not initialized');
+        showNotification('Реклама не загружена');
+        return;
+      }
+      
+      // Блокируем кнопку просмотра рекламы на время показа
+      const adsTaskButton = document.getElementById('ads-task-button');
+      adsTaskButton.disabled = true;
+      adsTaskButton.innerHTML = '<span class="ads-loading"></span>ЗАГРУЗКА...';
+      
+      // Показываем уведомление о начале загрузки рекламы
+      showNotification('Реклама загружается...');
+      
+      // Запускаем таймер на 3 секунды
+      setTimeout(() => {
+        // Увеличиваем счетчик просмотренной рекламы
+        userData.ads_watched = (userData.ads_watched || 0) + 1;
+        userData.last_ad_time = new Date().toISOString();
+        console.log('Updated ads_watched locally:', userData.ads_watched);
+        
+        // Обновляем интерфейс
+        checkAdsTask();
+        
+        // Показываем уведомление
+        showNotification(translations[currentLanguage].notification_ad_watched);
+        
+        // Сохраняем данные
+        saveUserData().catch(error => {
+          console.error('Error saving user data after ad watch:', error);
+        });
+        
+        // Разблокируем кнопку
+        adsTaskButton.disabled = false;
+      }, 3000);
+      
+      // Параллельно показываем рекламу (но не ждем ее завершения для начисления)
+      adsgramAd.show().then(() => {
+        // Реклама успешно показана
+        console.log('Ad shown successfully');
+      }).catch((error) => {
+        // Ошибка при показе рекламы
+        console.error('Error showing ad:', error);
+        showNotification(translations[currentLanguage].notification_ad_error);
+        
+        // Разблокируем кнопку в случае ошибки
+        adsTaskButton.disabled = false;
+        adsTaskButton.textContent = userData.ads_watched >= 10 ? translations[currentLanguage].get_reward : translations[currentLanguage].start;
+      });
+    }
     
     // Копирование реферальной ссылки
     function copyReferralLink() {
@@ -4635,45 +4615,41 @@ function watchAds() {
     const imgActive = "https://i.pinimg.com/736x/88/b3/b6/88b3b6e1175123e5c990931067c4b055.jpg";
 
     function incrementScore() {
-  // Проверяем, достаточно ли энергии
-  if (userData.energy <= 0) {
-    showNoEnergyNotification();
-    return;
-  }
-  
-  // Тратим энергию
-  userData.energy--;
-  
-  // Рассчитываем бонус за клик
-  const clickBonus = calculateClickBonus();
-  
-  // Проверяем активные бусты
-  let scoreMultiplier = 1;
-  userData.active_boosts.forEach(boost => {
-    if (boost.type === 'score_multiplier') {
-      scoreMultiplier *= boost.multiplier;
-    }
-  });
-  
-  // Увеличиваем счет с учетом бонуса и бустов
-  const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
-  userData.score += scoreIncrease;
-  userData.total_clicks++;
-  
-  // Создаем эффект молнии
-  createLightning();
-  
-  // Обновляем отображение
-  updateScoreDisplay();
-  updateEnergyDisplay();
-  updateLevel();
-  
-  // УБРАЛИ СОХРАНЕНИЕ ДАННЫХ ПОСЛЕ КАЖДОГО КЛИКА
-  // saveUserData();
-  
-  // Проверяем достижения
-  checkNewAchievements();
-}
+      // Проверяем, достаточно ли энергии
+      if (userData.energy <= 0) {
+        showNoEnergyNotification();
+        return;
+      }
+      
+      // Тратим энергию
+      userData.energy--;
+      
+      // Рассчитываем бонус за клик
+      const clickBonus = calculateClickBonus();
+      
+      // Проверяем активные бусты
+      let scoreMultiplier = 1;
+      userData.active_boosts.forEach(boost => {
+        if (boost.type === 'score_multiplier') {
+          scoreMultiplier *= boost.multiplier;
+        }
+      });
+      
+      // Увеличиваем счет с учетом бонуса и бустов
+      const scoreIncrease = Math.floor((1 + clickBonus) * scoreMultiplier);
+      userData.score += scoreIncrease;
+      userData.total_clicks++;
+      
+      // Создаем эффект молнии
+      createLightning();
+      
+      // Обновляем отображение
+      updateScoreDisplay();
+      updateEnergyDisplay();
+      updateLevel();
+      
+      // Сохраняем данные на сервере после каждого клика
+      saveUserData();
       
       // Проверяем достижения
       checkNewAchievements();
@@ -4743,18 +4719,6 @@ function watchAds() {
 
         // Вешаем обработчики на кнопки
     document.addEventListener('DOMContentLoaded', async function() {
-
-
-
-        setInterval(() => {
-  if (user) {
-    saveUserData().catch(error => {
-      console.error('Error in periodic save:', error);
-    });
-  }
-}, 5000);
-
-        
       // Инициализируем TonConnect
       initTonConnect();
       
@@ -5195,12 +5159,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-
-
-
-
-
