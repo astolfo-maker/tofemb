@@ -394,7 +394,6 @@ def convert_keys_to_snake_case(data):
     else:
         return data
 
-# Функция для сохранения данных пользователя
 def save_user(user_data: Dict[str, Any]) -> bool:
     if supabase is None:
         logger.error("Supabase client is not initialized")
@@ -418,6 +417,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "total_clicks": int(user_data.get('total_clicks', 0)),
             "level": get_level_by_score(int(user_data.get('score', 0))),
             "wallet_address": user_data.get('wallet_address', ''),
+            # Явно преобразуем в boolean
             "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
             "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
             "referrals": user_data.get('referrals', []),
@@ -440,6 +440,11 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "last_passive_income_update": user_data.get('last_passive_income_update', datetime.now(timezone.utc).isoformat()),
             "last_ad_time": user_data.get('last_ad_time', datetime.now(timezone.utc).isoformat())
         }
+        
+        # Логируем ключевые поля перед сохранением
+        logger.info(f"Before save to DB:")
+        logger.info(f"  wallet_task_completed: {db_data['wallet_task_completed']} (type: {type(db_data['wallet_task_completed'])})")
+        logger.info(f"  channel_task_completed: {db_data['channel_task_completed']} (type: {type(db_data['channel_task_completed'])})")
         
         def query():
             # Используем upsert для атомарной вставки или обновления
@@ -3082,13 +3087,13 @@ function initAdsgram() {
       }
     }
     
-   // Функция для сохранения данных пользователя на сервере (ИСПРАВЛЕНО)
+  // Функция для сохранения данных пользователя на сервере
 async function saveUserData() {
   if (!user) return;
   
   try {
-    // Создаем объект для отправки на сервер
-    const dataToSend = {...userData};
+    // Создаем глубокую копию данных для отправки
+    const dataToSend = JSON.parse(JSON.stringify(userData));
     
     // Убедимся, что ID пользователя установлен
     if (!dataToSend.id && user.id) {
@@ -3098,7 +3103,12 @@ async function saveUserData() {
       dataToSend.user_id = user.id;
     }
     
-    console.log('Saving user data:', dataToSend);
+    console.log('Saving user data:', {
+      id: dataToSend.id,
+      wallet_task_completed: dataToSend.wallet_task_completed,
+      channel_task_completed: dataToSend.channel_task_completed,
+      score: dataToSend.score
+    });
     
     const response = await fetch('/user', {
       method: 'POST',
@@ -3115,7 +3125,7 @@ async function saveUserData() {
       console.log('Save response:', data);
       
       if (data.user) {
-        // Просто обновляем данные пользователя без перезаписи локальных изменений
+        // Обновляем локальные данные только после успешного сохранения
         userData = data.user;
         console.log('User data saved successfully');
         return true;
@@ -3133,7 +3143,6 @@ async function saveUserData() {
     return false;
   }
 }
-
 
  // Функция для обновления отображения счета
     function updateScoreDisplay() {
@@ -3660,45 +3669,71 @@ function updateTopPreview(topUsers) {
       setTimeout(updateReferralTimer, 1000);
     }
     
-    // Получение награды за задание с кошельком
-    async function claimWalletTaskReward() {
-      if (!userData.wallet_address || userData.wallet_task_completed) return;
-      
-      // Добавляем награду
-      userData.score += 1000;
-      userData.wallet_task_completed = true;
-      
-      // Сохраняем данные
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      updateScoreDisplay();
-      updateLevel();
-      checkWalletTask();
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].notification_reward.replace('{0}', '1000'));
-    }
+   // Получение награды за задание с кошельком
+async function claimWalletTaskReward() {
+  console.log('Claiming wallet task reward');
+  
+  if (!userData.wallet_address || userData.wallet_task_completed) {
+    console.log('Cannot claim: wallet not connected or task already completed');
+    return;
+  }
+  
+  // Добавляем награду
+  userData.score += 1000;
+  userData.wallet_task_completed = true;
+  
+  console.log('Saving wallet task completion...');
+  
+  // Сохраняем данные и ждем завершения
+  const saved = await saveUserData();
+  
+  if (saved) {
+    console.log('Wallet task saved successfully');
+    // Обновляем интерфейс только после успешного сохранения
+    updateScoreDisplay();
+    updateLevel();
+    checkWalletTask();
     
-    // Получение награды за задание с подпиской на канал
-    async function claimChannelTaskReward() {
-      if (userData.channel_task_completed) return;
-      
-      // Добавляем награду
-      userData.score += 2000;
-      userData.channel_task_completed = true;
-      
-      // Сохраняем данные
-      await saveUserData();
-      
-      // Обновляем интерфейс
-      updateScoreDisplay();
-      updateLevel();
-      checkChannelTask();
-      
-      // Показываем уведомление
-      showNotification(translations[currentLanguage].notification_reward.replace('{0}', '2000'));
-    }
+    // Показываем уведомление
+    showNotification(translations[currentLanguage].notification_reward.replace('{0}', '1000'));
+  } else {
+    console.error('Failed to save wallet task');
+    showNotification('Ошибка сохранения данных');
+  }
+}
+
+// Получение награды за задание с подпиской на канал
+async function claimChannelTaskReward() {
+  console.log('Claiming channel task reward');
+  
+  if (userData.channel_task_completed) {
+    console.log('Cannot claim: task already completed');
+    return;
+  }
+  
+  // Добавляем награду
+  userData.score += 2000;
+  userData.channel_task_completed = true;
+  
+  console.log('Saving channel task completion...');
+  
+  // Сохраняем данные и ждем завершения
+  const saved = await saveUserData();
+  
+  if (saved) {
+    console.log('Channel task saved successfully');
+    // Обновляем интерфейс только после успешного сохранения
+    updateScoreDisplay();
+    updateLevel();
+    checkChannelTask();
+    
+    // Показываем уведомление
+    showNotification(translations[currentLanguage].notification_reward.replace('{0}', '2000'));
+  } else {
+    console.error('Failed to save channel task');
+    showNotification('Ошибка сохранения данных');
+  }
+}
     
     // Получение награды за задание с рефералами
     async function claimReferralTaskReward() {
@@ -4993,6 +5028,12 @@ async def save_user_data(request: Request):
         logger.info(f"POST /user endpoint called")
         data = await request.json()
         
+        # Логируем ключевые поля
+        logger.info(f"Saving data for user {data.get('id')}:")
+        logger.info(f"  wallet_task_completed: {data.get('wallet_task_completed')}")
+        logger.info(f"  channel_task_completed: {data.get('channel_task_completed')}")
+        logger.info(f"  score: {data.get('score')}")
+        
         # Сохраняем в базу данных
         success = save_user(data)
         
@@ -5127,8 +5168,4 @@ if __name__ == "__main__":
 
 
 
-
-
-
-
-
+  
