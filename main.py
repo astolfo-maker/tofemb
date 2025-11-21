@@ -402,11 +402,7 @@ def save_user(user_data: Dict[str, Any]) -> bool:
     try:
         logger.info(f"Saving user: {user_data.get('first_name', 'Unknown')}")
         
-        # Преобразуем ключи из camelCase в snake_case, если необходимо
-        if any(key[0].islower() and any(c.isupper() for c in key) for key in user_data.keys()):
-            user_data = convert_keys_to_snake_case(user_data)
-        
-        # Подготовка данных для вставки/обновления
+        # Подготовка данных для вставки/обновления (без преобразования camelCase в snake_case)
         db_data = {
             "user_id": str(user_data.get('id', '')),
             "first_name": user_data.get('first_name', ''),
@@ -417,7 +413,6 @@ def save_user(user_data: Dict[str, Any]) -> bool:
             "total_clicks": int(user_data.get('total_clicks', 0)),
             "level": get_level_by_score(int(user_data.get('score', 0))),
             "wallet_address": user_data.get('wallet_address', ''),
-            # Явно преобразуем в boolean
             "wallet_task_completed": bool(user_data.get('wallet_task_completed', False)),
             "channel_task_completed": bool(user_data.get('channel_task_completed', False)),
             "referrals": user_data.get('referrals', []),
@@ -5167,5 +5162,3 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
-
-  
