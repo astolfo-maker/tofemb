@@ -5,3 +5,5 @@ supabase
 requests
 tenacity
 python-multipart
+pyTelegramBotAPI
+flask
